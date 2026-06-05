@@ -9,7 +9,10 @@ describe("postMatchCardsWithClient", () => {
   test("logs in, sends each match card to the configured channel, and destroys the client", async () => {
     const channel = {
       isTextBased: vi.fn(() => true),
-      send: vi.fn(async () => undefined)
+      send: vi
+        .fn()
+        .mockResolvedValueOnce({ id: "discord-message-1" })
+        .mockResolvedValueOnce({ id: "discord-message-2" })
     };
     const client: DiscordPosterClient = {
       login: vi.fn(async () => undefined),
@@ -26,13 +29,14 @@ describe("postMatchCardsWithClient", () => {
 
     const messages = [createMatchCardMessage(firstMatch), createMatchCardMessage(secondMatch)];
 
-    await postMatchCardsWithClient(config(), messages, client);
+    const result = await postMatchCardsWithClient(config(), messages, client);
 
     expect(client.login).toHaveBeenCalledWith("token-value");
     expect(client.channels.fetch).toHaveBeenCalledWith("channel-1");
     expect(channel.send).toHaveBeenCalledTimes(2);
     expect(channel.send).toHaveBeenNthCalledWith(1, messages[0]);
     expect(channel.send).toHaveBeenNthCalledWith(2, messages[1]);
+    expect(result).toEqual(["discord-message-1", "discord-message-2"]);
     expect(client.destroy).toHaveBeenCalledOnce();
   });
 });

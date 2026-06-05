@@ -22,6 +22,17 @@ export interface StoredResult {
   recordedAt: string;
 }
 
+export type PostedMatchCardSource = "auto" | "command";
+
+export interface StoredPostedMatchCard {
+  matchId: string;
+  channelId: string;
+  messageId: string;
+  postedForDate: string;
+  postedAt: string;
+  postSource: PostedMatchCardSource;
+}
+
 export interface NewScoringRun {
   createdAt: string;
   matchId: string | null;
@@ -71,6 +82,16 @@ export class CopanalhasDatabase {
         home_score INTEGER NOT NULL,
         away_score INTEGER NOT NULL,
         recorded_at TEXT NOT NULL
+      ) STRICT;
+
+      CREATE TABLE IF NOT EXISTS posted_match_cards (
+        match_id TEXT NOT NULL,
+        channel_id TEXT NOT NULL,
+        message_id TEXT NOT NULL,
+        posted_for_date TEXT NOT NULL,
+        posted_at TEXT NOT NULL,
+        post_source TEXT NOT NULL,
+        PRIMARY KEY (match_id, channel_id)
       ) STRICT;
 
       CREATE TABLE IF NOT EXISTS scoring_runs (
@@ -244,6 +265,49 @@ export class CopanalhasDatabase {
     }));
   }
 
+  recordPostedMatchCard(card: StoredPostedMatchCard): void {
+    this.database
+      .prepare(`
+        INSERT INTO posted_match_cards (
+          match_id,
+          channel_id,
+          message_id,
+          posted_for_date,
+          posted_at,
+          post_source
+        )
+        VALUES (?, ?, ?, ?, ?, ?)
+        ON CONFLICT(match_id, channel_id) DO UPDATE SET
+          message_id = excluded.message_id,
+          posted_for_date = excluded.posted_for_date,
+          posted_at = excluded.posted_at,
+          post_source = excluded.post_source
+      `)
+      .run(
+        card.matchId,
+        card.channelId,
+        card.messageId,
+        card.postedForDate,
+        card.postedAt,
+        card.postSource
+      );
+  }
+
+  listPostedMatchCards(): StoredPostedMatchCard[] {
+    const rows = this.database
+      .prepare("SELECT * FROM posted_match_cards ORDER BY posted_for_date, channel_id, match_id")
+      .all() as unknown as PostedMatchCardRow[];
+
+    return rows.map((row) => ({
+      matchId: row.match_id,
+      channelId: row.channel_id,
+      messageId: row.message_id,
+      postedForDate: row.posted_for_date,
+      postedAt: row.posted_at,
+      postSource: row.post_source
+    }));
+  }
+
   insertScoringRun(run: NewScoringRun): StoredScoringRun {
     const result = this.database
       .prepare("INSERT INTO scoring_runs (created_at, match_id, summary_json) VALUES (?, ?, ?)")
@@ -327,6 +391,15 @@ interface ResultRow {
   home_score: number;
   away_score: number;
   recorded_at: string;
+}
+
+interface PostedMatchCardRow {
+  match_id: string;
+  channel_id: string;
+  message_id: string;
+  posted_for_date: string;
+  posted_at: string;
+  post_source: PostedMatchCardSource;
 }
 
 interface ScoringRunRow {

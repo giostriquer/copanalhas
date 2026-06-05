@@ -90,6 +90,32 @@ describe("CopanalhasDatabase", () => {
     store.close();
   });
 
+  test("records posted match cards by match and channel", () => {
+    const store = openCopanalhasDatabase(":memory:");
+    store.migrate();
+
+    store.recordPostedMatchCard({
+      matchId: "wc2026-001",
+      channelId: "channel-1",
+      messageId: "discord-message-1",
+      postedForDate: "2026-06-11",
+      postedAt: "2026-06-11T12:00:00.000Z",
+      postSource: "command"
+    });
+
+    expect(store.listPostedMatchCards()).toEqual([
+      {
+        matchId: "wc2026-001",
+        channelId: "channel-1",
+        messageId: "discord-message-1",
+        postedForDate: "2026-06-11",
+        postedAt: "2026-06-11T12:00:00.000Z",
+        postSource: "command"
+      }
+    ]);
+    store.close();
+  });
+
   test("records scoring runs with JSON summaries", () => {
     const store = openCopanalhasDatabase(":memory:");
     store.migrate();

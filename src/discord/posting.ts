@@ -13,14 +13,18 @@ export interface DiscordPosterClient {
 
 export interface DiscordPosterChannel {
   isTextBased(): boolean;
-  send?(message: MatchCardMessage): Promise<unknown>;
+  send?(message: MatchCardMessage): Promise<DiscordSentMessage>;
+}
+
+export interface DiscordSentMessage {
+  id: string;
 }
 
 export async function postDiscordMatchCards(
   config: CopanalhasConfig,
   messages: MatchCardMessage[]
-): Promise<void> {
-  await postMatchCardsWithClient(
+): Promise<string[]> {
+  return postMatchCardsWithClient(
     config,
     messages,
     new Client({
@@ -33,7 +37,9 @@ export async function postMatchCardsWithClient(
   config: CopanalhasConfig,
   messages: MatchCardMessage[],
   client: DiscordPosterClient
-): Promise<void> {
+): Promise<string[]> {
+  const messageIds: string[] = [];
+
   try {
     await client.login(config.discordToken);
     const channel = await client.channels.fetch(config.channelId);
@@ -43,9 +49,12 @@ export async function postMatchCardsWithClient(
     }
 
     for (const message of messages) {
-      await channel.send(message);
+      const sentMessage = await channel.send(message);
+      messageIds.push(sentMessage.id);
     }
   } finally {
     await client.destroy();
   }
+
+  return messageIds;
 }

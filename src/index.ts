@@ -36,7 +36,7 @@ export interface CliDependencies {
     onMessageResult: Parameters<typeof startDiscordClient>[1],
     predictionInteractionOptions?: PredictionInteractionOptions
   ): Promise<unknown>;
-  postMatchCards?(config: CopanalhasConfig, messages: MatchCardMessage[]): Promise<void>;
+  postMatchCards?(config: CopanalhasConfig, messages: MatchCardMessage[]): Promise<unknown>;
 }
 
 export async function runCli(
