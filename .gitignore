@@ -17,6 +17,7 @@ tmp/
 *.sqlite
 *.sqlite3
 logs/
+.superpowers/
 
 # OS/editor noise
 .DS_Store
