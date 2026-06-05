@@ -1,6 +1,7 @@
 import { pathToFileURL } from "node:url";
 
 import { createPredictionPersistenceHandler } from "./app/collector.js";
+import { loadLocalEnvFile } from "./config/env.js";
 import { parseCopanalhasConfig, type CopanalhasConfig } from "./discord/config.js";
 import { startDiscordClient } from "./discord/ingestion.js";
 import { formatLeaderboard } from "./leaderboard/format.js";
@@ -149,6 +150,8 @@ export function main(): void {
 }
 
 function defaultDependencies(): CliDependencies {
+  loadLocalEnvFile();
+
   return {
     openDatabase: openCopanalhasDatabase,
     writeLine: (line) => console.log(line),
