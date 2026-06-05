@@ -2,6 +2,10 @@ import { Client, Events, GatewayIntentBits, type Message } from "discord.js";
 
 import { parsePredictionMessage, type PredictionParseResult } from "../predictions/parser.js";
 import type { CopanalhasConfig } from "./config.js";
+import {
+  handleDiscordPredictionInteraction,
+  type PredictionInteractionOptions
+} from "./interactions.js";
 
 export const parserVersion = "prediction-parser-v1";
 
@@ -98,7 +102,8 @@ export function handleDiscordMessage(
 
 export function createDiscordClient(
   config: CopanalhasConfig,
-  onMessageResult: (result: DiscordIngestionResult) => void
+  onMessageResult: (result: DiscordIngestionResult) => void,
+  predictionInteractionOptions?: PredictionInteractionOptions
 ): Client {
   const client = new Client({
     intents: [
@@ -122,14 +127,25 @@ export function createDiscordClient(
     onMessageResult(result);
   });
 
+  if (predictionInteractionOptions) {
+    client.on(Events.InteractionCreate, (interaction) => {
+      void handleDiscordPredictionInteraction(interaction, predictionInteractionOptions).catch(
+        (error: unknown) => {
+          console.error(error);
+        }
+      );
+    });
+  }
+
   return client;
 }
 
 export async function startDiscordClient(
   config: CopanalhasConfig,
-  onMessageResult: (result: DiscordIngestionResult) => void
+  onMessageResult: (result: DiscordIngestionResult) => void,
+  predictionInteractionOptions?: PredictionInteractionOptions
 ): Promise<Client> {
-  const client = createDiscordClient(config, onMessageResult);
+  const client = createDiscordClient(config, onMessageResult, predictionInteractionOptions);
   await client.login(config.discordToken);
   return client;
 }

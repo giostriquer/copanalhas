@@ -4,6 +4,7 @@ import { createPredictionPersistenceHandler } from "./app/collector.js";
 import { loadLocalEnvFile } from "./config/env.js";
 import { parseCopanalhasConfig, type CopanalhasConfig } from "./discord/config.js";
 import { startDiscordClient } from "./discord/ingestion.js";
+import type { PredictionInteractionOptions } from "./discord/interactions.js";
 import { formatLeaderboard } from "./leaderboard/format.js";
 import { buildLeaderboard, scoreMatch, type MatchResult, type ScorePrediction } from "./scoring/scoring.js";
 import {
@@ -30,7 +31,8 @@ export interface CliDependencies {
   env: Record<string, string | undefined>;
   startDiscord(
     config: CopanalhasConfig,
-    onMessageResult: Parameters<typeof startDiscordClient>[1]
+    onMessageResult: Parameters<typeof startDiscordClient>[1],
+    predictionInteractionOptions?: PredictionInteractionOptions
   ): Promise<unknown>;
 }
 
@@ -138,7 +140,13 @@ async function startBot(dependencies: CliDependencies): Promise<void> {
       matches: WORLD_CUP_2026_SEED.matches,
       upsertPrediction: (prediction) => store.upsertPrediction(prediction),
       writeLine: dependencies.writeLine
-    })
+    }),
+    {
+      guildId: configResult.config.guildId,
+      channelId: configResult.config.channelId,
+      matches: WORLD_CUP_2026_SEED.matches,
+      upsertPrediction: (prediction) => store.upsertPrediction(prediction)
+    }
   );
 }
 

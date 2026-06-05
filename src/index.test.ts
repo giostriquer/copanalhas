@@ -122,7 +122,18 @@ describe("runCli", () => {
         channelId: "channel-1",
         databasePath: "./tmp/bot.sqlite"
       },
-      expect.any(Function)
+      expect.any(Function),
+      expect.objectContaining({
+        guildId: "guild-1",
+        channelId: "channel-1",
+        matches: expect.arrayContaining([
+          expect.objectContaining({
+            id: "wc2026-001",
+            matchNumber: 1
+          })
+        ]),
+        upsertPrediction: expect.any(Function)
+      })
     );
     expect(lines).toEqual(["Starting Discord collector for configured channel."]);
   });
