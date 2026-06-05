@@ -278,6 +278,37 @@ describe("CopanalhasDatabase", () => {
     store.close();
   });
 
+  test("records leaderboard dashboard posts by guild and channel", () => {
+    const store = openCopanalhasDatabase(":memory:");
+    store.migrate();
+
+    store.recordLeaderboardPost({
+      guildId: "guild-1",
+      channelId: "channel-1",
+      messageId: "leaderboard-message-1",
+      createdAt: "2026-06-11T12:00:00.000Z",
+      updatedAt: "2026-06-11T12:00:00.000Z"
+    });
+    store.recordLeaderboardPost({
+      guildId: "guild-1",
+      channelId: "channel-1",
+      messageId: "leaderboard-message-2",
+      createdAt: "2026-06-11T12:00:00.000Z",
+      updatedAt: "2026-06-11T12:05:00.000Z"
+    });
+
+    expect(store.listLeaderboardPosts()).toEqual([
+      {
+        guildId: "guild-1",
+        channelId: "channel-1",
+        messageId: "leaderboard-message-2",
+        createdAt: "2026-06-11T12:00:00.000Z",
+        updatedAt: "2026-06-11T12:05:00.000Z"
+      }
+    ]);
+    store.close();
+  });
+
   test("records scoring runs with JSON summaries", () => {
     const store = openCopanalhasDatabase(":memory:");
     store.migrate();

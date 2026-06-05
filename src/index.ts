@@ -22,6 +22,8 @@ import {
   type StandingsDashboardMessage
 } from "./standings/format.js";
 import { computeGroupStandings, type StandingsResult } from "./standings/standings.js";
+import { upsertDiscordLeaderboardMessage } from "./discord/leaderboard-posting.js";
+import type { LeaderboardDashboardMessage } from "./leaderboard/format.js";
 import { openCopanalhasDatabase } from "./storage/database.js";
 import { WORLD_CUP_2026_SEED } from "./worldcup/seed.js";
 
@@ -43,6 +45,10 @@ export interface CliDependencies {
   sendMatchCard?(message: MatchCardMessage): Promise<string>;
   upsertStandingsMessage?(
     message: StandingsDashboardMessage,
+    existingMessageId: string | null
+  ): Promise<string>;
+  upsertLeaderboardMessage?(
+    message: LeaderboardDashboardMessage,
     existingMessageId: string | null
   ): Promise<string>;
   now?(): Date;
@@ -238,6 +244,10 @@ async function startBot(dependencies: CliDependencies): Promise<void> {
       dependencies.upsertStandingsMessage ??
       ((message, existingMessageId) =>
         upsertDiscordStandingsMessage(configResult.config, message, existingMessageId)),
+    upsertLeaderboardMessage:
+      dependencies.upsertLeaderboardMessage ??
+      ((message, existingMessageId) =>
+        upsertDiscordLeaderboardMessage(configResult.config, message, existingMessageId)),
     now: dependencies.now ?? (() => new Date()),
     writeLine: dependencies.writeLine
   });

@@ -68,6 +68,10 @@ describe("handleOperatorCommand", () => {
     const clearPredictionsForMatches = vi.fn(() => 3);
     const clearResultsForMatches = vi.fn(() => 1);
     const updateStandingsDashboard = vi.fn(async () => ({ action: "updated" as const, posts: [] }));
+    const updateLeaderboardDashboard = vi.fn(async () => ({
+      action: "updated" as const,
+      post: { messageId: "leaderboard-message-1", action: "edited" as const }
+    }));
 
     const result = await handleOperatorCommand(
       command("reset-test-date", { date: "2026-06-11" }),
@@ -75,7 +79,8 @@ describe("handleOperatorCommand", () => {
         clearPostedMatchCards,
         clearPredictionsForMatches,
         clearResultsForMatches,
-        updateStandingsDashboard
+        updateStandingsDashboard,
+        updateLeaderboardDashboard
       })
     );
 
@@ -86,7 +91,8 @@ describe("handleOperatorCommand", () => {
         "Posted card records: 2",
         "Predictions: 3",
         "Results: 1",
-        "Standings refreshed."
+        "Standings refreshed.",
+        "Leaderboard refreshed."
       ].join("\n"),
       ephemeral: true
     });
@@ -94,6 +100,7 @@ describe("handleOperatorCommand", () => {
     expect(clearPredictionsForMatches).toHaveBeenCalledWith(["wc2026-001", "wc2026-002"]);
     expect(clearResultsForMatches).toHaveBeenCalledWith(["wc2026-001", "wc2026-002"]);
     expect(updateStandingsDashboard).toHaveBeenCalledOnce();
+    expect(updateLeaderboardDashboard).toHaveBeenCalledOnce();
   });
 
   test("status reports today's automation state and recent catch-up results", async () => {
@@ -157,7 +164,9 @@ describe("handleOperatorCommand", () => {
         "Result sync: on",
         "Last result sync: synced 1, skipped 0 (2026-06-09 to 2026-06-11)",
         "Standings posts: 0/2",
-        "Standings last updated: never"
+        "Standings last updated: never",
+        "Leaderboard post: missing",
+        "Leaderboard last updated: never"
       ].join("\n"),
       ephemeral: true
     });
@@ -336,7 +345,7 @@ describe("handleOperatorCommand", () => {
     });
   });
 
-  test("result refreshes standings after recording a manual result", async () => {
+  test("result refreshes standings and leaderboard after recording a manual result", async () => {
     const updateStandingsDashboard = vi.fn(async () => ({
       action: "updated" as const,
       posts: [
@@ -344,13 +353,18 @@ describe("handleOperatorCommand", () => {
         { postKey: "groups_g_l" as const, messageId: "message-b", action: "edited" as const }
       ]
     }));
+    const updateLeaderboardDashboard = vi.fn(async () => ({
+      action: "updated" as const,
+      post: { messageId: "leaderboard-message-1", action: "edited" as const }
+    }));
 
     await handleOperatorCommand(
       command("result", { match: "wc2026-001", score: "2-1" }),
-      options({ updateStandingsDashboard })
+      options({ updateStandingsDashboard, updateLeaderboardDashboard })
     );
 
     expect(updateStandingsDashboard).toHaveBeenCalledOnce();
+    expect(updateLeaderboardDashboard).toHaveBeenCalledOnce();
   });
 
   test("ignores commands outside the configured guild", async () => {
@@ -507,6 +521,11 @@ function options(overrides: Partial<OperatorCommandOptions> = {}): OperatorComma
     upsertResult: vi.fn(),
     listStandingsPosts: vi.fn(() => []),
     updateStandingsDashboard: vi.fn(async () => ({ action: "updated" as const, posts: [] })),
+    listLeaderboardPosts: vi.fn(() => []),
+    updateLeaderboardDashboard: vi.fn(async () => ({
+      action: "updated" as const,
+      post: { messageId: "leaderboard-message-1", action: "edited" as const }
+    })),
     ...overrides
   };
 }

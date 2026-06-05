@@ -12,6 +12,7 @@ describe("startCopanalhasBotRuntime", () => {
     const startInterval = vi.fn(() => ({ stop: vi.fn() }));
     const sendMatchCard = vi.fn(async () => "discord-message-1");
     const upsertStandingsMessage = vi.fn(async (message) => `standings-${message.key}`);
+    const upsertLeaderboardMessage = vi.fn(async () => "leaderboard-message-1");
     const writeLine = vi.fn();
 
     const runtime = await startCopanalhasBotRuntime({
@@ -22,6 +23,7 @@ describe("startCopanalhasBotRuntime", () => {
       startInterval,
       sendMatchCard,
       upsertStandingsMessage,
+      upsertLeaderboardMessage,
       now: () => new Date("2026-06-11T12:00:00.000Z"),
       writeLine
     });
@@ -42,7 +44,8 @@ describe("startCopanalhasBotRuntime", () => {
           matches: WORLD_CUP_2026_SEED.matches,
           postDueMatchCards: expect.any(Function),
           upsertResult: expect.any(Function),
-          updateStandingsDashboard: expect.any(Function)
+          updateStandingsDashboard: expect.any(Function),
+          updateLeaderboardDashboard: expect.any(Function)
         }),
         registerCommands: expect.any(Function)
       })
@@ -50,6 +53,8 @@ describe("startCopanalhasBotRuntime", () => {
     expect(startInterval).toHaveBeenCalled();
     expect(upsertStandingsMessage).toHaveBeenCalledTimes(2);
     expect(store.recordStandingsPost).toHaveBeenCalledTimes(2);
+    expect(upsertLeaderboardMessage).toHaveBeenCalledOnce();
+    expect(store.recordLeaderboardPost).toHaveBeenCalledOnce();
 
     await runtime.stop();
   });
@@ -68,6 +73,7 @@ describe("startCopanalhasBotRuntime", () => {
       startInterval,
       sendMatchCard,
       upsertStandingsMessage: vi.fn(async (message) => `standings-${message.key}`),
+      upsertLeaderboardMessage: vi.fn(async () => "leaderboard-message-1"),
       now: () => new Date("2026-06-11T12:00:00.000Z"),
       writeLine: vi.fn()
     });
@@ -102,6 +108,7 @@ describe("startCopanalhasBotRuntime", () => {
       return { stop: vi.fn() };
     });
     const upsertStandingsMessage = vi.fn(async (message) => `standings-${message.key}`);
+    const upsertLeaderboardMessage = vi.fn(async () => "leaderboard-message-1");
     const syncFinishedResults = vi.fn(async () => ({
       action: "synced" as const,
       storedResults: ["wc2026-001"],
@@ -116,17 +123,20 @@ describe("startCopanalhasBotRuntime", () => {
       startInterval,
       sendMatchCard: vi.fn(async () => "discord-message-1"),
       upsertStandingsMessage,
+      upsertLeaderboardMessage,
       syncFinishedResults,
       now: () => new Date("2026-06-11T12:00:00.000Z"),
       writeLine: vi.fn()
     });
     upsertStandingsMessage.mockClear();
+    upsertLeaderboardMessage.mockClear();
     syncFinishedResults.mockClear();
 
     await intervalCallbacks[1]?.();
 
     expect(syncFinishedResults).toHaveBeenCalledOnce();
     expect(upsertStandingsMessage).toHaveBeenCalledTimes(2);
+    expect(upsertLeaderboardMessage).toHaveBeenCalledOnce();
   });
 
   test("syncs recent results during startup catch-up when configured", async () => {
@@ -134,6 +144,7 @@ describe("startCopanalhasBotRuntime", () => {
     const startDiscord = vi.fn(async () => ({ destroy: vi.fn(async () => undefined) }));
     const startInterval = vi.fn(() => ({ stop: vi.fn() }));
     const upsertStandingsMessage = vi.fn(async (message) => `standings-${message.key}`);
+    const upsertLeaderboardMessage = vi.fn(async () => "leaderboard-message-1");
     const syncFinishedResults = vi.fn(async () => ({
       action: "synced" as const,
       storedResults: ["wc2026-001"],
@@ -148,6 +159,7 @@ describe("startCopanalhasBotRuntime", () => {
       startInterval,
       sendMatchCard: vi.fn(async () => "discord-message-1"),
       upsertStandingsMessage,
+      upsertLeaderboardMessage,
       syncFinishedResults,
       now: () => new Date("2026-06-11T12:00:00.000Z"),
       writeLine: vi.fn()
@@ -161,6 +173,7 @@ describe("startCopanalhasBotRuntime", () => {
       })
     );
     expect(upsertStandingsMessage).toHaveBeenCalledTimes(4);
+    expect(upsertLeaderboardMessage).toHaveBeenCalledTimes(2);
   });
 
   test("exposes runtime status from startup catch-up state", async () => {
@@ -186,6 +199,7 @@ describe("startCopanalhasBotRuntime", () => {
       startInterval: vi.fn(() => ({ stop: vi.fn() })),
       sendMatchCard: vi.fn(async () => "discord-message-1"),
       upsertStandingsMessage: vi.fn(async (message) => `standings-${message.key}`),
+      upsertLeaderboardMessage: vi.fn(async () => "leaderboard-message-1"),
       now: () => new Date("2026-06-11T12:00:00.000Z"),
       writeLine: vi.fn()
     });
@@ -253,6 +267,8 @@ function createStore(): BotRuntimeStore {
     clearResultsForMatches: vi.fn(() => 0),
     listStandingsPosts: vi.fn(() => []),
     recordStandingsPost: vi.fn(),
+    listLeaderboardPosts: vi.fn(() => []),
+    recordLeaderboardPost: vi.fn(),
     insertScoringRun: vi.fn()
   };
 }

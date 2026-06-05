@@ -245,6 +245,11 @@ function operatorOptions(): OperatorCommandOptions {
     listResults: vi.fn(() => []),
     upsertResult: vi.fn(),
     listStandingsPosts: vi.fn(() => []),
-    updateStandingsDashboard: vi.fn(async () => ({ action: "updated" as const, posts: [] }))
+    updateStandingsDashboard: vi.fn(async () => ({ action: "updated" as const, posts: [] })),
+    listLeaderboardPosts: vi.fn(() => []),
+    updateLeaderboardDashboard: vi.fn(async () => ({
+      action: "updated" as const,
+      post: { messageId: "leaderboard-message-1", action: "edited" as const }
+    }))
   };
 }

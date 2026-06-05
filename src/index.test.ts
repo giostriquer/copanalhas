@@ -248,6 +248,7 @@ describe("runCli", () => {
       startInterval,
       sendMatchCard: vi.fn(async () => "discord-message-1"),
       upsertStandingsMessage: vi.fn(async (message) => `standings-${message.key}`),
+      upsertLeaderboardMessage: vi.fn(async () => "leaderboard-message-1"),
       now: () => new Date("2026-06-11T12:00:00.000Z")
     });
 
@@ -347,6 +348,8 @@ function createStoreShape(): CliStore {
     clearResultsForMatches: vi.fn(() => 0),
     listStandingsPosts: vi.fn(() => [] as ReturnType<CliStore["listStandingsPosts"]>),
     recordStandingsPost: vi.fn(),
+    listLeaderboardPosts: vi.fn(() => [] as ReturnType<CliStore["listLeaderboardPosts"]>),
+    recordLeaderboardPost: vi.fn(),
     insertScoringRun: vi.fn(),
     close: vi.fn()
   };

@@ -46,6 +46,14 @@ export interface StoredStandingsPost {
   updatedAt: string;
 }
 
+export interface StoredLeaderboardPost {
+  guildId: string;
+  channelId: string;
+  messageId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface NewScoringRun {
   createdAt: string;
   matchId: string | null;
@@ -118,6 +126,15 @@ export class CopanalhasDatabase {
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL,
         PRIMARY KEY (post_key, guild_id, channel_id)
+      ) STRICT;
+
+      CREATE TABLE IF NOT EXISTS leaderboard_posts (
+        guild_id TEXT NOT NULL,
+        channel_id TEXT NOT NULL,
+        message_id TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        PRIMARY KEY (guild_id, channel_id)
       ) STRICT;
 
       CREATE TABLE IF NOT EXISTS scoring_runs (
@@ -417,6 +434,39 @@ export class CopanalhasDatabase {
     }));
   }
 
+  recordLeaderboardPost(post: StoredLeaderboardPost): void {
+    this.database
+      .prepare(`
+        INSERT INTO leaderboard_posts (
+          guild_id,
+          channel_id,
+          message_id,
+          created_at,
+          updated_at
+        )
+        VALUES (?, ?, ?, ?, ?)
+        ON CONFLICT(guild_id, channel_id) DO UPDATE SET
+          message_id = excluded.message_id,
+          created_at = excluded.created_at,
+          updated_at = excluded.updated_at
+      `)
+      .run(post.guildId, post.channelId, post.messageId, post.createdAt, post.updatedAt);
+  }
+
+  listLeaderboardPosts(): StoredLeaderboardPost[] {
+    const rows = this.database
+      .prepare("SELECT * FROM leaderboard_posts ORDER BY guild_id, channel_id")
+      .all() as unknown as LeaderboardPostRow[];
+
+    return rows.map((row) => ({
+      guildId: row.guild_id,
+      channelId: row.channel_id,
+      messageId: row.message_id,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at
+    }));
+  }
+
   insertScoringRun(run: NewScoringRun): StoredScoringRun {
     const result = this.database
       .prepare("INSERT INTO scoring_runs (created_at, match_id, summary_json) VALUES (?, ?, ?)")
@@ -529,6 +579,14 @@ interface PostedMatchCardRow {
 
 interface StandingsPostRow {
   post_key: StandingsPostKey;
+  guild_id: string;
+  channel_id: string;
+  message_id: string;
+  created_at: string;
+  updated_at: string;
+}
+
+interface LeaderboardPostRow {
   guild_id: string;
   channel_id: string;
   message_id: string;

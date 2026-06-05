@@ -112,8 +112,21 @@ for the configured channel and selected date.
 `status` is the operator health check. It reports the current local date/time,
 auto-post setting, today's reviewed matches, posted/unposted card state,
 prediction-window counts, the last auto-post action, result-sync state, the last
-result-sync action, and standings post health. Use it after starting the bot to
-confirm that catch-up ran and the process is ready for members.
+result-sync action, standings post health, and leaderboard post health. Use it
+after starting the bot to confirm that catch-up ran and the process is ready for
+members.
+
+The main public dashboard is three persistent messages in the configured
+channel:
+
+- World Cup 2026 Group Standings, Groups A-F
+- World Cup 2026 Group Standings, Groups G-L
+- Copanalhas Leaderboard
+
+The standings and leaderboard messages are edited in place. Startup posts or
+repairs missing dashboard messages. Automatic result sync, manual result entry,
+and `reset-test-date` refresh the affected dashboards so the channel does not
+fill with new scoreboard messages.
 
 `reset-test-date` is the broader smoke-test reset. It clears posted-card dedupe
 records, predictions, and results for matches on the selected date, then refreshes

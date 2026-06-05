@@ -44,7 +44,9 @@ prediction button/modal interactions with team-specific score fields, and can
 sync finished results from football-data.org when a token is configured.
 On startup, the bot immediately catches up the current matchday if the configured
 auto-post time has already passed, refreshes standings, and runs result sync with
-a small lookback window when result sync is enabled.
+a small lookback window when result sync is enabled. The main public dashboard is
+three persistent posts: group standings A-F, group standings G-L, and the
+Copanalhas player leaderboard.
 Terminal commands remain useful for setup and manual recovery, but Discord slash
 commands are the preferred operator controls during the game.
 
@@ -58,7 +60,7 @@ Useful operator commands while the bot is running:
   predictions, and results for one test date, then refresh standings.
 - `/copanalhas status`: privately show today's matches, posted/unposted cards,
   prediction-window counts, last auto-post action, result-sync state, and
-  standings post health.
+  dashboard post health.
 - `/copanalhas meus-palpites`: privately show your predictions for today's
   matches. Add `date:2026-06-11` to inspect another matchday.
 - `/copanalhas predictions match:wc2026-001`: privately inspect submitted picks
@@ -67,7 +69,9 @@ Useful operator commands while the bot is running:
 - `/copanalhas reveal match:wc2026-001`: publicly reveal submitted picks only
   after predictions have closed.
 - `/copanalhas result match:wc2026-001 score:2-1`: record or override a result.
-- `/copanalhas leaderboard`: privately show the current leaderboard.
+- `/copanalhas leaderboard`: privately preview the current leaderboard. The
+  public leaderboard dashboard post is updated automatically after result
+  changes.
 
 ## Documentation
 

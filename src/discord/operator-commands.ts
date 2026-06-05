@@ -9,6 +9,7 @@ import { formatPredictionAudit, formatPredictionReveal } from "../predictions/vi
 import { buildLeaderboard, scoreMatch, type MatchResult } from "../scoring/scoring.js";
 import type {
   PostedMatchCardSource,
+  StoredLeaderboardPost,
   StoredPrediction,
   StoredResult,
   StoredStandingsPost
@@ -16,6 +17,7 @@ import type {
 import type { WorldCupMatch } from "../worldcup/types.js";
 import { formatTeamName } from "../worldcup/team-display.js";
 import type { UpdateStandingsDashboardResult } from "../app/standings-posting.js";
+import type { UpdateLeaderboardDashboardResult } from "../app/leaderboard-posting.js";
 import { copanalhasCommandName } from "./commands.js";
 
 export type OperatorSubcommand =
@@ -65,6 +67,8 @@ export interface OperatorCommandOptions {
   upsertResult(result: StoredResult): void | Promise<void>;
   listStandingsPosts(): StoredStandingsPost[];
   updateStandingsDashboard(): Promise<UpdateStandingsDashboardResult>;
+  listLeaderboardPosts(): StoredLeaderboardPost[];
+  updateLeaderboardDashboard(): Promise<UpdateLeaderboardDashboardResult>;
 }
 
 export type OperatorCommandResult =
@@ -173,6 +177,7 @@ export async function handleOperatorCommand(
     const predictions = options.clearPredictionsForMatches(matchIds);
     const results = options.clearResultsForMatches(matchIds);
     await options.updateStandingsDashboard();
+    await options.updateLeaderboardDashboard();
 
     return reply(
       [
@@ -180,7 +185,8 @@ export async function handleOperatorCommand(
         `Posted card records: ${postedCards}`,
         `Predictions: ${predictions}`,
         `Results: ${results}`,
-        "Standings refreshed."
+        "Standings refreshed.",
+        "Leaderboard refreshed."
       ].join("\n")
     );
   }
@@ -198,7 +204,12 @@ export async function handleOperatorCommand(
           (runtimeStatus?.resultSyncEnabled ?? options.resultSyncEnabled) ? "on" : "off"
         }`,
         ...formatLastResultSync(runtimeStatus?.lastResultSync),
-        ...formatStandingsStatus(options.listStandingsPosts(), options.guildId, options.channelId)
+        ...formatStandingsStatus(options.listStandingsPosts(), options.guildId, options.channelId),
+        ...formatLeaderboardStatus(
+          options.listLeaderboardPosts(),
+          options.guildId,
+          options.channelId
+        )
       ].join("\n")
     );
   }
@@ -290,6 +301,7 @@ export async function handleOperatorCommand(
       fetchedAt: null
     });
     await options.updateStandingsDashboard();
+    await options.updateLeaderboardDashboard();
 
     return reply(`Recorded result ${match.id} ${parsedScore.score.normalizedText}.`);
   }
@@ -576,6 +588,21 @@ function formatStandingsStatus(
   return [
     `Standings posts: ${matchingPosts.length}/2`,
     `Standings last updated: ${latestUpdatedAt ?? "never"}`
+  ];
+}
+
+function formatLeaderboardStatus(
+  posts: StoredLeaderboardPost[],
+  guildId: string,
+  channelId: string
+): string[] {
+  const matchingPost = posts.find(
+    (post) => post.guildId === guildId && post.channelId === channelId
+  );
+
+  return [
+    `Leaderboard post: ${matchingPost ? "present" : "missing"}`,
+    `Leaderboard last updated: ${matchingPost?.updatedAt ?? "never"}`
   ];
 }
 
