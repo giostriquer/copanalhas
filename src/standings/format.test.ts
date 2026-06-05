@@ -42,11 +42,15 @@ describe("createStandingsDashboardMessages", () => {
 
     expect(content).toContain("Groups A-F");
     expect(content).toContain("```text");
-    expect(content).toContain("+--------------+--------------+--------------+");
-    expect(content).toContain("| GROUP A      | GROUP B      | GROUP C      |");
-    expect(content).toContain("| MEX  3  +1   | BIH  0   0   | BRA  0   0   |");
-    expect(content).toContain("| RSA  0  -1   | SUI  0   0   | SCO  0   0   |");
-    expect(content).toContain("| GROUP D      | GROUP E      | GROUP F      |");
+    expect(content).toContain("+------------------------+------------------------+------------------------+");
+    expect(content).toContain("| GROUP A                | GROUP B                | GROUP C                |");
+    expect(content).toContain("Mexico");
+    expect(content).toContain("South Africa");
+    expect(content).toContain("Bosnia & Herz.");
+    expect(content).toContain("Brazil");
+    expect(content).not.toContain("| MEX  3");
+    expect(content).not.toContain("| RSA  0");
+    expect(content).toContain("| GROUP D                | GROUP E                | GROUP F                |");
     expect(content).toContain("Columns: TEAM PTS GD");
   });
 });

@@ -26,6 +26,13 @@ const dashboardGroups: Array<{ key: StandingsPostKey; label: string; groups: str
   { key: "groups_a_f", label: "Groups A-F", groups: ["A", "B", "C", "D", "E", "F"] },
   { key: "groups_g_l", label: "Groups G-L", groups: ["G", "H", "I", "J", "K", "L"] }
 ];
+const cellWidth = 22;
+const teamNameWidth = 14;
+const readableTeamNames = new Map<string, string>([
+  ["Bosnia and Herzegovina", "Bosnia & Herz."],
+  ["Korea Republic", "Korea Rep."],
+  ["USA", "United States"]
+]);
 
 export function createStandingsDashboardMessages(
   options: CreateStandingsDashboardMessagesOptions
@@ -86,17 +93,19 @@ function formatStandingRow(row: GroupStandingRow | undefined): string {
     return "";
   }
 
-  return `${row.teamCode} ${row.points.toString().padStart(2)} ${formatGoalDifference(
+  return `${formatTeamName(row).padEnd(teamNameWidth)} ${row.points
+    .toString()
+    .padStart(2)} ${formatGoalDifference(
     row.goalDifference
   ).padStart(3)}`;
 }
 
 function cells(values: readonly string[]): string {
-  return `| ${values.map((value) => value.padEnd(12)).join(" | ")} |`;
+  return `| ${values.map((value) => value.padEnd(cellWidth)).join(" | ")} |`;
 }
 
 function border(columnCount: number): string {
-  return Array.from({ length: columnCount }, () => "+--------------").join("") + "+";
+  return Array.from({ length: columnCount }, () => `+${"-".repeat(cellWidth + 2)}`).join("") + "+";
 }
 
 function chunk(values: readonly string[], size: number): string[][] {
@@ -111,6 +120,16 @@ function chunk(values: readonly string[], size: number): string[][] {
 
 function formatGoalDifference(goalDifference: number): string {
   return goalDifference > 0 ? `+${goalDifference}` : goalDifference.toString();
+}
+
+function formatTeamName(row: GroupStandingRow): string {
+  const readableName = readableTeamNames.get(row.teamName) ?? row.teamName;
+
+  if (readableName.length <= teamNameWidth) {
+    return readableName;
+  }
+
+  return `${readableName.slice(0, teamNameWidth - 1)}.`;
 }
 
 function formatDashboardTimestamp(date: Date, timeZone: string): string {
