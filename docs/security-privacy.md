@@ -1,0 +1,35 @@
+# Security And Privacy
+
+## Boundaries
+
+Copanalhas is a private points game for an owned Discord server. It must not
+become a broad Discord scraper, odds tool, payment tool, or wagering system.
+
+## Secrets
+
+- Store Discord bot tokens outside git.
+- Add `.env` files to `.gitignore`.
+- Provide examples with placeholder IDs only.
+- Rotate tokens if they are ever pasted into chat, commits, logs, or screenshots.
+
+## Data Minimization
+
+Collect only what is needed to score predictions:
+
+- Discord user ID
+- Discord message ID
+- match ID
+- parsed score prediction
+- timestamps needed for cutoff/edit policy
+
+Avoid retaining raw private message content. Avoid collecting display names,
+profile data, unrelated channel messages, attachments, reactions, or member lists
+unless a later documented feature truly needs them.
+
+## Operational Safety
+
+- Ignore all messages outside the configured guild/channel.
+- Make source-data imports auditable.
+- Log failures without exposing tokens or raw private message bodies.
+- Keep admin/operator commands explicit and restricted.
+- Document permission changes before applying them to the Discord app.
