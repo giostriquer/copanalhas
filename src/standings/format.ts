@@ -1,4 +1,5 @@
 import type { GroupStandingRow, GroupStandings } from "./standings.js";
+import { formatCompactTeamName } from "../worldcup/team-display.js";
 
 export type StandingsPostKey = "groups_a_f" | "groups_g_l";
 
@@ -28,11 +29,6 @@ const dashboardGroups: Array<{ key: StandingsPostKey; label: string; groups: str
 ];
 const cellWidth = 22;
 const teamNameWidth = 14;
-const readableTeamNames = new Map<string, string>([
-  ["Bosnia and Herzegovina", "Bosnia & Herz."],
-  ["Korea Republic", "Korea Rep."],
-  ["USA", "United States"]
-]);
 
 export function createStandingsDashboardMessages(
   options: CreateStandingsDashboardMessagesOptions
@@ -123,13 +119,7 @@ function formatGoalDifference(goalDifference: number): string {
 }
 
 function formatTeamName(row: GroupStandingRow): string {
-  const readableName = readableTeamNames.get(row.teamName) ?? row.teamName;
-
-  if (readableName.length <= teamNameWidth) {
-    return readableName;
-  }
-
-  return `${readableName.slice(0, teamNameWidth - 1)}.`;
+  return formatCompactTeamName({ code: row.teamCode, name: row.teamName }, teamNameWidth);
 }
 
 function formatDashboardTimestamp(date: Date, timeZone: string): string {

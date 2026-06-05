@@ -4,6 +4,7 @@ import {
   formatDiscordInstant,
   formatDiscordTimestamp
 } from "../worldcup/cutoff.js";
+import { formatTeamName } from "../worldcup/team-display.js";
 import type { WorldCupMatch } from "../worldcup/types.js";
 
 export interface PredictionVisibilityOptions {
@@ -58,7 +59,7 @@ export function formatPredictionReveal(options: PredictionVisibilityOptions): Pr
     ok: true,
     content: [
       `Picks are locked for Match #${options.match.matchNumber}`,
-      `${options.match.homeTeam.name} vs ${options.match.awayTeam.name}`,
+      `${formatTeamName(options.match.homeTeam)} vs ${formatTeamName(options.match.awayTeam)}`,
       "",
       formatSubmittedPredictions(predictionsForMatch(options.predictions, options.match.id), "reveal")
     ].join("\n")
@@ -111,7 +112,9 @@ function predictionsForMatch(predictions: StoredPrediction[], matchId: string): 
 }
 
 function matchLabel(match: WorldCupMatch): string {
-  return `Match #${match.matchNumber} - ${match.homeTeam.name} vs ${match.awayTeam.name}`;
+  return `Match #${match.matchNumber} - ${formatTeamName(match.homeTeam)} vs ${formatTeamName(
+    match.awayTeam
+  )}`;
 }
 
 function scoreLabel(prediction: Pick<StoredPrediction, "homeScore" | "awayScore">): string {

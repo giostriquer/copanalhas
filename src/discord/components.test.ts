@@ -38,7 +38,7 @@ describe("match cards", () => {
       content: [
         "MATCH OF THE DAY",
         "Match #1 - Group A",
-        "Mexico vs South Africa",
+        "México vs África do Sul",
         "Kickoff: <t:1781204400:F> (<t:1781204400:R>)",
         "Predictions close: <t:1781202600:F> (<t:1781202600:R>)",
         "Click Predict and enter a score like 2x1."
@@ -50,7 +50,7 @@ describe("match cards", () => {
     const payload = createMatchCardMessage(firstSeedMatch());
     const json = payload.components[0]?.toJSON();
 
-    expect(payload.content).toContain("Mexico vs South Africa");
+    expect(payload.content).toContain("México vs África do Sul");
     expect(json).toEqual({
       type: 1,
       components: [
@@ -69,7 +69,7 @@ describe("match cards", () => {
     const row = modal.components[0] as { components: Array<{ custom_id?: string }> } | undefined;
 
     expect(modal.custom_id).toBe("copanalhas:score:wc2026-001");
-    expect(modal.title).toBe("Mexico vs South Africa");
+    expect(modal.title).toBe("México vs África do Sul");
     expect(row?.components[0]?.custom_id).toBe(scoreInputCustomId);
   });
 });

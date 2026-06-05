@@ -9,6 +9,7 @@ import {
 
 import type { WorldCupMatch } from "../worldcup/types.js";
 import { formatPredictionWindow } from "../worldcup/cutoff.js";
+import { formatTeamName } from "../worldcup/team-display.js";
 
 export const scoreInputCustomId = "score";
 
@@ -57,6 +58,8 @@ export function buildMatchCardView(
   options: MatchCardViewOptions = {}
 ): MatchCardView {
   const predictionWindow = formatPredictionWindow(match, options.timeZone ?? defaultTimeZone);
+  const homeTeamName = formatTeamName(match.homeTeam);
+  const awayTeamName = formatTeamName(match.awayTeam);
 
   return {
     matchId: match.id,
@@ -64,7 +67,7 @@ export function buildMatchCardView(
     content: [
       "MATCH OF THE DAY",
       `Match #${match.matchNumber} - Group ${match.group}`,
-      `${match.homeTeam.name} vs ${match.awayTeam.name}`,
+      `${homeTeamName} vs ${awayTeamName}`,
       predictionWindow.kickoffText,
       predictionWindow.closesText,
       "Click Predict and enter a score like 2x1."
@@ -94,7 +97,7 @@ export function createMatchCardMessage(
 export function createPredictionModal(match: WorldCupMatch): ModalBuilder {
   return new ModalBuilder()
     .setCustomId(buildScoreModalCustomId(match.id))
-    .setTitle(`${match.homeTeam.name} vs ${match.awayTeam.name}`)
+    .setTitle(`${formatTeamName(match.homeTeam)} vs ${formatTeamName(match.awayTeam)}`)
     .addComponents(
       new ActionRowBuilder<TextInputBuilder>().addComponents(
         new TextInputBuilder()

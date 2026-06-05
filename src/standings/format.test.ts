@@ -44,10 +44,10 @@ describe("createStandingsDashboardMessages", () => {
     expect(content).toContain("```text");
     expect(content).toContain("+------------------------+------------------------+------------------------+");
     expect(content).toContain("| GROUP A                | GROUP B                | GROUP C                |");
-    expect(content).toContain("Mexico");
-    expect(content).toContain("South Africa");
-    expect(content).toContain("Bosnia & Herz.");
-    expect(content).toContain("Brazil");
+    expect(content).toContain("México");
+    expect(content).toContain("África do Sul");
+    expect(content).toContain("Bósnia e Herz.");
+    expect(content).toContain("Brasil");
     expect(content).not.toContain("| MEX  3");
     expect(content).not.toContain("| RSA  0");
     expect(content).toContain("| GROUP D                | GROUP E                | GROUP F                |");

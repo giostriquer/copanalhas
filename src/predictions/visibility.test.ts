@@ -21,7 +21,7 @@ describe("prediction visibility formatting", () => {
     expect(message).toBe(
       [
         "Prediction Audit",
-        "Match #1 - Mexico vs South Africa",
+        "Match #1 - México vs África do Sul",
         "Window: open, closes <t:1781202600:R>",
         "",
         "2 submitted",
@@ -41,7 +41,7 @@ describe("prediction visibility formatting", () => {
     expect(reveal).toEqual({
       ok: false,
       content: [
-        "Predictions are still open for Match #1 - Mexico vs South Africa.",
+        "Predictions are still open for Match #1 - México vs África do Sul.",
         "Public reveal unlocks when predictions close: <t:1781202600:F> (<t:1781202600:R>)."
       ].join("\n")
     });
@@ -61,7 +61,7 @@ describe("prediction visibility formatting", () => {
       ok: true,
       content: [
         "Picks are locked for Match #1",
-        "Mexico vs South Africa",
+        "México vs África do Sul",
         "",
         "2 submitted",
         "<@user-1>  2x1",
@@ -80,7 +80,7 @@ describe("prediction visibility formatting", () => {
     ).toBe(
       [
         "Prediction Audit",
-        "Match #1 - Mexico vs South Africa",
+        "Match #1 - México vs África do Sul",
         "Window: open, closes <t:1781202600:R>",
         "",
         "No predictions yet."

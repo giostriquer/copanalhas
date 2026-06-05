@@ -25,7 +25,7 @@ describe("handlePredictionInteraction", () => {
     expect(showModal).toHaveBeenCalledOnce();
     expect(showModal.mock.calls[0]?.[0].toJSON()).toMatchObject({
       custom_id: "copanalhas:score:wc2026-001",
-      title: "Mexico vs South Africa"
+      title: "México vs África do Sul"
     });
     expect(interaction.reply).not.toHaveBeenCalled();
   });
@@ -64,7 +64,7 @@ describe("handlePredictionInteraction", () => {
     }
     expect(storedPredictions).toEqual([result.prediction]);
     expect(interaction.reply).toHaveBeenCalledWith({
-      content: "Saved: Mexico 2-1 South Africa",
+      content: "Saved: México 2-1 África do Sul",
       ephemeral: true
     });
   });
@@ -178,7 +178,7 @@ describe("handleDiscordPredictionInteraction", () => {
       parserVersion: modalPredictionParserVersion
     });
     expect(interaction.reply).toHaveBeenCalledWith({
-      content: "Saved: Mexico 2-1 South Africa",
+      content: "Saved: México 2-1 África do Sul",
       flags: MessageFlags.Ephemeral
     });
   });

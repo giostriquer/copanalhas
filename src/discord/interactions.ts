@@ -13,6 +13,7 @@ import {
   formatPredictionWindow,
   type PredictionSubmissionWindow
 } from "../worldcup/cutoff.js";
+import { formatTeamName } from "../worldcup/team-display.js";
 import type { WorldCupMatch } from "../worldcup/types.js";
 
 export const modalPredictionParserVersion = "prediction-modal-v1";
@@ -258,7 +259,9 @@ async function handleScoreModal(
 
   await options.upsertPrediction(prediction);
   await interaction.reply({
-    content: `Saved: ${match.homeTeam.name} ${parsedScore.score.normalizedText} ${match.awayTeam.name}`,
+    content: `Saved: ${formatTeamName(match.homeTeam)} ${
+      parsedScore.score.normalizedText
+    } ${formatTeamName(match.awayTeam)}`,
     ephemeral: true
   });
 

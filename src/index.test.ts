@@ -130,10 +130,10 @@ describe("runCli", () => {
       }),
       [
         expect.objectContaining({
-          content: expect.stringContaining("Mexico vs South Africa")
+          content: expect.stringContaining("México vs África do Sul")
         }),
         expect.objectContaining({
-          content: expect.stringContaining("Korea Republic vs Czechia")
+          content: expect.stringContaining("Coreia do Sul vs Tchéquia")
         })
       ]
     );
@@ -158,9 +158,9 @@ describe("runCli", () => {
     expect(output).toContain("Groups A-F");
     expect(output).toContain("Groups G-L");
     expect(output).toContain("| GROUP A                | GROUP B                | GROUP C                |");
-    expect(output).toContain("Mexico");
-    expect(output).toContain("Bosnia & Herz.");
-    expect(output).toContain("Brazil");
+    expect(output).toContain("México");
+    expect(output).toContain("Bósnia e Herz.");
+    expect(output).toContain("Brasil");
     expect(output).not.toContain("| MEX  3");
   });
 

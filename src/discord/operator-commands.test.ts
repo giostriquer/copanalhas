@@ -116,7 +116,7 @@ describe("handleOperatorCommand", () => {
       action: "replied",
       content: [
         "Prediction Audit",
-        "Match #1 - Mexico vs South Africa",
+        "Match #1 - México vs África do Sul",
         "Window: open, closes <t:1781202600:R>",
         "",
         "1 submitted",
@@ -138,7 +138,7 @@ describe("handleOperatorCommand", () => {
     expect(result).toEqual({
       action: "replied",
       content: [
-        "Predictions are still open for Match #1 - Mexico vs South Africa.",
+        "Predictions are still open for Match #1 - México vs África do Sul.",
         "Public reveal unlocks when predictions close: <t:1781202600:F> (<t:1781202600:R>)."
       ].join("\n"),
       ephemeral: true
@@ -158,7 +158,7 @@ describe("handleOperatorCommand", () => {
       action: "replied",
       content: [
         "Picks are locked for Match #1",
-        "Mexico vs South Africa",
+        "México vs África do Sul",
         "",
         "1 submitted",
         "<@user-1>  2x1"
