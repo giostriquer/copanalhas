@@ -23,11 +23,17 @@ export interface WorldCupMatch {
   awayTeam: WorldCupTeam;
   localDate: string;
   kickoffTimeLocal: string | null;
+  kickoffAtUtc: string | null;
   venue: string;
   sourceId: string;
+  externalIds: WorldCupExternalIds;
 }
 
 export interface WorldCupTeam {
   code: string;
   name: string;
+}
+
+export interface WorldCupExternalIds {
+  footballData?: number;
 }

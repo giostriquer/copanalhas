@@ -48,8 +48,10 @@ export class CopanalhasDatabase {
         away_team_name TEXT NOT NULL,
         local_date TEXT NOT NULL,
         kickoff_time_local TEXT,
+        kickoff_at_utc TEXT,
         venue TEXT NOT NULL,
-        source_id TEXT NOT NULL
+        source_id TEXT NOT NULL,
+        football_data_match_id INTEGER
       ) STRICT;
 
       CREATE TABLE IF NOT EXISTS predictions (
@@ -78,6 +80,9 @@ export class CopanalhasDatabase {
         summary_json TEXT NOT NULL
       ) STRICT;
     `);
+
+    this.ensureColumn("matches", "kickoff_at_utc", "TEXT");
+    this.ensureColumn("matches", "football_data_match_id", "INTEGER");
   }
 
   upsertMatches(matches: WorldCupMatch[]): void {
@@ -93,10 +98,12 @@ export class CopanalhasDatabase {
         away_team_name,
         local_date,
         kickoff_time_local,
+        kickoff_at_utc,
         venue,
-        source_id
+        source_id,
+        football_data_match_id
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(id) DO UPDATE SET
         match_number = excluded.match_number,
         phase = excluded.phase,
@@ -107,8 +114,10 @@ export class CopanalhasDatabase {
         away_team_name = excluded.away_team_name,
         local_date = excluded.local_date,
         kickoff_time_local = excluded.kickoff_time_local,
+        kickoff_at_utc = excluded.kickoff_at_utc,
         venue = excluded.venue,
-        source_id = excluded.source_id
+        source_id = excluded.source_id,
+        football_data_match_id = excluded.football_data_match_id
     `);
 
     for (const match of matches) {
@@ -123,8 +132,10 @@ export class CopanalhasDatabase {
         match.awayTeam.name,
         match.localDate,
         match.kickoffTimeLocal,
+        match.kickoffAtUtc,
         match.venue,
-        match.sourceId
+        match.sourceId,
+        match.externalIds.footballData ?? null
       );
     }
   }
@@ -149,8 +160,10 @@ export class CopanalhasDatabase {
       },
       localDate: row.local_date,
       kickoffTimeLocal: row.kickoff_time_local,
+      kickoffAtUtc: row.kickoff_at_utc,
       venue: row.venue,
-      sourceId: row.source_id
+      sourceId: row.source_id,
+      externalIds: row.football_data_match_id ? { footballData: row.football_data_match_id } : {}
     }));
   }
 
@@ -258,6 +271,16 @@ export class CopanalhasDatabase {
   close(): void {
     this.database.close();
   }
+
+  private ensureColumn(tableName: string, columnName: string, columnType: string): void {
+    const columns = this.database.prepare(`PRAGMA table_info(${tableName})`).all() as Array<{
+      name: string;
+    }>;
+
+    if (!columns.some((column) => column.name === columnName)) {
+      this.database.exec(`ALTER TABLE ${tableName} ADD COLUMN ${columnName} ${columnType}`);
+    }
+  }
 }
 
 export function openCopanalhasDatabase(path: string): CopanalhasDatabase {
@@ -282,8 +305,10 @@ interface MatchRow {
   away_team_name: string;
   local_date: string;
   kickoff_time_local: string | null;
+  kickoff_at_utc: string | null;
   venue: string;
   source_id: string;
+  football_data_match_id: number | null;
 }
 
 interface PredictionRow {

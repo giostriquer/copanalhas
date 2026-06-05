@@ -54,6 +54,36 @@ describe("validateTournamentSeed", () => {
     });
   });
 
+  test("rejects invalid kickoff UTC timestamps", () => {
+    const firstMatch = seedMatch(0);
+    const rest = WORLD_CUP_2026_SEED.matches.slice(1);
+
+    expect(
+      validateTournamentSeed({
+        ...WORLD_CUP_2026_SEED,
+        matches: [{ ...firstMatch, kickoffAtUtc: "2026-06-11 19:00" }, ...rest]
+      })
+    ).toEqual({
+      ok: false,
+      errors: [`${firstMatch.id} has invalid kickoffAtUtc 2026-06-11 19:00`]
+    });
+  });
+
+  test("rejects invalid football-data match ids", () => {
+    const firstMatch = seedMatch(0);
+    const rest = WORLD_CUP_2026_SEED.matches.slice(1);
+
+    expect(
+      validateTournamentSeed({
+        ...WORLD_CUP_2026_SEED,
+        matches: [{ ...firstMatch, externalIds: { footballData: 0 } }, ...rest]
+      })
+    ).toEqual({
+      ok: false,
+      errors: [`${firstMatch.id} has invalid football-data match id 0`]
+    });
+  });
+
   test("rejects same-team fixtures", () => {
     const firstMatch = seedMatch(0);
     const rest = WORLD_CUP_2026_SEED.matches.slice(1);

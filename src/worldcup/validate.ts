@@ -7,6 +7,7 @@ export interface TournamentSeedValidation {
 
 const datePattern = /^\d{4}-\d{2}-\d{2}$/u;
 const timePattern = /^\d{2}:\d{2}$/u;
+const utcTimestampPattern = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z$/u;
 
 export function validateTournamentSeed(seed: TournamentSeed): TournamentSeedValidation {
   const errors: string[] = [];
@@ -38,6 +39,17 @@ export function validateTournamentSeed(seed: TournamentSeed): TournamentSeedVali
       errors.push(`${match.id} has invalid kickoffTimeLocal ${match.kickoffTimeLocal}`);
     }
 
+    if (match.kickoffAtUtc !== null && !isValidUtcTimestamp(match.kickoffAtUtc)) {
+      errors.push(`${match.id} has invalid kickoffAtUtc ${match.kickoffAtUtc}`);
+    }
+
+    if (
+      match.externalIds.footballData !== undefined &&
+      (!Number.isInteger(match.externalIds.footballData) || match.externalIds.footballData <= 0)
+    ) {
+      errors.push(`${match.id} has invalid football-data match id ${match.externalIds.footballData}`);
+    }
+
     if (match.homeTeam.code === match.awayTeam.code) {
       errors.push(`${match.id} has the same home and away team code`);
     }
@@ -51,4 +63,8 @@ export function validateTournamentSeed(seed: TournamentSeed): TournamentSeedVali
     ok: errors.length === 0,
     errors
   };
+}
+
+function isValidUtcTimestamp(value: string): boolean {
+  return utcTimestampPattern.test(value) && !Number.isNaN(Date.parse(value));
 }

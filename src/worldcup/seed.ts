@@ -1,4 +1,4 @@
-import type { TournamentSeed, WorldCupMatch } from "./types.js";
+import type { TournamentSeed, WorldCupExternalIds, WorldCupMatch } from "./types.js";
 
 const fifaScheduleSourceId = "fifa-schedule-2026-03-31";
 
@@ -40,7 +40,9 @@ function groupMatch(
   awayCode: string,
   awayName: string,
   localDate: string,
-  venue: string
+  venue: string,
+  kickoffAtUtc: string | null = null,
+  externalIds: WorldCupExternalIds = {}
 ): WorldCupMatch {
   return {
     id: `wc2026-${matchNumber.toString().padStart(3, "0")}`,
@@ -51,7 +53,9 @@ function groupMatch(
     awayTeam: { code: awayCode, name: awayName },
     localDate,
     kickoffTimeLocal: null,
+    kickoffAtUtc,
     venue,
-    sourceId: fifaScheduleSourceId
+    sourceId: fifaScheduleSourceId,
+    externalIds
   };
 }
