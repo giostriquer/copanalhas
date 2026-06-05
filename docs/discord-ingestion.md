@@ -86,7 +86,9 @@ raw content can be removed.
   matchday card to be posted again without deleting predictions or results.
 - `npm run dev -- bot`: starts the long-running bot. It listens for the card
   button and modal interactions, saves predictions, registers operator slash
-  commands, runs auto-posting, and runs optional result sync.
+  commands, runs auto-posting, and runs optional result sync. Startup also
+  catches up today's missing matchday card if auto-post time already passed and
+  runs result sync with a two-day lookback window when result sync is enabled.
 
 While `bot` is running, use `/copanalhas` for normal operator work:
 
@@ -106,6 +108,12 @@ message ID is recorded once per included match, so restarting the process or
 re-running an operator post command does not repost matches already recorded in
 SQLite. During smoke tests, `clear-posted-date` removes only those dedupe rows
 for the configured channel and selected date.
+
+`status` is the operator health check. It reports the current local date/time,
+auto-post setting, today's reviewed matches, posted/unposted card state,
+prediction-window counts, the last auto-post action, result-sync state, the last
+result-sync action, and standings post health. Use it after starting the bot to
+confirm that catch-up ran and the process is ready for members.
 
 `reset-test-date` is the broader smoke-test reset. It clears posted-card dedupe
 records, predictions, and results for matches on the selected date, then refreshes

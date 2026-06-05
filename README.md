@@ -42,6 +42,9 @@ running it registers `/copanalhas` operator commands, posts daily matchday cards
 with one prediction button per match at the configured local time, listens for
 prediction button/modal interactions with team-specific score fields, and can
 sync finished results from football-data.org when a token is configured.
+On startup, the bot immediately catches up the current matchday if the configured
+auto-post time has already passed, refreshes standings, and runs result sync with
+a small lookback window when result sync is enabled.
 Terminal commands remain useful for setup and manual recovery, but Discord slash
 commands are the preferred operator controls during the game.
 
@@ -53,6 +56,9 @@ Useful operator commands while the bot is running:
   records for a date so it can be reposted during testing.
 - `/copanalhas reset-test-date date:2026-06-11`: clear posted cards,
   predictions, and results for one test date, then refresh standings.
+- `/copanalhas status`: privately show today's matches, posted/unposted cards,
+  prediction-window counts, last auto-post action, result-sync state, and
+  standings post health.
 - `/copanalhas meus-palpites`: privately show your predictions for today's
   matches. Add `date:2026-06-11` to inspect another matchday.
 - `/copanalhas predictions match:wc2026-001`: privately inspect submitted picks

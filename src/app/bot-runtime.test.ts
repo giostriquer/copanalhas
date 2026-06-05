@@ -2,6 +2,7 @@ import { describe, expect, test, vi } from "vitest";
 
 import { startCopanalhasBotRuntime, type BotRuntimeStore } from "./bot-runtime.js";
 import type { CopanalhasConfig } from "../discord/config.js";
+import type { OperatorCommandOptions } from "../discord/operator-commands.js";
 import { WORLD_CUP_2026_SEED } from "../worldcup/seed.js";
 
 describe("startCopanalhasBotRuntime", () => {
@@ -53,6 +54,45 @@ describe("startCopanalhasBotRuntime", () => {
     await runtime.stop();
   });
 
+  test("posts due matchday cards during startup catch-up", async () => {
+    const store = createStore();
+    const startDiscord = vi.fn(async () => ({ destroy: vi.fn(async () => undefined) }));
+    const startInterval = vi.fn(() => ({ stop: vi.fn() }));
+    const sendMatchCard = vi.fn(async () => "discord-message-1");
+
+    await startCopanalhasBotRuntime({
+      config: config(),
+      store,
+      matches: WORLD_CUP_2026_SEED.matches,
+      startDiscord,
+      startInterval,
+      sendMatchCard,
+      upsertStandingsMessage: vi.fn(async (message) => `standings-${message.key}`),
+      now: () => new Date("2026-06-11T12:00:00.000Z"),
+      writeLine: vi.fn()
+    });
+
+    expect(sendMatchCard).toHaveBeenCalledOnce();
+    expect(store.recordPostedMatchCard).toHaveBeenCalledWith(
+      expect.objectContaining({
+        matchId: "wc2026-001",
+        channelId: "channel-1",
+        messageId: "discord-message-1",
+        postedForDate: "2026-06-11",
+        postSource: "auto"
+      })
+    );
+    expect(store.recordPostedMatchCard).toHaveBeenCalledWith(
+      expect.objectContaining({
+        matchId: "wc2026-002",
+        channelId: "channel-1",
+        messageId: "discord-message-1",
+        postedForDate: "2026-06-11",
+        postSource: "auto"
+      })
+    );
+  });
+
   test("refreshes standings after result sync stores final scores", async () => {
     const store = createStore();
     const intervalCallbacks: Array<() => void | Promise<void>> = [];
@@ -81,11 +121,106 @@ describe("startCopanalhasBotRuntime", () => {
       writeLine: vi.fn()
     });
     upsertStandingsMessage.mockClear();
+    syncFinishedResults.mockClear();
 
     await intervalCallbacks[1]?.();
 
     expect(syncFinishedResults).toHaveBeenCalledOnce();
     expect(upsertStandingsMessage).toHaveBeenCalledTimes(2);
+  });
+
+  test("syncs recent results during startup catch-up when configured", async () => {
+    const store = createStore();
+    const startDiscord = vi.fn(async () => ({ destroy: vi.fn(async () => undefined) }));
+    const startInterval = vi.fn(() => ({ stop: vi.fn() }));
+    const upsertStandingsMessage = vi.fn(async (message) => `standings-${message.key}`);
+    const syncFinishedResults = vi.fn(async () => ({
+      action: "synced" as const,
+      storedResults: ["wc2026-001"],
+      skipped: []
+    }));
+
+    await startCopanalhasBotRuntime({
+      config: { ...config(), footballDataToken: "token-value", resultSyncEnabled: true },
+      store,
+      matches: WORLD_CUP_2026_SEED.matches,
+      startDiscord,
+      startInterval,
+      sendMatchCard: vi.fn(async () => "discord-message-1"),
+      upsertStandingsMessage,
+      syncFinishedResults,
+      now: () => new Date("2026-06-11T12:00:00.000Z"),
+      writeLine: vi.fn()
+    });
+
+    expect(syncFinishedResults).toHaveBeenCalledOnce();
+    expect(syncFinishedResults).toHaveBeenCalledWith(
+      expect.objectContaining({
+        dateFrom: "2026-06-09",
+        dateTo: "2026-06-11"
+      })
+    );
+    expect(upsertStandingsMessage).toHaveBeenCalledTimes(4);
+  });
+
+  test("exposes runtime status from startup catch-up state", async () => {
+    const postedCards: ReturnType<BotRuntimeStore["listPostedMatchCards"]> = [];
+    const store = {
+      ...createStore(),
+      listPostedMatchCards: vi.fn(() => postedCards),
+      recordPostedMatchCard: vi.fn((card) => {
+        postedCards.push(card);
+      })
+    };
+    let operatorOptions: OperatorCommandOptions | undefined;
+    const startDiscord = vi.fn(async (_config, _onMessage, _predictionOptions, readyOptions) => {
+      operatorOptions = readyOptions.operatorCommandOptions;
+      return { destroy: vi.fn(async () => undefined) };
+    });
+
+    await startCopanalhasBotRuntime({
+      config: config(),
+      store,
+      matches: WORLD_CUP_2026_SEED.matches,
+      startDiscord,
+      startInterval: vi.fn(() => ({ stop: vi.fn() })),
+      sendMatchCard: vi.fn(async () => "discord-message-1"),
+      upsertStandingsMessage: vi.fn(async (message) => `standings-${message.key}`),
+      now: () => new Date("2026-06-11T12:00:00.000Z"),
+      writeLine: vi.fn()
+    });
+
+    expect(operatorOptions?.getRuntimeStatus?.()).toMatchObject({
+      localDate: "2026-06-11",
+      localTime: "09:00",
+      timeZone: "America/Sao_Paulo",
+      autoPostEnabled: true,
+      autoPostTime: "09:00",
+      todayMatches: [
+        {
+          matchId: "wc2026-001",
+          matchNumber: 1,
+          label: "México x África do Sul",
+          posted: true,
+          predictionState: "open"
+        },
+        {
+          matchId: "wc2026-002",
+          matchNumber: 2,
+          label: "Coreia do Sul x Tchéquia",
+          posted: true,
+          predictionState: "open"
+        }
+      ],
+      lastAutoPost: {
+        action: "posted",
+        localDate: "2026-06-11",
+        posted: ["wc2026-001", "wc2026-002"],
+        skipped: []
+      },
+      resultSyncEnabled: false,
+      lastResultSync: { action: "never" }
+    });
   });
 });
 

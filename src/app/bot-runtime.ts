@@ -9,8 +9,14 @@ import type {
   DiscordIngestionResult
 } from "../discord/ingestion.js";
 import type { PredictionInteractionOptions } from "../discord/interactions.js";
-import type { OperatorCommandOptions } from "../discord/operator-commands.js";
 import { registerCopanalhasCommands } from "../discord/commands.js";
+import type {
+  OperatorCommandOptions,
+  RuntimeAutoPostStatus,
+  RuntimePredictionState,
+  RuntimeResultSyncStatus,
+  RuntimeStatusSnapshot
+} from "../discord/operator-commands.js";
 import type { StandingsDashboardMessage } from "../standings/format.js";
 import type {
   NewScoringRun,
@@ -21,6 +27,8 @@ import type {
 } from "../storage/database.js";
 import type { WorldCupMatch } from "../worldcup/types.js";
 import { getLocalDateTimeParts } from "./scheduler.js";
+import { canSubmitPredictionAt } from "../worldcup/cutoff.js";
+import { formatTeamName } from "../worldcup/team-display.js";
 import {
   syncFinishedResults as syncFinishedResultsDefault,
   type SyncFinishedResultsOptions,
@@ -29,6 +37,7 @@ import {
 
 const autoPostIntervalMs = 60 * 1000;
 const resultSyncIntervalMs = 15 * 60 * 1000;
+const resultSyncLookbackDays = 2;
 
 export interface BotRuntimeStore {
   migrate(): void;
@@ -53,6 +62,15 @@ export interface RuntimeInterval {
 
 export interface StartedBotRuntime {
   stop(): void | Promise<void>;
+}
+
+interface AutoPostRuntimeState {
+  lastRunDate: string | null;
+  lastResult: RuntimeAutoPostStatus;
+}
+
+interface ResultSyncRuntimeState {
+  lastResult: RuntimeResultSyncStatus;
 }
 
 export interface StartCopanalhasBotRuntimeOptions {
@@ -85,7 +103,18 @@ export async function startCopanalhasBotRuntime(
   options.store.upsertMatches(options.matches);
 
   const predictionInteractionOptions = createPredictionInteractionOptions(options);
-  const operatorCommandOptions = createOperatorCommandOptions(options);
+  const autoPostState: AutoPostRuntimeState = {
+    lastRunDate: null,
+    lastResult: { action: "never" }
+  };
+  const resultSyncState: ResultSyncRuntimeState = {
+    lastResult: { action: "never" }
+  };
+  const operatorCommandOptions = createOperatorCommandOptions(
+    options,
+    autoPostState,
+    resultSyncState
+  );
   const discordClient = await options.startDiscord(
     options.config,
     createPredictionPersistenceHandler({
@@ -100,7 +129,14 @@ export async function startCopanalhasBotRuntime(
     }
   );
   await operatorCommandOptions.updateStandingsDashboard();
-  const intervals = startRuntimeIntervals(options, operatorCommandOptions);
+  await runAutoPost(options, operatorCommandOptions, autoPostState);
+  await runResultSync(options, operatorCommandOptions, resultSyncState);
+  const intervals = startRuntimeIntervals(
+    options,
+    operatorCommandOptions,
+    autoPostState,
+    resultSyncState
+  );
 
   return {
     async stop() {
@@ -130,7 +166,9 @@ function createPredictionInteractionOptions(
 }
 
 function createOperatorCommandOptions(
-  options: StartCopanalhasBotRuntimeOptions
+  options: StartCopanalhasBotRuntimeOptions,
+  autoPostState: AutoPostRuntimeState,
+  resultSyncState: ResultSyncRuntimeState
 ): OperatorCommandOptions {
   return {
     guildId: options.config.guildId,
@@ -139,6 +177,7 @@ function createOperatorCommandOptions(
     timeZone: options.config.timezone,
     resultSyncEnabled: options.config.resultSyncEnabled,
     now: options.now,
+    getRuntimeStatus: () => createRuntimeStatus(options, autoPostState, resultSyncState),
     postDueMatchCards: (date, postSource) =>
       postDueMatchCards({
         matches: options.matches,
@@ -176,56 +215,158 @@ function createOperatorCommandOptions(
 
 function startRuntimeIntervals(
   options: StartCopanalhasBotRuntimeOptions,
-  operatorCommandOptions: OperatorCommandOptions
+  operatorCommandOptions: OperatorCommandOptions,
+  autoPostState: AutoPostRuntimeState,
+  resultSyncState: ResultSyncRuntimeState
 ): RuntimeInterval[] {
   const intervals: RuntimeInterval[] = [];
-  let lastAutoPostDate: string | null = null;
 
   intervals.push(
     options.startInterval(async () => {
-      const result = await runAutoPostTick({
-        enabled: options.config.autoPostEnabled,
-        targetTime: options.config.autoPostTime,
-        timeZone: options.config.timezone,
-        lastRunDate: lastAutoPostDate,
-        now: options.now,
-        postDueMatchCards: (date) => operatorCommandOptions.postDueMatchCards(date, "auto")
-      });
-
-      if (result.action === "posted") {
-        lastAutoPostDate = result.localDate;
-      }
+      await runAutoPost(options, operatorCommandOptions, autoPostState);
     }, autoPostIntervalMs)
   );
 
   if (options.config.resultSyncEnabled && options.config.footballDataToken) {
     intervals.push(
       options.startInterval(async () => {
-        const { localDate } = getLocalDateTimeParts(options.now(), options.config.timezone);
-        const syncFinishedResults =
-          options.syncFinishedResults ?? syncFinishedResultsDefault;
-
-        const syncResult = await syncFinishedResults({
-          enabled: options.config.resultSyncEnabled,
-          token: options.config.footballDataToken,
-          matches: options.matches,
-          dateFrom: localDate,
-          dateTo: localDate,
-          now: options.now,
-          listResults: () => options.store.listResults(),
-          listPredictions: () => options.store.listPredictions(),
-          upsertResult: (result) => options.store.upsertResult(result),
-          insertScoringRun: (run) => options.store.insertScoringRun(run)
-        });
-
-        if (syncResult.action === "synced" && syncResult.storedResults.length > 0) {
-          await operatorCommandOptions.updateStandingsDashboard();
-        }
+        await runResultSync(options, operatorCommandOptions, resultSyncState);
       }, resultSyncIntervalMs)
     );
   }
 
   return intervals;
+}
+
+async function runAutoPost(
+  options: StartCopanalhasBotRuntimeOptions,
+  operatorCommandOptions: OperatorCommandOptions,
+  state: AutoPostRuntimeState
+): Promise<void> {
+  const result = await runAutoPostTick({
+    enabled: options.config.autoPostEnabled,
+    targetTime: options.config.autoPostTime,
+    timeZone: options.config.timezone,
+    lastRunDate: state.lastRunDate,
+    now: options.now,
+    postDueMatchCards: (date) => operatorCommandOptions.postDueMatchCards(date, "auto")
+  });
+  state.lastResult = result;
+
+  if (result.action === "posted") {
+    state.lastRunDate = result.localDate;
+  }
+}
+
+async function runResultSync(
+  options: StartCopanalhasBotRuntimeOptions,
+  operatorCommandOptions: OperatorCommandOptions,
+  state: ResultSyncRuntimeState
+): Promise<void> {
+  if (!options.config.resultSyncEnabled || !options.config.footballDataToken) {
+    return;
+  }
+
+  const syncFinishedResults = options.syncFinishedResults ?? syncFinishedResultsDefault;
+  const { dateFrom, dateTo } = getResultSyncDateWindow(options.now(), options.config.timezone);
+  const syncResult = await syncFinishedResults({
+    enabled: options.config.resultSyncEnabled,
+    token: options.config.footballDataToken,
+    matches: options.matches,
+    dateFrom,
+    dateTo,
+    now: options.now,
+    listResults: () => options.store.listResults(),
+    listPredictions: () => options.store.listPredictions(),
+    upsertResult: (result) => options.store.upsertResult(result),
+    insertScoringRun: (run) => options.store.insertScoringRun(run)
+  });
+  state.lastResult = resultSyncStatus(syncResult, dateFrom, dateTo);
+
+  if (syncResult.action === "synced" && syncResult.storedResults.length > 0) {
+    await operatorCommandOptions.updateStandingsDashboard();
+  }
+}
+
+function getResultSyncDateWindow(now: Date, timeZone: string): { dateFrom: string; dateTo: string } {
+  const { localDate } = getLocalDateTimeParts(now, timeZone);
+
+  return {
+    dateFrom: shiftDate(localDate, -resultSyncLookbackDays),
+    dateTo: localDate
+  };
+}
+
+function shiftDate(localDate: string, days: number): string {
+  const date = new Date(`${localDate}T00:00:00.000Z`);
+  date.setUTCDate(date.getUTCDate() + days);
+
+  return date.toISOString().slice(0, 10);
+}
+
+function resultSyncStatus(
+  result: SyncFinishedResultsResult,
+  dateFrom: string,
+  dateTo: string
+): RuntimeResultSyncStatus {
+  if (result.action === "disabled") {
+    return result;
+  }
+
+  if (result.action === "failed") {
+    return { ...result, dateFrom, dateTo };
+  }
+
+  return { ...result, dateFrom, dateTo };
+}
+
+function createRuntimeStatus(
+  options: StartCopanalhasBotRuntimeOptions,
+  autoPostState: AutoPostRuntimeState,
+  resultSyncState: ResultSyncRuntimeState
+): RuntimeStatusSnapshot {
+  const localDateTime = getLocalDateTimeParts(options.now(), options.config.timezone);
+  const postedMatchIds = new Set(
+    options.store
+      .listPostedMatchCards()
+      .filter(
+        (card) =>
+          card.channelId === options.config.channelId &&
+          card.postedForDate === localDateTime.localDate
+      )
+      .map((card) => card.matchId)
+  );
+
+  return {
+    localDate: localDateTime.localDate,
+    localTime: localDateTime.localTime,
+    timeZone: options.config.timezone,
+    autoPostEnabled: options.config.autoPostEnabled,
+    autoPostTime: options.config.autoPostTime,
+    todayMatches: options.matches
+      .filter((match) => match.localDate === localDateTime.localDate)
+      .toSorted((left, right) => left.matchNumber - right.matchNumber)
+      .map((match) => ({
+        matchId: match.id,
+        matchNumber: match.matchNumber,
+        label: `${formatTeamName(match.homeTeam)} x ${formatTeamName(match.awayTeam)}`,
+        posted: postedMatchIds.has(match.id),
+        predictionState: predictionStateForMatch(match, options.now())
+      })),
+    lastAutoPost: autoPostState.lastResult,
+    resultSyncEnabled: options.config.resultSyncEnabled,
+    lastResultSync: resultSyncState.lastResult
+  };
+}
+
+function predictionStateForMatch(match: WorldCupMatch, now: Date): RuntimePredictionState {
+  const submissionWindow = canSubmitPredictionAt(match, now);
+
+  if (submissionWindow.ok) {
+    return "open";
+  }
+
+  return submissionWindow.reason === "closed" ? "closed" : "missing-kickoff";
 }
 
 function hasDestroy(value: unknown): value is { destroy(): void | Promise<void> } {

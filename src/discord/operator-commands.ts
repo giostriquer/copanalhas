@@ -55,6 +55,7 @@ export interface OperatorCommandOptions {
   timeZone: string;
   resultSyncEnabled: boolean;
   now(): Date;
+  getRuntimeStatus?(): RuntimeStatusSnapshot;
   postDueMatchCards(date: string, postSource: PostedMatchCardSource): Promise<PostDueMatchCardsResult>;
   clearPostedMatchCards(date: string): number;
   clearPredictionsForMatches(matchIds: readonly string[]): number;
@@ -73,6 +74,40 @@ export type OperatorCommandResult =
 export type OperatorAutocompleteResult =
   | { action: "ignored"; reason: "wrong-guild" | "wrong-channel" | "unsupported-option" }
   | { action: "responded"; choices: Array<{ name: string; value: string }> };
+
+export type RuntimePredictionState = "open" | "closed" | "missing-kickoff";
+
+export interface RuntimeTodayMatchStatus {
+  matchId: string;
+  matchNumber: number;
+  label: string;
+  posted: boolean;
+  predictionState: RuntimePredictionState;
+}
+
+export type RuntimeAutoPostStatus =
+  | { action: "never" }
+  | { action: "disabled" }
+  | { action: "not-due"; localDate: string; localTime: string }
+  | { action: "posted"; localDate: string; posted: string[]; skipped: string[] };
+
+export type RuntimeResultSyncStatus =
+  | { action: "never" }
+  | { action: "disabled"; reason: "disabled" | "missing-token" }
+  | { action: "failed"; dateFrom: string; dateTo: string; reason: "rate-limited" | "unavailable" }
+  | { action: "synced"; dateFrom: string; dateTo: string; storedResults: string[]; skipped: string[] };
+
+export interface RuntimeStatusSnapshot {
+  localDate: string;
+  localTime: string;
+  timeZone: string;
+  autoPostEnabled: boolean;
+  autoPostTime: string;
+  todayMatches: RuntimeTodayMatchStatus[];
+  lastAutoPost: RuntimeAutoPostStatus;
+  resultSyncEnabled: boolean;
+  lastResultSync: RuntimeResultSyncStatus;
+}
 
 export async function handleOperatorCommand(
   command: OperatorCommandInput,
@@ -151,12 +186,18 @@ export async function handleOperatorCommand(
   }
 
   if (command.subcommand === "status") {
+    const runtimeStatus = options.getRuntimeStatus?.();
+
     return reply(
       [
         "Copanalhas Status",
+        ...formatRuntimeStatus(runtimeStatus),
         `Matches loaded: ${options.matches.length}`,
         `Missing kickoff times: ${options.matches.filter((match) => !match.kickoffAtUtc).length}`,
-        `Result sync: ${options.resultSyncEnabled ? "on" : "off"}`,
+        `Result sync: ${
+          (runtimeStatus?.resultSyncEnabled ?? options.resultSyncEnabled) ? "on" : "off"
+        }`,
+        ...formatLastResultSync(runtimeStatus?.lastResultSync),
         ...formatStandingsStatus(options.listStandingsPosts(), options.guildId, options.channelId)
       ].join("\n")
     );
@@ -535,5 +576,79 @@ function formatStandingsStatus(
   return [
     `Standings posts: ${matchingPosts.length}/2`,
     `Standings last updated: ${latestUpdatedAt ?? "never"}`
+  ];
+}
+
+function formatRuntimeStatus(status: RuntimeStatusSnapshot | undefined): string[] {
+  if (!status) {
+    return [];
+  }
+
+  const postedToday = status.todayMatches.filter((match) => match.posted).length;
+  const unpostedToday = status.todayMatches.filter((match) => !match.posted);
+  const openWindows = status.todayMatches.filter((match) => match.predictionState === "open").length;
+  const closedWindows = status.todayMatches.filter(
+    (match) => match.predictionState === "closed"
+  ).length;
+  const missingKickoffWindows = status.todayMatches.filter(
+    (match) => match.predictionState === "missing-kickoff"
+  ).length;
+
+  return [
+    `Today: ${status.localDate} ${status.localTime} ${status.timeZone}`,
+    `Auto-post: ${status.autoPostEnabled ? `on at ${status.autoPostTime}` : "off"} ${
+      status.timeZone
+    }`,
+    `Today matches: ${status.todayMatches.length}`,
+    `Posted today: ${postedToday}/${status.todayMatches.length}`,
+    `Unposted today: ${formatUnpostedMatches(unpostedToday)}`,
+    `Prediction windows: ${openWindows} open, ${closedWindows} closed, ${missingKickoffWindows} missing kickoff`,
+    `Last auto-post: ${formatLastAutoPost(status.lastAutoPost)}`
+  ];
+}
+
+function formatUnpostedMatches(matches: RuntimeTodayMatchStatus[]): string {
+  if (matches.length === 0) {
+    return "none";
+  }
+
+  return matches.map((match) => `#${match.matchNumber} ${match.label}`).join("; ");
+}
+
+function formatLastAutoPost(status: RuntimeAutoPostStatus): string {
+  if (status.action === "never") {
+    return "never";
+  }
+
+  if (status.action === "disabled") {
+    return "disabled";
+  }
+
+  if (status.action === "not-due") {
+    return `not due at ${status.localDate} ${status.localTime}`;
+  }
+
+  return `posted ${status.posted.length}, skipped ${status.skipped.length} on ${status.localDate}`;
+}
+
+function formatLastResultSync(status: RuntimeResultSyncStatus | undefined): string[] {
+  if (!status) {
+    return [];
+  }
+
+  if (status.action === "never") {
+    return ["Last result sync: never"];
+  }
+
+  if (status.action === "disabled") {
+    return [`Last result sync: disabled (${status.reason})`];
+  }
+
+  if (status.action === "failed") {
+    return [`Last result sync: failed ${status.reason} (${status.dateFrom} to ${status.dateTo})`];
+  }
+
+  return [
+    `Last result sync: synced ${status.storedResults.length}, skipped ${status.skipped.length} (${status.dateFrom} to ${status.dateTo})`
   ];
 }

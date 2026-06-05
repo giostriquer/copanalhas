@@ -96,14 +96,66 @@ describe("handleOperatorCommand", () => {
     expect(updateStandingsDashboard).toHaveBeenCalledOnce();
   });
 
-  test("status reports missing kickoff times and result sync state", async () => {
-    await expect(handleOperatorCommand(command("status"), options())).resolves.toEqual({
+  test("status reports today's automation state and recent catch-up results", async () => {
+    await expect(
+      handleOperatorCommand(
+        command("status"),
+        options({
+          resultSyncEnabled: true,
+          getRuntimeStatus: () => ({
+            localDate: "2026-06-11",
+            localTime: "20:00",
+            timeZone: "UTC",
+            autoPostEnabled: true,
+            autoPostTime: "09:00",
+            todayMatches: [
+              {
+                matchId: "wc2026-001",
+                matchNumber: 1,
+                label: "México x África do Sul",
+                posted: true,
+                predictionState: "closed"
+              },
+              {
+                matchId: "wc2026-002",
+                matchNumber: 2,
+                label: "Coreia do Sul x Tchéquia",
+                posted: false,
+                predictionState: "open"
+              }
+            ],
+            lastAutoPost: {
+              action: "posted",
+              localDate: "2026-06-11",
+              posted: ["wc2026-001"],
+              skipped: ["wc2026-002"]
+            },
+            resultSyncEnabled: true,
+            lastResultSync: {
+              action: "synced",
+              dateFrom: "2026-06-09",
+              dateTo: "2026-06-11",
+              storedResults: ["wc2026-001"],
+              skipped: []
+            }
+          })
+        })
+      )
+    ).resolves.toEqual({
       action: "replied",
       content: [
         "Copanalhas Status",
+        "Today: 2026-06-11 20:00 UTC",
+        "Auto-post: on at 09:00 UTC",
+        "Today matches: 2",
+        "Posted today: 1/2",
+        "Unposted today: #2 Coreia do Sul x Tchéquia",
+        "Prediction windows: 1 open, 1 closed, 0 missing kickoff",
+        "Last auto-post: posted 1, skipped 1 on 2026-06-11",
         "Matches loaded: 72",
         "Missing kickoff times: 0",
-        "Result sync: off",
+        "Result sync: on",
+        "Last result sync: synced 1, skipped 0 (2026-06-09 to 2026-06-11)",
         "Standings posts: 0/2",
         "Standings last updated: never"
       ].join("\n"),
