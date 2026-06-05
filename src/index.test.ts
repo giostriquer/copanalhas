@@ -34,7 +34,10 @@ describe("runCli", () => {
           matchId: "wc2026-001",
           homeScore: 2,
           awayScore: 1,
-          recordedAt: "2026-06-11T23:00:00.000Z"
+          recordedAt: "2026-06-11T23:00:00.000Z",
+          resultSource: "manual",
+          externalMatchId: null,
+          fetchedAt: null
         }
       ]
     });
@@ -141,6 +144,7 @@ describe("runCli", () => {
     const lines: string[] = [];
     const store = createStore();
     const startDiscord = vi.fn(async () => undefined);
+    const startInterval = vi.fn(() => ({ stop: vi.fn() }));
 
     await runCli(["bot"], {
       openDatabase: () => store,
@@ -151,7 +155,10 @@ describe("runCli", () => {
         DISCORD_CHANNEL_ID: "channel-1",
         COPANALHAS_DATABASE_PATH: "./tmp/bot.sqlite"
       },
-      startDiscord
+      startDiscord,
+      startInterval,
+      sendMatchCard: vi.fn(async () => "discord-message-1"),
+      now: () => new Date("2026-06-11T12:00:00.000Z")
     });
 
     expect(store.upsertMatches).toHaveBeenCalled();
@@ -173,9 +180,20 @@ describe("runCli", () => {
           })
         ]),
         upsertPrediction: expect.any(Function)
+      }),
+      expect.objectContaining({
+        operatorCommandOptions: expect.objectContaining({
+          guildId: "guild-1",
+          channelId: "channel-1"
+        }),
+        registerCommands: expect.any(Function)
       })
     );
-    expect(lines).toEqual(["Starting Discord collector for configured channel."]);
+    expect(startInterval).toHaveBeenCalled();
+    expect(lines).toEqual([
+      "Starting Discord collector for configured channel.",
+      "Autonomous operator enabled. Auto-post: on at 09:00 America/Sao_Paulo."
+    ]);
   });
 
   test("prints config errors before starting the bot", async () => {
@@ -232,6 +250,9 @@ function createStoreShape(): CliStore {
     upsertResult: vi.fn(),
     listPredictions: vi.fn(() => [] as ReturnType<CliStore["listPredictions"]>),
     listResults: vi.fn(() => [] as ReturnType<CliStore["listResults"]>),
+    listPostedMatchCards: vi.fn(() => [] as ReturnType<CliStore["listPostedMatchCards"]>),
+    recordPostedMatchCard: vi.fn(),
+    insertScoringRun: vi.fn(),
     close: vi.fn()
   };
 }

@@ -5,7 +5,7 @@ import { getLocalDateTimeParts } from "../app/scheduler.js";
 import { formatLeaderboard } from "../leaderboard/format.js";
 import { parseScoreInput } from "../predictions/score-parser.js";
 import { buildLeaderboard, scoreMatch, type MatchResult, type ScorePrediction } from "../scoring/scoring.js";
-import type { StoredResult } from "../storage/database.js";
+import type { PostedMatchCardSource, StoredResult } from "../storage/database.js";
 import type { WorldCupMatch } from "../worldcup/types.js";
 import { copanalhasCommandName } from "./commands.js";
 
@@ -31,7 +31,7 @@ export interface OperatorCommandOptions {
   timeZone: string;
   resultSyncEnabled: boolean;
   now(): Date;
-  postDueMatchCards(date: string, postSource: "command"): Promise<PostDueMatchCardsResult>;
+  postDueMatchCards(date: string, postSource: PostedMatchCardSource): Promise<PostDueMatchCardsResult>;
   listPredictions(): ScorePrediction[];
   listResults(): MatchResult[];
   upsertResult(result: StoredResult): void | Promise<void>;

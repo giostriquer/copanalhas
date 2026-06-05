@@ -1,29 +1,25 @@
 import { pathToFileURL } from "node:url";
 
-import { createPredictionPersistenceHandler } from "./app/collector.js";
+import {
+  startCopanalhasBotRuntime,
+  type BotRuntimeStore,
+  type RuntimeInterval
+} from "./app/bot-runtime.js";
 import { loadLocalEnvFile } from "./config/env.js";
 import { createMatchCardMessage, type MatchCardMessage } from "./discord/components.js";
 import { parseCopanalhasConfig, type CopanalhasConfig } from "./discord/config.js";
-import { startDiscordClient } from "./discord/ingestion.js";
-import type { PredictionInteractionOptions } from "./discord/interactions.js";
+import {
+  startDiscordClient,
+  type DiscordClientReadyOptions,
+  type DiscordIngestionResult
+} from "./discord/ingestion.js";
 import { postDiscordMatchCards } from "./discord/posting.js";
 import { formatLeaderboard } from "./leaderboard/format.js";
-import { buildLeaderboard, scoreMatch, type MatchResult, type ScorePrediction } from "./scoring/scoring.js";
-import {
-  openCopanalhasDatabase,
-  type StoredPrediction,
-  type StoredResult
-} from "./storage/database.js";
+import { buildLeaderboard, scoreMatch } from "./scoring/scoring.js";
+import { openCopanalhasDatabase } from "./storage/database.js";
 import { WORLD_CUP_2026_SEED } from "./worldcup/seed.js";
-import type { WorldCupMatch } from "./worldcup/types.js";
 
-export interface CliStore {
-  migrate(): void;
-  upsertMatches(matches: WorldCupMatch[]): void;
-  upsertPrediction(prediction: StoredPrediction): void;
-  upsertResult(result: StoredResult): void;
-  listPredictions(): ScorePrediction[];
-  listResults(): MatchResult[];
+export interface CliStore extends BotRuntimeStore {
   close(): void;
 }
 
@@ -33,9 +29,13 @@ export interface CliDependencies {
   env: Record<string, string | undefined>;
   startDiscord(
     config: CopanalhasConfig,
-    onMessageResult: Parameters<typeof startDiscordClient>[1],
-    predictionInteractionOptions?: PredictionInteractionOptions
+    onMessageResult: (result: DiscordIngestionResult) => void,
+    predictionInteractionOptions: Parameters<typeof startDiscordClient>[2],
+    readyOptions: DiscordClientReadyOptions
   ): Promise<unknown>;
+  startInterval?(callback: () => void | Promise<void>, intervalMs: number): RuntimeInterval;
+  sendMatchCard?(matchId: string, message: MatchCardMessage): Promise<string>;
+  now?(): Date;
   postMatchCards?(config: CopanalhasConfig, messages: MatchCardMessage[]): Promise<unknown>;
 }
 
@@ -175,24 +175,26 @@ async function startBot(dependencies: CliDependencies): Promise<void> {
   }
 
   const store = dependencies.openDatabase(configResult.config.databasePath);
-  store.migrate();
-  store.upsertMatches(WORLD_CUP_2026_SEED.matches);
   dependencies.writeLine("Starting Discord collector for configured channel.");
 
-  await dependencies.startDiscord(
-    configResult.config,
-    createPredictionPersistenceHandler({
-      matches: WORLD_CUP_2026_SEED.matches,
-      upsertPrediction: (prediction) => store.upsertPrediction(prediction),
-      writeLine: dependencies.writeLine
-    }),
-    {
-      guildId: configResult.config.guildId,
-      channelId: configResult.config.channelId,
-      matches: WORLD_CUP_2026_SEED.matches,
-      timeZone: configResult.config.timezone,
-      upsertPrediction: (prediction) => store.upsertPrediction(prediction)
-    }
+  await startCopanalhasBotRuntime({
+    config: configResult.config,
+    store,
+    matches: WORLD_CUP_2026_SEED.matches,
+    startDiscord: dependencies.startDiscord,
+    startInterval: dependencies.startInterval ?? startNodeInterval,
+    sendMatchCard:
+      dependencies.sendMatchCard ??
+      ((matchId, message) => sendDiscordMatchCard(configResult.config, matchId, message)),
+    now: dependencies.now ?? (() => new Date()),
+    writeLine: dependencies.writeLine
+  });
+  dependencies.writeLine(
+    `Autonomous operator enabled. Auto-post: ${
+      configResult.config.autoPostEnabled
+        ? `on at ${configResult.config.autoPostTime} ${configResult.config.timezone}`
+        : "off"
+    }.`
   );
 }
 
@@ -211,8 +213,38 @@ function defaultDependencies(): CliDependencies {
     writeLine: (line) => console.log(line),
     env: process.env,
     startDiscord: startDiscordClient,
+    startInterval: startNodeInterval,
     postMatchCards: postDiscordMatchCards
   };
+}
+
+function startNodeInterval(
+  callback: () => void | Promise<void>,
+  intervalMs: number
+): RuntimeInterval {
+  const handle = setInterval(() => {
+    void Promise.resolve(callback()).catch((error: unknown) => {
+      console.error(error);
+    });
+  }, intervalMs);
+
+  return {
+    stop: () => clearInterval(handle)
+  };
+}
+
+async function sendDiscordMatchCard(
+  config: CopanalhasConfig,
+  _matchId: string,
+  message: MatchCardMessage
+): Promise<string> {
+  const [messageId] = await postDiscordMatchCards(config, [message]);
+
+  if (!messageId) {
+    throw new Error("Discord did not return a message id for the posted match card.");
+  }
+
+  return messageId;
 }
 
 function databasePathFromEnv(env: Record<string, string | undefined>): string {
