@@ -2,6 +2,7 @@ import { DatabaseSync } from "node:sqlite";
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 
+import type { StandingsPostKey } from "../standings/format.js";
 import type { WorldCupMatch } from "../worldcup/types.js";
 
 export interface StoredPrediction {
@@ -34,6 +35,15 @@ export interface StoredPostedMatchCard {
   postedForDate: string;
   postedAt: string;
   postSource: PostedMatchCardSource;
+}
+
+export interface StoredStandingsPost {
+  postKey: StandingsPostKey;
+  guildId: string;
+  channelId: string;
+  messageId: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface NewScoringRun {
@@ -98,6 +108,16 @@ export class CopanalhasDatabase {
         posted_at TEXT NOT NULL,
         post_source TEXT NOT NULL,
         PRIMARY KEY (match_id, channel_id)
+      ) STRICT;
+
+      CREATE TABLE IF NOT EXISTS standings_posts (
+        post_key TEXT NOT NULL,
+        guild_id TEXT NOT NULL,
+        channel_id TEXT NOT NULL,
+        message_id TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        PRIMARY KEY (post_key, guild_id, channel_id)
       ) STRICT;
 
       CREATE TABLE IF NOT EXISTS scoring_runs (
@@ -339,6 +359,48 @@ export class CopanalhasDatabase {
     }));
   }
 
+  recordStandingsPost(post: StoredStandingsPost): void {
+    this.database
+      .prepare(`
+        INSERT INTO standings_posts (
+          post_key,
+          guild_id,
+          channel_id,
+          message_id,
+          created_at,
+          updated_at
+        )
+        VALUES (?, ?, ?, ?, ?, ?)
+        ON CONFLICT(post_key, guild_id, channel_id) DO UPDATE SET
+          message_id = excluded.message_id,
+          created_at = excluded.created_at,
+          updated_at = excluded.updated_at
+      `)
+      .run(
+        post.postKey,
+        post.guildId,
+        post.channelId,
+        post.messageId,
+        post.createdAt,
+        post.updatedAt
+      );
+  }
+
+  listStandingsPosts(): StoredStandingsPost[] {
+    const rows = this.database
+      .prepare("SELECT * FROM standings_posts ORDER BY post_key, guild_id, channel_id")
+      .all() as unknown as StandingsPostRow[];
+
+    return rows.map((row) => ({
+      postKey: row.post_key,
+      guildId: row.guild_id,
+      channelId: row.channel_id,
+      messageId: row.message_id,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at
+    }));
+  }
+
   insertScoringRun(run: NewScoringRun): StoredScoringRun {
     const result = this.database
       .prepare("INSERT INTO scoring_runs (created_at, match_id, summary_json) VALUES (?, ?, ?)")
@@ -434,6 +496,15 @@ interface PostedMatchCardRow {
   posted_for_date: string;
   posted_at: string;
   post_source: PostedMatchCardSource;
+}
+
+interface StandingsPostRow {
+  post_key: StandingsPostKey;
+  guild_id: string;
+  channel_id: string;
+  message_id: string;
+  created_at: string;
+  updated_at: string;
 }
 
 interface ScoringRunRow {
