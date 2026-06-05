@@ -125,6 +125,65 @@ describe("CopanalhasDatabase", () => {
     store.close();
   });
 
+  test("clears posted match cards for one date and channel only", () => {
+    const store = openCopanalhasDatabase(":memory:");
+    store.migrate();
+
+    store.recordPostedMatchCard({
+      matchId: "wc2026-001",
+      channelId: "channel-1",
+      messageId: "discord-message-1",
+      postedForDate: "2026-06-11",
+      postedAt: "2026-06-11T12:00:00.000Z",
+      postSource: "command"
+    });
+    store.recordPostedMatchCard({
+      matchId: "wc2026-002",
+      channelId: "channel-1",
+      messageId: "discord-message-1",
+      postedForDate: "2026-06-11",
+      postedAt: "2026-06-11T12:00:00.000Z",
+      postSource: "command"
+    });
+    store.recordPostedMatchCard({
+      matchId: "wc2026-003",
+      channelId: "channel-1",
+      messageId: "discord-message-2",
+      postedForDate: "2026-06-12",
+      postedAt: "2026-06-12T12:00:00.000Z",
+      postSource: "command"
+    });
+    store.recordPostedMatchCard({
+      matchId: "wc2026-001",
+      channelId: "channel-2",
+      messageId: "discord-message-3",
+      postedForDate: "2026-06-11",
+      postedAt: "2026-06-11T12:00:00.000Z",
+      postSource: "command"
+    });
+
+    expect(store.clearPostedMatchCardsForDate("channel-1", "2026-06-11")).toBe(2);
+    expect(store.listPostedMatchCards()).toEqual([
+      {
+        matchId: "wc2026-001",
+        channelId: "channel-2",
+        messageId: "discord-message-3",
+        postedForDate: "2026-06-11",
+        postedAt: "2026-06-11T12:00:00.000Z",
+        postSource: "command"
+      },
+      {
+        matchId: "wc2026-003",
+        channelId: "channel-1",
+        messageId: "discord-message-2",
+        postedForDate: "2026-06-12",
+        postedAt: "2026-06-12T12:00:00.000Z",
+        postSource: "command"
+      }
+    ]);
+    store.close();
+  });
+
   test("records standings dashboard posts by key, guild, and channel", () => {
     const store = openCopanalhasDatabase(":memory:");
     store.migrate();

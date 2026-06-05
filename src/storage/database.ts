@@ -359,6 +359,14 @@ export class CopanalhasDatabase {
     }));
   }
 
+  clearPostedMatchCardsForDate(channelId: string, postedForDate: string): number {
+    const result = this.database
+      .prepare("DELETE FROM posted_match_cards WHERE channel_id = ? AND posted_for_date = ?")
+      .run(channelId, postedForDate);
+
+    return Number(result.changes);
+  }
+
   recordStandingsPost(post: StoredStandingsPost): void {
     this.database
       .prepare(`

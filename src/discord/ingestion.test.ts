@@ -217,6 +217,7 @@ function operatorOptions(): OperatorCommandOptions {
     resultSyncEnabled: false,
     now: () => new Date("2026-06-11T23:00:00.000Z"),
     postDueMatchCards: vi.fn(async () => ({ posted: [], skipped: [] })),
+    clearPostedMatchCards: vi.fn(() => 0),
     listPredictions: vi.fn(() => []),
     listResults: vi.fn(() => []),
     upsertResult: vi.fn(),

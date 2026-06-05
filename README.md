@@ -33,6 +33,7 @@ Useful commands:
 - `npm run dev -- seed-matches`
 - `npm run dev -- bot`
 - `npm run dev -- post-matches-today 2026-06-11`
+- `npm run dev -- clear-posted-date 2026-06-11`
 - `npm run dev -- record-result wc2026-001 2 1`
 - `npm run dev -- leaderboard`
 
@@ -48,6 +49,8 @@ Useful operator commands while the bot is running:
 
 - `/copanalhas post-date date:2026-06-11`: post the reviewed matchday card for a
   date.
+- `/copanalhas clear-posted-date date:2026-06-11`: clear posted-card dedupe
+  records for a date so it can be reposted during testing.
 - `/copanalhas predictions match:wc2026-001`: privately inspect submitted picks
   for one match before or after lock.
 - `/copanalhas reveal match:wc2026-001`: publicly reveal submitted picks only

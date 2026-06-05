@@ -43,6 +43,25 @@ describe("handleOperatorCommand", () => {
     expect(postDueMatchCards).toHaveBeenCalledWith("2026-06-12", "command");
   });
 
+  test("clear-posted-date resets posted card records for the requested date", async () => {
+    const clearPostedMatchCards = vi.fn(() => 2);
+
+    const result = await handleOperatorCommand(
+      command("clear-posted-date", { date: "2026-06-11" }),
+      options({ clearPostedMatchCards })
+    );
+
+    expect(result).toEqual({
+      action: "replied",
+      content: [
+        "Cleared 2 posted match card records for 2026-06-11.",
+        "Predictions, results, and standings were not touched."
+      ].join("\n"),
+      ephemeral: true
+    });
+    expect(clearPostedMatchCards).toHaveBeenCalledWith("2026-06-11");
+  });
+
   test("status reports missing kickoff times and result sync state", async () => {
     await expect(handleOperatorCommand(command("status"), options())).resolves.toEqual({
       action: "replied",
@@ -301,6 +320,7 @@ function options(overrides: Partial<OperatorCommandOptions> = {}): OperatorComma
     resultSyncEnabled: false,
     now: () => new Date("2026-06-11T23:00:00.000Z"),
     postDueMatchCards: vi.fn(async () => ({ posted: [], skipped: [] })),
+    clearPostedMatchCards: vi.fn(() => 0),
     listPredictions: vi.fn(() => []),
     listResults: vi.fn(() => []),
     upsertResult: vi.fn(),

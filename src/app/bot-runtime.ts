@@ -39,6 +39,7 @@ export interface BotRuntimeStore {
   listResults(): StoredResult[];
   listPostedMatchCards(): StoredPostedMatchCard[];
   recordPostedMatchCard(card: StoredPostedMatchCard): void;
+  clearPostedMatchCardsForDate(channelId: string, postedForDate: string): number;
   listStandingsPosts(): StoredStandingsPost[];
   recordStandingsPost(post: StoredStandingsPost): void;
   insertScoringRun(run: NewScoringRun): unknown;
@@ -147,6 +148,8 @@ function createOperatorCommandOptions(
         sendMatchCard: options.sendMatchCard,
         recordPostedMatchCard: (card) => options.store.recordPostedMatchCard(card)
       }),
+    clearPostedMatchCards: (date) =>
+      options.store.clearPostedMatchCardsForDate(options.config.channelId, date),
     listPredictions: () => options.store.listPredictions(),
     listResults: () => options.store.listResults(),
     upsertResult: (result) => options.store.upsertResult(result),

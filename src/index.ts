@@ -65,6 +65,11 @@ export async function runCli(
     return;
   }
 
+  if (command === "clear-posted-date") {
+    clearPostedDate(argv, dependencies);
+    return;
+  }
+
   if (command === "record-result") {
     recordResult(argv, dependencies);
     return;
@@ -158,6 +163,34 @@ function recordResult(argv: string[], dependencies: CliDependencies): void {
       fetchedAt: null
     });
     dependencies.writeLine(`Recorded result ${matchId} ${homeScore}-${awayScore}.`);
+  } finally {
+    store.close();
+  }
+}
+
+function clearPostedDate(argv: string[], dependencies: CliDependencies): void {
+  const date = dateFromOptionalArg(argv[1]);
+
+  if (!date) {
+    dependencies.writeLine(usage());
+    return;
+  }
+
+  const channelId = dependencies.env.DISCORD_CHANNEL_ID?.trim();
+
+  if (!channelId) {
+    dependencies.writeLine("DISCORD_CHANNEL_ID is required");
+    return;
+  }
+
+  const store = dependencies.openDatabase(databasePathFromEnv(dependencies.env));
+
+  try {
+    store.migrate();
+    const cleared = store.clearPostedMatchCardsForDate(channelId, date);
+    dependencies.writeLine(
+      `Cleared ${cleared} posted match card records for ${date}. Predictions, results, and standings were not touched.`
+    );
   } finally {
     store.close();
   }
@@ -323,7 +356,7 @@ function dateFromOptionalArg(value: string | undefined): string | undefined {
 }
 
 function usage(): string {
-  return "Usage: npm run dev -- seed-matches | post-matches-today [YYYY-MM-DD] | record-result <matchId> <homeScore> <awayScore> | leaderboard | standings-preview | bot";
+  return "Usage: npm run dev -- seed-matches | post-matches-today [YYYY-MM-DD] | clear-posted-date [YYYY-MM-DD] | record-result <matchId> <homeScore> <awayScore> | leaderboard | standings-preview | bot";
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {

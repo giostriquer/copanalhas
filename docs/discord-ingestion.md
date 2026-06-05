@@ -77,6 +77,9 @@ raw content can be removed.
 - `npm run dev -- post-matches-today [YYYY-MM-DD]`: posts one matchday card for
   reviewed matches on the selected date. If the date is omitted, the command uses
   the current ISO date.
+- `npm run dev -- clear-posted-date [YYYY-MM-DD]`: clears only posted-card
+  dedupe records for the configured channel and selected date, allowing a test
+  matchday card to be posted again without deleting predictions or results.
 - `npm run dev -- bot`: starts the long-running bot. It listens for the card
   button and modal interactions, saves predictions, registers operator slash
   commands, runs auto-posting, and runs optional result sync.
@@ -85,6 +88,7 @@ While `bot` is running, use `/copanalhas` for normal operator work:
 
 - `/copanalhas post-today`
 - `/copanalhas post-date date:2026-06-11`
+- `/copanalhas clear-posted-date date:2026-06-11`
 - `/copanalhas status`
 - `/copanalhas leaderboard`
 - `/copanalhas predictions match:wc2026-001`
@@ -94,7 +98,8 @@ While `bot` is running, use `/copanalhas` for normal operator work:
 Posted matchday cards are deduped by match and channel. The grouped Discord
 message ID is recorded once per included match, so restarting the process or
 re-running an operator post command does not repost matches already recorded in
-SQLite.
+SQLite. During smoke tests, `clear-posted-date` removes only those dedupe rows
+for the configured channel and selected date.
 
 `predictions` is an operator-only private audit view. It can show submitted
 picks before the prediction window closes, which helps with smoke tests and

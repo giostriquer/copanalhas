@@ -33,6 +33,17 @@ export function createCopanalhasCommand() {
         )
     )
     .addSubcommand((subcommand) =>
+      subcommand
+        .setName("clear-posted-date")
+        .setDescription("Clear posted-card records for a test date")
+        .addStringOption((option) =>
+          option
+            .setName("date")
+            .setDescription("Date to clear in YYYY-MM-DD format")
+            .setRequired(true)
+        )
+    )
+    .addSubcommand((subcommand) =>
       subcommand.setName("status").setDescription("Show Copanalhas operator status")
     )
     .addSubcommand((subcommand) =>

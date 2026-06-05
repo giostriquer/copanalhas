@@ -105,6 +105,45 @@ describe("runCli", () => {
     expect(lines).toEqual(["Recorded result wc2026-001 2-1."]);
   });
 
+  test("clears posted match card records for a selected date", async () => {
+    const lines: string[] = [];
+    const store = createStore({
+      clearPostedMatchCardsForDate: vi.fn(() => 2)
+    });
+
+    await runCli(["clear-posted-date", "2026-06-11"], {
+      openDatabase: () => store,
+      writeLine: (line) => lines.push(line),
+      env: {
+        DISCORD_CHANNEL_ID: "channel-1",
+        COPANALHAS_DATABASE_PATH: "./tmp/copanalhas.sqlite"
+      },
+      startDiscord: async () => undefined
+    });
+
+    expect(store.migrate).toHaveBeenCalledOnce();
+    expect(store.clearPostedMatchCardsForDate).toHaveBeenCalledWith("channel-1", "2026-06-11");
+    expect(store.close).toHaveBeenCalledOnce();
+    expect(lines).toEqual([
+      "Cleared 2 posted match card records for 2026-06-11. Predictions, results, and standings were not touched."
+    ]);
+  });
+
+  test("requires a channel id before clearing posted match card records", async () => {
+    const lines: string[] = [];
+
+    await runCli(["clear-posted-date", "2026-06-11"], {
+      openDatabase: () => {
+        throw new Error("database should not open");
+      },
+      writeLine: (line) => lines.push(line),
+      env: {},
+      startDiscord: async () => undefined
+    });
+
+    expect(lines).toEqual(["DISCORD_CHANNEL_ID is required"]);
+  });
+
   test("posts match cards for a selected World Cup date", async () => {
     const lines: string[] = [];
     const postMatchCards = vi.fn(
@@ -272,7 +311,7 @@ describe("runCli", () => {
     });
 
     expect(lines).toEqual([
-      "Usage: npm run dev -- seed-matches | post-matches-today [YYYY-MM-DD] | record-result <matchId> <homeScore> <awayScore> | leaderboard | standings-preview | bot"
+      "Usage: npm run dev -- seed-matches | post-matches-today [YYYY-MM-DD] | clear-posted-date [YYYY-MM-DD] | record-result <matchId> <homeScore> <awayScore> | leaderboard | standings-preview | bot"
     ]);
   });
 });
@@ -294,6 +333,7 @@ function createStoreShape(): CliStore {
     listResults: vi.fn(() => [] as ReturnType<CliStore["listResults"]>),
     listPostedMatchCards: vi.fn(() => [] as ReturnType<CliStore["listPostedMatchCards"]>),
     recordPostedMatchCard: vi.fn(),
+    clearPostedMatchCardsForDate: vi.fn(() => 0),
     listStandingsPosts: vi.fn(() => [] as ReturnType<CliStore["listStandingsPosts"]>),
     recordStandingsPost: vi.fn(),
     insertScoringRun: vi.fn(),

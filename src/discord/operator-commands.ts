@@ -19,6 +19,7 @@ import { copanalhasCommandName } from "./commands.js";
 export type OperatorSubcommand =
   | "post-today"
   | "post-date"
+  | "clear-posted-date"
   | "status"
   | "standings"
   | "leaderboard"
@@ -42,6 +43,7 @@ export interface OperatorCommandOptions {
   resultSyncEnabled: boolean;
   now(): Date;
   postDueMatchCards(date: string, postSource: PostedMatchCardSource): Promise<PostDueMatchCardsResult>;
+  clearPostedMatchCards(date: string): number;
   listPredictions(): StoredPrediction[];
   listResults(): MatchResult[];
   upsertResult(result: StoredResult): void | Promise<void>;
@@ -78,6 +80,27 @@ export async function handleOperatorCommand(
     }
 
     return postForDate(date, options);
+  }
+
+  if (command.subcommand === "clear-posted-date") {
+    const date = command.options.date;
+
+    if (!isDateString(date)) {
+      return reply("Use a date like 2026-06-11.");
+    }
+
+    const cleared = options.clearPostedMatchCards(date);
+
+    return reply(
+      [
+        `Cleared ${cleared} ${count(
+          cleared,
+          "posted match card record",
+          "posted match card records"
+        )} for ${date}.`,
+        "Predictions, results, and standings were not touched."
+      ].join("\n")
+    );
   }
 
   if (command.subcommand === "status") {
@@ -256,7 +279,7 @@ function readCommandOptions(
   subcommand: OperatorSubcommand,
   interaction: ChatInputCommandInteraction
 ): Record<string, string> {
-  if (subcommand === "post-date") {
+  if (subcommand === "post-date" || subcommand === "clear-posted-date") {
     return {
       date: interaction.options.getString("date", true)
     };
@@ -282,6 +305,7 @@ function parseOperatorSubcommand(value: string): OperatorSubcommand | undefined 
   if (
     value === "post-today" ||
     value === "post-date" ||
+    value === "clear-posted-date" ||
     value === "status" ||
     value === "standings" ||
     value === "leaderboard" ||
