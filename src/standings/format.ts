@@ -35,16 +35,14 @@ export function createStandingsDashboardMessages(
 
   return dashboardGroups.map((dashboard) => ({
     key: dashboard.key,
-    content: ["World Cup 2026 Group Standings", `Updated: ${updatedText}`].join("\n"),
-    embeds: [
-      {
-        title: dashboard.label,
-        description: renderDashboardTable(dashboard.groups, standingsByGroup),
-        footer: {
-          text: "Columns: TEAM PTS GD"
-        }
-      }
-    ]
+    content: [
+      "World Cup 2026 Group Standings",
+      `Updated: ${updatedText}`,
+      dashboard.label,
+      renderDashboardTable(dashboard.groups, standingsByGroup),
+      "Columns: TEAM PTS GD"
+    ].join("\n"),
+    embeds: []
   }));
 }
 

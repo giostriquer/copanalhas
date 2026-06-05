@@ -31,12 +31,12 @@ The bot maintains one dashboard split into two Discord messages because a single
 mega table is fragile on mobile and one post per group would create too much
 channel noise.
 
-Each dashboard message should use normal message content for the title and last
-updated line, plus one embed whose description is a full-width ASCII code-block
-table. The table shows three groups per row band and keeps only the scan-critical
-dashboard columns: team code, points, and goal difference. This uses more of
-Discord's available embed width than inline fields, which wrap inside narrow
-columns.
+Each dashboard message should use normal message content only: title, last
+updated line, dashboard label, and one fenced ASCII code-block table. The table
+shows three groups per row band and keeps only the scan-critical dashboard
+columns: team code, points, and goal difference. Avoid embeds for this surface;
+an embed plus a code block creates a double backdrop that makes the table feel
+clunky and more constrained.
 
 Recommended structure for the `Groups A-F` message:
 

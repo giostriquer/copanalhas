@@ -126,8 +126,8 @@ function clientWithChannel(channel: {
 function message(): StandingsDashboardMessage {
   return {
     key: "groups_a_f",
-    content: "World Cup 2026 Group Standings\nGroups A-F",
-    embeds: [{ title: "Group A", description: "```text\n# Team Pts\n```" }]
+    content: "World Cup 2026 Group Standings\nGroups A-F\n```text\n# Team Pts\n```",
+    embeds: []
   };
 }
 

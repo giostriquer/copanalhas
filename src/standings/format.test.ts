@@ -22,21 +22,11 @@ describe("createStandingsDashboardMessages", () => {
       key: "groups_g_l",
       content: expect.stringContaining("World Cup 2026 Group Standings")
     });
-    expect(messages[0]?.content).not.toContain("Groups A-F");
-    expect(messages[1]?.content).not.toContain("Groups G-L");
-    expect(messages[0]?.embeds).toHaveLength(1);
-    expect(messages[1]?.embeds).toHaveLength(1);
-    expect(messages[0]?.embeds[0]).toMatchObject({
-      title: "Groups A-F",
-      description: expect.stringContaining("GROUP A")
-    });
-    expect(messages[0]?.embeds[0]?.description).toContain("GROUP F");
-    expect(messages[0]?.embeds[0]).not.toHaveProperty("fields");
-    expect(messages[1]?.embeds[0]).toMatchObject({
-      title: "Groups G-L",
-      description: expect.stringContaining("GROUP L")
-    });
-    expect(messages[1]?.embeds[0]).not.toHaveProperty("fields");
+    expect(messages[0]?.embeds).toEqual([]);
+    expect(messages[1]?.embeds).toEqual([]);
+    expect(messages[0]?.content).toContain("GROUP A");
+    expect(messages[0]?.content).toContain("GROUP F");
+    expect(messages[1]?.content).toContain("GROUP L");
     expect(messages[0]?.content).toContain("Updated: 2026-06-11 23:30 UTC");
   });
 
@@ -48,15 +38,16 @@ describe("createStandingsDashboardMessages", () => {
       updatedAt: new Date("2026-06-11T23:30:00.000Z"),
       timeZone: "UTC"
     });
-    const description = messages[0]?.embeds[0]?.description;
+    const content = messages[0]?.content;
 
-    expect(description).toContain("```text");
-    expect(description).toContain("+--------------+--------------+--------------+");
-    expect(description).toContain("| GROUP A      | GROUP B      | GROUP C      |");
-    expect(description).toContain("| MEX  3  +1   | BIH  0   0   | BRA  0   0   |");
-    expect(description).toContain("| RSA  0  -1   | SUI  0   0   | SCO  0   0   |");
-    expect(description).toContain("| GROUP D      | GROUP E      | GROUP F      |");
-    expect(messages[0]?.embeds[0]?.footer).toEqual({ text: "Columns: TEAM PTS GD" });
+    expect(content).toContain("Groups A-F");
+    expect(content).toContain("```text");
+    expect(content).toContain("+--------------+--------------+--------------+");
+    expect(content).toContain("| GROUP A      | GROUP B      | GROUP C      |");
+    expect(content).toContain("| MEX  3  +1   | BIH  0   0   | BRA  0   0   |");
+    expect(content).toContain("| RSA  0  -1   | SUI  0   0   | SCO  0   0   |");
+    expect(content).toContain("| GROUP D      | GROUP E      | GROUP F      |");
+    expect(content).toContain("Columns: TEAM PTS GD");
   });
 });
 
