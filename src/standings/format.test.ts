@@ -16,14 +16,34 @@ describe("createStandingsDashboardMessages", () => {
     expect(messages).toHaveLength(2);
     expect(messages[0]).toMatchObject({
       key: "groups_a_f",
-      content: expect.stringContaining("Groups A-F")
+      content: expect.stringContaining("World Cup 2026 Group Standings")
     });
     expect(messages[1]).toMatchObject({
       key: "groups_g_l",
-      content: expect.stringContaining("Groups G-L")
+      content: expect.stringContaining("World Cup 2026 Group Standings")
     });
-    expect(messages[0]?.embeds).toHaveLength(6);
-    expect(messages[1]?.embeds).toHaveLength(6);
+    expect(messages[0]?.content).not.toContain("Groups A-F");
+    expect(messages[1]?.content).not.toContain("Groups G-L");
+    expect(messages[0]?.embeds).toHaveLength(1);
+    expect(messages[1]?.embeds).toHaveLength(1);
+    expect(messages[0]?.embeds[0]).toMatchObject({
+      title: "Groups A-F",
+      fields: expect.arrayContaining([
+        expect.objectContaining({
+          name: "Group A",
+          inline: true
+        }),
+        expect.objectContaining({
+          name: "Group F",
+          inline: true
+        })
+      ])
+    });
+    expect(messages[0]?.embeds[0]?.fields).toHaveLength(6);
+    expect(messages[1]?.embeds[0]).toMatchObject({
+      title: "Groups G-L"
+    });
+    expect(messages[1]?.embeds[0]?.fields).toHaveLength(6);
     expect(messages[0]?.content).toContain("Updated: 2026-06-11 23:30 UTC");
   });
 
@@ -35,15 +55,15 @@ describe("createStandingsDashboardMessages", () => {
       updatedAt: new Date("2026-06-11T23:30:00.000Z"),
       timeZone: "UTC"
     });
-    const groupA = messages[0]?.embeds.find((embed) => embed.title === "Group A");
+    const groupA = messages[0]?.embeds[0]?.fields?.find((field) => field.name === "Group A");
 
-    expect(groupA?.description).toContain("```text");
-    expect(groupA?.description).toContain("# Team");
-    expect(groupA?.description).toContain("Pts");
-    expect(groupA?.description).toContain("1 Mexico");
-    expect(groupA?.description).toContain("1 1 0 0  2  1  1   3");
-    expect(groupA?.description).toContain("4 South Africa");
-    expect(groupA?.description).toContain("1 0 0 1  1  2 -1   0");
+    expect(groupA?.inline).toBe(true);
+    expect(groupA?.value).toContain("```text");
+    expect(groupA?.value).toContain("# Team P W D L GD Pts");
+    expect(groupA?.value).toContain("1 MEX");
+    expect(groupA?.value).toContain("1 MEX 1 1 0 0 +1 3");
+    expect(groupA?.value).toContain("4 RSA");
+    expect(groupA?.value).toContain("4 RSA 1 0 0 1 -1 0");
   });
 });
 

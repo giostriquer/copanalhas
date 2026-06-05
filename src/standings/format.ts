@@ -16,7 +16,17 @@ export interface StandingsDashboardMessage {
 
 export interface StandingsDashboardEmbed {
   title: string;
-  description: string;
+  description?: string;
+  fields?: StandingsDashboardField[];
+  footer?: {
+    text: string;
+  };
+}
+
+export interface StandingsDashboardField {
+  name: string;
+  value: string;
+  inline: boolean;
 }
 
 const dashboardGroups: Array<{ key: StandingsPostKey; label: string; groups: string[] }> = [
@@ -32,28 +42,35 @@ export function createStandingsDashboardMessages(
 
   return dashboardGroups.map((dashboard) => ({
     key: dashboard.key,
-    content: ["World Cup 2026 Group Standings", dashboard.label, `Updated: ${updatedText}`].join(
-      "\n"
-    ),
-    embeds: dashboard.groups.map((group) => {
-      const standings = standingsByGroup.get(group);
+    content: ["World Cup 2026 Group Standings", `Updated: ${updatedText}`].join("\n"),
+    embeds: [
+      {
+        title: dashboard.label,
+        fields: dashboard.groups.map((group) => {
+          const standings = standingsByGroup.get(group);
 
-      if (!standings) {
-        throw new Error(`Missing standings data for Group ${group}.`);
+          if (!standings) {
+            throw new Error(`Missing standings data for Group ${group}.`);
+          }
+
+          return {
+            name: `Group ${group}`,
+            value: renderGroupTable(standings.rows),
+            inline: true
+          };
+        }),
+        footer: {
+          text: "Columns: P W D L GD Pts"
+        }
       }
-
-      return {
-        title: `Group ${group}`,
-        description: renderGroupTable(standings.rows)
-      };
-    })
+    ]
   }));
 }
 
 function renderGroupTable(rows: readonly GroupStandingRow[]): string {
   return [
     "```text",
-    "# Team              P W D L GF GA GD Pts",
+    "# Team P W D L GD Pts",
     ...rows.map(formatStandingRow),
     "```"
   ].join("\n");
@@ -62,24 +79,18 @@ function renderGroupTable(rows: readonly GroupStandingRow[]): string {
 function formatStandingRow(row: GroupStandingRow): string {
   return [
     row.rank.toString(),
-    truncate(row.teamName, 16).padEnd(16),
+    row.teamCode,
     row.played.toString(),
     row.wins.toString(),
     row.draws.toString(),
     row.losses.toString(),
-    row.goalsFor.toString().padStart(2),
-    row.goalsAgainst.toString().padStart(2),
-    row.goalDifference.toString().padStart(2),
-    row.points.toString().padStart(3)
+    formatGoalDifference(row.goalDifference),
+    row.points.toString()
   ].join(" ");
 }
 
-function truncate(value: string, maxLength: number): string {
-  if (value.length <= maxLength) {
-    return value;
-  }
-
-  return value.slice(0, maxLength - 1) + ".";
+function formatGoalDifference(goalDifference: number): string {
+  return goalDifference > 0 ? `+${goalDifference}` : goalDifference.toString();
 }
 
 function formatDashboardTimestamp(date: Date, timeZone: string): string {

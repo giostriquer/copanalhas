@@ -158,7 +158,7 @@ describe("runCli", () => {
     expect(output).toContain("Groups A-F");
     expect(output).toContain("Groups G-L");
     expect(output).toContain("Group A");
-    expect(output).toContain("1 Mexico");
+    expect(output).toContain("1 MEX");
   });
 
   test("starts the Discord bot with parsed environment config", async () => {

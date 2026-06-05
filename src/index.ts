@@ -248,7 +248,15 @@ function printStandingsPreview(dependencies: CliDependencies): void {
     dependencies.writeLine(message.content);
 
     for (const embed of message.embeds) {
-      dependencies.writeLine(`${embed.title}\n${embed.description}`);
+      dependencies.writeLine(embed.title);
+
+      if (embed.description) {
+        dependencies.writeLine(embed.description);
+      }
+
+      for (const field of embed.fields ?? []) {
+        dependencies.writeLine(`${field.name}\n${field.value}`);
+      }
     }
   }
 }
