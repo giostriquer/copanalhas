@@ -1,4 +1,6 @@
 import { DatabaseSync } from "node:sqlite";
+import { mkdirSync } from "node:fs";
+import { dirname } from "node:path";
 
 import type { WorldCupMatch } from "../worldcup/types.js";
 
@@ -259,6 +261,14 @@ export class CopanalhasDatabase {
 }
 
 export function openCopanalhasDatabase(path: string): CopanalhasDatabase {
+  if (path !== ":memory:") {
+    const parentDirectory = dirname(path);
+
+    if (parentDirectory !== ".") {
+      mkdirSync(parentDirectory, { recursive: true });
+    }
+  }
+
   return new CopanalhasDatabase(new DatabaseSync(path));
 }
 

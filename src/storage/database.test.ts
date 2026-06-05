@@ -1,4 +1,7 @@
 import { describe, expect, test } from "vitest";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 
 import { openCopanalhasDatabase } from "./database.js";
 import { WORLD_CUP_2026_SEED } from "../worldcup/seed.js";
@@ -112,5 +115,20 @@ describe("CopanalhasDatabase", () => {
       }
     ]);
     store.close();
+  });
+
+  test("creates parent directories for file-backed databases", () => {
+    const tempRoot = mkdtempSync(join(tmpdir(), "copanalhas-storage-"));
+    const databasePath = join(tempRoot, "nested", "copanalhas.sqlite");
+
+    try {
+      const store = openCopanalhasDatabase(databasePath);
+      store.migrate();
+      store.close();
+    } finally {
+      rmSync(tempRoot, { recursive: true, force: true });
+    }
+
+    expect(true).toBe(true);
   });
 });
