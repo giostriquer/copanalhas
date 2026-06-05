@@ -11,6 +11,11 @@ import {
   handleDiscordPredictionInteraction,
   type PredictionInteractionOptions
 } from "./interactions.js";
+import {
+  handleDiscordOperatorCommand,
+  type OperatorCommandOptions,
+  type OperatorCommandResult
+} from "./operator-commands.js";
 
 export const parserVersion = "prediction-parser-v1";
 
@@ -33,6 +38,11 @@ export interface DiscordIngestionOptions {
 
 export interface DiscordClientReadyOptions {
   registerCommands?(options: RegisterCopanalhasCommandsOptions): Promise<void>;
+  operatorCommandOptions?: OperatorCommandOptions;
+  handleOperatorCommand?(
+    interaction: Parameters<typeof handleDiscordOperatorCommand>[0],
+    options: OperatorCommandOptions
+  ): Promise<OperatorCommandResult>;
 }
 
 export interface DiscordReadyClient {
@@ -148,8 +158,22 @@ export function createDiscordClient(
     onMessageResult(result);
   });
 
-  if (predictionInteractionOptions) {
+  if (predictionInteractionOptions || readyOptions.operatorCommandOptions) {
     client.on(Events.InteractionCreate, (interaction) => {
+      if (interaction.isChatInputCommand() && readyOptions.operatorCommandOptions) {
+        void (readyOptions.handleOperatorCommand ?? handleDiscordOperatorCommand)(
+          interaction,
+          readyOptions.operatorCommandOptions
+        ).catch((error: unknown) => {
+          console.error(error);
+        });
+        return;
+      }
+
+      if (!predictionInteractionOptions) {
+        return;
+      }
+
       void handleDiscordPredictionInteraction(interaction, predictionInteractionOptions).catch(
         (error: unknown) => {
           console.error(error);

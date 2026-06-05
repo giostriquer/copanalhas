@@ -1,8 +1,11 @@
 import { describe, expect, test, vi } from "vitest";
 
-import { handleDiscordClientReady, handleDiscordMessage } from "./ingestion.js";
+import { Events, type Interaction } from "discord.js";
+
+import { createDiscordClient, handleDiscordClientReady, handleDiscordMessage } from "./ingestion.js";
 import type { RegisterCopanalhasCommandsOptions } from "./commands.js";
 import type { CopanalhasConfig } from "./config.js";
+import type { OperatorCommandOptions } from "./operator-commands.js";
 import type { PredictionParseResult } from "../predictions/parser.js";
 
 describe("handleDiscordMessage", () => {
@@ -155,6 +158,28 @@ describe("handleDiscordClientReady", () => {
   });
 });
 
+describe("createDiscordClient interactions", () => {
+  test("routes chat input commands to the operator handler", async () => {
+    const handleOperatorCommand = vi.fn(async () => ({
+      action: "replied" as const,
+      content: "ok",
+      ephemeral: true as const
+    }));
+    const client = createDiscordClient(config(), vi.fn(), undefined, {
+      handleOperatorCommand,
+      operatorCommandOptions: operatorOptions()
+    });
+
+    client.emit(Events.InteractionCreate, {
+      isChatInputCommand: () => true
+    } as unknown as Interaction);
+    await new Promise((resolve) => setImmediate(resolve));
+
+    expect(handleOperatorCommand).toHaveBeenCalledOnce();
+    client.destroy();
+  });
+});
+
 function message(overrides: Partial<Parameters<typeof handleDiscordMessage>[0]> = {}) {
   return {
     id: "message-1",
@@ -180,5 +205,20 @@ function config(): CopanalhasConfig {
     timezone: "America/Sao_Paulo",
     footballDataToken: null,
     resultSyncEnabled: false
+  };
+}
+
+function operatorOptions(): OperatorCommandOptions {
+  return {
+    guildId: "guild-1",
+    channelId: "channel-1",
+    matches: [],
+    timeZone: "UTC",
+    resultSyncEnabled: false,
+    now: () => new Date("2026-06-11T23:00:00.000Z"),
+    postDueMatchCards: vi.fn(async () => ({ posted: [], skipped: [] })),
+    listPredictions: vi.fn(() => []),
+    listResults: vi.fn(() => []),
+    upsertResult: vi.fn()
   };
 }
