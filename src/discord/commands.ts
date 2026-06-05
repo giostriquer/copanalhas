@@ -36,6 +36,9 @@ export function createCopanalhasCommand() {
       subcommand.setName("status").setDescription("Show Copanalhas operator status")
     )
     .addSubcommand((subcommand) =>
+      subcommand.setName("standings").setDescription("Post or update group standings")
+    )
+    .addSubcommand((subcommand) =>
       subcommand.setName("leaderboard").setDescription("Show the current leaderboard")
     )
     .addSubcommand((subcommand) =>

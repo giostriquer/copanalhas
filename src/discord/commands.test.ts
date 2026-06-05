@@ -15,6 +15,7 @@ describe("Copanalhas slash command definition", () => {
         expect.objectContaining({ name: "post-today" }),
         expect.objectContaining({ name: "post-date" }),
         expect.objectContaining({ name: "status" }),
+        expect.objectContaining({ name: "standings" }),
         expect.objectContaining({ name: "leaderboard" }),
         expect.objectContaining({ name: "result" })
       ])
