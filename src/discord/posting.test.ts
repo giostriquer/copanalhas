@@ -42,6 +42,11 @@ function config(): CopanalhasConfig {
     discordToken: "token-value",
     guildId: "guild-1",
     channelId: "channel-1",
-    databasePath: "./data/copanalhas.sqlite"
+    databasePath: "./data/copanalhas.sqlite",
+    autoPostEnabled: true,
+    autoPostTime: "09:00",
+    timezone: "America/Sao_Paulo",
+    footballDataToken: null,
+    resultSyncEnabled: false
   };
 }

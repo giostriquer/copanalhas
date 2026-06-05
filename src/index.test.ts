@@ -116,12 +116,12 @@ describe("runCli", () => {
     });
 
     expect(postMatchCards).toHaveBeenCalledWith(
-      {
+      expect.objectContaining({
         discordToken: "token-value",
         guildId: "guild-1",
         channelId: "channel-1",
         databasePath: "./data/copanalhas.sqlite"
-      },
+      }),
       [
         expect.objectContaining({
           content: expect.stringContaining("Mexico vs South Africa")
@@ -153,12 +153,12 @@ describe("runCli", () => {
 
     expect(store.upsertMatches).toHaveBeenCalled();
     expect(startDiscord).toHaveBeenCalledWith(
-      {
+      expect.objectContaining({
         discordToken: "token-value",
         guildId: "guild-1",
         channelId: "channel-1",
         databasePath: "./tmp/bot.sqlite"
-      },
+      }),
       expect.any(Function),
       expect.objectContaining({
         guildId: "guild-1",

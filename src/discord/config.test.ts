@@ -17,7 +17,12 @@ describe("parseCopanalhasConfig", () => {
         discordToken: "token-value",
         guildId: "guild-1",
         channelId: "channel-1",
-        databasePath: "./tmp/test.sqlite"
+        databasePath: "./tmp/test.sqlite",
+        autoPostEnabled: true,
+        autoPostTime: "09:00",
+        timezone: "America/Sao_Paulo",
+        footballDataToken: null,
+        resultSyncEnabled: false
       }
     });
   });
@@ -35,8 +40,51 @@ describe("parseCopanalhasConfig", () => {
         discordToken: "token-value",
         guildId: "guild-1",
         channelId: "channel-1",
-        databasePath: "./data/copanalhas.sqlite"
+        databasePath: "./data/copanalhas.sqlite",
+        autoPostEnabled: true,
+        autoPostTime: "09:00",
+        timezone: "America/Sao_Paulo",
+        footballDataToken: null,
+        resultSyncEnabled: false
       }
+    });
+  });
+
+  test("accepts explicit autonomous runtime settings", () => {
+    expect(
+      parseCopanalhasConfig({
+        DISCORD_BOT_TOKEN: "token-value",
+        DISCORD_GUILD_ID: "guild-1",
+        DISCORD_CHANNEL_ID: "channel-1",
+        COPANALHAS_AUTO_POST_ENABLED: "false",
+        COPANALHAS_AUTO_POST_TIME: "10:30",
+        COPANALHAS_TIMEZONE: "UTC",
+        FOOTBALL_DATA_TOKEN: "football-data-token",
+        COPANALHAS_RESULT_SYNC_ENABLED: "true"
+      })
+    ).toEqual({
+      ok: true,
+      config: expect.objectContaining({
+        autoPostEnabled: false,
+        autoPostTime: "10:30",
+        timezone: "UTC",
+        footballDataToken: "football-data-token",
+        resultSyncEnabled: true
+      })
+    });
+  });
+
+  test("rejects invalid autonomous runtime settings", () => {
+    expect(
+      parseCopanalhasConfig({
+        DISCORD_BOT_TOKEN: "token-value",
+        DISCORD_GUILD_ID: "guild-1",
+        DISCORD_CHANNEL_ID: "channel-1",
+        COPANALHAS_AUTO_POST_TIME: "25:99"
+      })
+    ).toEqual({
+      ok: false,
+      errors: ["COPANALHAS_AUTO_POST_TIME must use HH:mm"]
     });
   });
 

@@ -3,6 +3,11 @@ export interface CopanalhasConfig {
   guildId: string;
   channelId: string;
   databasePath: string;
+  autoPostEnabled: boolean;
+  autoPostTime: string;
+  timezone: string;
+  footballDataToken: string | null;
+  resultSyncEnabled: boolean;
 }
 
 export type CopanalhasConfigResult =
@@ -17,6 +22,13 @@ export function parseCopanalhasConfig(
   const guildId = clean(env.DISCORD_GUILD_ID);
   const channelId = clean(env.DISCORD_CHANNEL_ID);
   const databasePath = clean(env.COPANALHAS_DATABASE_PATH) ?? "./data/copanalhas.sqlite";
+  const autoPostEnabled = clean(env.COPANALHAS_AUTO_POST_ENABLED)?.toLowerCase() !== "false";
+  const autoPostTime = clean(env.COPANALHAS_AUTO_POST_TIME) ?? "09:00";
+  const timezone = clean(env.COPANALHAS_TIMEZONE) ?? "America/Sao_Paulo";
+  const footballDataToken = clean(env.FOOTBALL_DATA_TOKEN) ?? null;
+  const resultSyncSetting = clean(env.COPANALHAS_RESULT_SYNC_ENABLED)?.toLowerCase();
+  const resultSyncEnabled =
+    footballDataToken !== null && (resultSyncSetting === undefined || resultSyncSetting === "true");
 
   if (!discordToken) {
     errors.push("DISCORD_BOT_TOKEN is required");
@@ -30,6 +42,10 @@ export function parseCopanalhasConfig(
     errors.push("DISCORD_CHANNEL_ID is required");
   }
 
+  if (!isValidTime(autoPostTime)) {
+    errors.push("COPANALHAS_AUTO_POST_TIME must use HH:mm");
+  }
+
   if (errors.length > 0 || !discordToken || !guildId || !channelId) {
     return { ok: false, errors };
   }
@@ -40,7 +56,12 @@ export function parseCopanalhasConfig(
       discordToken,
       guildId,
       channelId,
-      databasePath
+      databasePath,
+      autoPostEnabled,
+      autoPostTime,
+      timezone,
+      footballDataToken,
+      resultSyncEnabled
     }
   };
 }
@@ -48,4 +69,8 @@ export function parseCopanalhasConfig(
 function clean(value: string | undefined): string | undefined {
   const trimmed = value?.trim();
   return trimmed === "" ? undefined : trimmed;
+}
+
+function isValidTime(value: string): boolean {
+  return /^(?:[01]\d|2[0-3]):[0-5]\d$/u.test(value);
 }
