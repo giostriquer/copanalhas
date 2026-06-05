@@ -21,7 +21,7 @@ describe("handleOperatorCommand", () => {
 
     expect(result).toEqual({
       action: "replied",
-      content: "Posted 1 match card for 2026-06-11. Skipped 0 already posted.",
+      content: "Posted 1 matchday card for 1 match on 2026-06-11. Skipped 0 already posted.",
       ephemeral: true
     });
     expect(postDueMatchCards).toHaveBeenCalledWith("2026-06-11", "command");
@@ -37,7 +37,7 @@ describe("handleOperatorCommand", () => {
 
     expect(result).toEqual({
       action: "replied",
-      content: "Posted 0 match cards for 2026-06-12. Skipped 1 already posted.",
+      content: "Posted 0 matchday cards for 0 matches on 2026-06-12. Skipped 1 already posted.",
       ephemeral: true
     });
     expect(postDueMatchCards).toHaveBeenCalledWith("2026-06-12", "command");
@@ -252,7 +252,7 @@ describe("handleDiscordOperatorCommand", () => {
       flags: MessageFlags.Ephemeral
     });
     expect(interaction.editReply).toHaveBeenCalledWith({
-      content: "Posted 1 match card for 2026-06-11. Skipped 0 already posted.",
+      content: "Posted 1 matchday card for 1 match on 2026-06-11. Skipped 0 already posted.",
       allowedMentions: { parse: [] }
     });
     expect(interaction.reply).not.toHaveBeenCalled();

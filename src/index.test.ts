@@ -2,6 +2,8 @@ import { describe, expect, test, vi } from "vitest";
 
 import { runCli } from "./index.js";
 import type { CliStore } from "./index.js";
+import type { CopanalhasConfig } from "./discord/config.js";
+import type { MatchCardMessage } from "./discord/components.js";
 
 describe("runCli", () => {
   test("prints a leaderboard from stored predictions and results", async () => {
@@ -105,7 +107,9 @@ describe("runCli", () => {
 
   test("posts match cards for a selected World Cup date", async () => {
     const lines: string[] = [];
-    const postMatchCards = vi.fn(async () => undefined);
+    const postMatchCards = vi.fn(
+      async (_config: CopanalhasConfig, _messages: MatchCardMessage[]) => undefined
+    );
 
     await runCli(["post-matches-today", "2026-06-11"], {
       openDatabase: () => {
@@ -130,14 +134,27 @@ describe("runCli", () => {
       }),
       [
         expect.objectContaining({
-          content: expect.stringContaining("México vs África do Sul")
-        }),
-        expect.objectContaining({
-          content: expect.stringContaining("Coreia do Sul vs Tchéquia")
+          content: expect.stringContaining("MATCHES OF THE DAY"),
+          components: expect.arrayContaining([expect.anything()])
         })
       ]
     );
-    expect(lines).toEqual(["Posted 2 match cards for 2026-06-11."]);
+    const postedMessages = vi.mocked(postMatchCards).mock.calls[0]?.[1];
+    const postedMessage = postedMessages?.[0];
+
+    if (!postedMessage) {
+      throw new Error("expected a grouped matchday message");
+    }
+
+    expect(postedMessage.content).toContain("México vs África do Sul");
+    expect(postedMessage.content).toContain("Coreia do Sul vs Tchéquia");
+    expect(postedMessage.components[0]?.toJSON()).toMatchObject({
+      components: [
+        { custom_id: "copanalhas:predict:wc2026-001", label: "Palpite #1" },
+        { custom_id: "copanalhas:predict:wc2026-002", label: "Palpite #2" }
+      ]
+    });
+    expect(lines).toEqual(["Posted 1 matchday card for 2 matches on 2026-06-11."]);
   });
 
   test("prints a local standings preview with simulated first-day results", async () => {

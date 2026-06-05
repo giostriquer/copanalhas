@@ -63,7 +63,7 @@ export interface StartCopanalhasBotRuntimeOptions {
     readyOptions: DiscordClientReadyOptions
   ): Promise<unknown>;
   startInterval(callback: () => void | Promise<void>, intervalMs: number): RuntimeInterval;
-  sendMatchCard(matchId: string, message: MatchCardMessage): Promise<string>;
+  sendMatchCard(message: MatchCardMessage): Promise<string>;
   upsertStandingsMessage(
     message: StandingsDashboardMessage,
     existingMessageId: string | null

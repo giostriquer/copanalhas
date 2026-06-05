@@ -6,7 +6,7 @@ import {
   type RuntimeInterval
 } from "./app/bot-runtime.js";
 import { loadLocalEnvFile } from "./config/env.js";
-import { createMatchCardMessage, type MatchCardMessage } from "./discord/components.js";
+import { createMatchDayMessage, type MatchCardMessage } from "./discord/components.js";
 import { parseCopanalhasConfig, type CopanalhasConfig } from "./discord/config.js";
 import {
   startDiscordClient,
@@ -40,7 +40,7 @@ export interface CliDependencies {
     readyOptions: DiscordClientReadyOptions
   ): Promise<unknown>;
   startInterval?(callback: () => void | Promise<void>, intervalMs: number): RuntimeInterval;
-  sendMatchCard?(matchId: string, message: MatchCardMessage): Promise<string>;
+  sendMatchCard?(message: MatchCardMessage): Promise<string>;
   upsertStandingsMessage?(
     message: StandingsDashboardMessage,
     existingMessageId: string | null
@@ -125,13 +125,13 @@ async function postMatchesToday(argv: string[], dependencies: CliDependencies): 
   }
 
   const postMatchCards = dependencies.postMatchCards ?? postDiscordMatchCards;
-  await postMatchCards(
-    configResult.config,
-    matches.map((match) =>
-      createMatchCardMessage(match, { timeZone: configResult.config.timezone })
-    )
-  );
-  dependencies.writeLine(`Posted ${matches.length} match cards for ${date}.`);
+  await postMatchCards(configResult.config, [
+    createMatchDayMessage(matches, {
+      date,
+      timeZone: configResult.config.timezone
+    })
+  ]);
+  dependencies.writeLine(`Posted 1 matchday card for ${matches.length} matches on ${date}.`);
 }
 
 function recordResult(argv: string[], dependencies: CliDependencies): void {
@@ -200,7 +200,7 @@ async function startBot(dependencies: CliDependencies): Promise<void> {
     startInterval: dependencies.startInterval ?? startNodeInterval,
     sendMatchCard:
       dependencies.sendMatchCard ??
-      ((matchId, message) => sendDiscordMatchCard(configResult.config, matchId, message)),
+      ((message) => sendDiscordMatchCard(configResult.config, message)),
     upsertStandingsMessage:
       dependencies.upsertStandingsMessage ??
       ((message, existingMessageId) =>
@@ -289,7 +289,6 @@ function startNodeInterval(
 
 async function sendDiscordMatchCard(
   config: CopanalhasConfig,
-  _matchId: string,
   message: MatchCardMessage
 ): Promise<string> {
   const [messageId] = await postDiscordMatchCards(config, [message]);

@@ -37,6 +37,10 @@ export interface MatchCardViewOptions {
   timeZone?: string;
 }
 
+export interface MatchDayMessageOptions extends MatchCardViewOptions {
+  date: string;
+}
+
 export function buildPredictButtonCustomId(matchId: string): string {
   return [customIdPrefix, predictAction, matchId].join(":");
 }
@@ -84,13 +88,31 @@ export function createMatchCardMessage(
   return {
     content: view.content,
     components: [
-      new ActionRowBuilder<ButtonBuilder>().addComponents(
-        new ButtonBuilder()
-          .setCustomId(view.predictButtonCustomId)
-          .setLabel("Predict")
-          .setStyle(ButtonStyle.Primary)
-      )
+      new ActionRowBuilder<ButtonBuilder>().addComponents(createPredictButton(match, "Predict"))
     ]
+  };
+}
+
+export function createMatchDayMessage(
+  matches: readonly WorldCupMatch[],
+  options: MatchDayMessageOptions
+): MatchCardMessage {
+  return {
+    content: [
+      "MATCHES OF THE DAY",
+      options.date,
+      "",
+      ...matches.flatMap((match, index) => [
+        ...(index === 0 ? [] : [""]),
+        ...formatMatchDaySection(match, options)
+      ]),
+      "",
+      "Click a match button and enter a score like 2x1."
+    ].join("\n"),
+    components: chunk(
+      matches.map((match) => createPredictButton(match, `Palpite #${match.matchNumber}`)),
+      5
+    ).map((buttons) => new ActionRowBuilder<ButtonBuilder>().addComponents(...buttons))
   };
 }
 
@@ -118,4 +140,32 @@ function parseCustomId(customId: string, expectedAction: string): ParsedComponen
   }
 
   return { matchId };
+}
+
+function formatMatchDaySection(match: WorldCupMatch, options: MatchCardViewOptions): string[] {
+  const predictionWindow = formatPredictionWindow(match, options.timeZone ?? defaultTimeZone);
+
+  return [
+    `Match #${match.matchNumber} - Group ${match.group}`,
+    `${formatTeamName(match.homeTeam)} vs ${formatTeamName(match.awayTeam)}`,
+    predictionWindow.kickoffText,
+    predictionWindow.closesText
+  ];
+}
+
+function createPredictButton(match: WorldCupMatch, label: string): ButtonBuilder {
+  return new ButtonBuilder()
+    .setCustomId(buildPredictButtonCustomId(match.id))
+    .setLabel(label)
+    .setStyle(ButtonStyle.Primary);
+}
+
+function chunk<T>(values: readonly T[], size: number): T[][] {
+  const chunks: T[][] = [];
+
+  for (let index = 0; index < values.length; index += size) {
+    chunks.push(values.slice(index, index + size));
+  }
+
+  return chunks;
 }

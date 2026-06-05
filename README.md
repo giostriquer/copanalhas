@@ -25,8 +25,8 @@ money, and should not collect more Discord data than is needed to score the game
 
 This repository contains an autonomous Discord operator runtime, a reviewed
 World Cup seed subset, SQLite storage, scoring/leaderboard logic, Discord-native
-match card predictions, operator slash commands, prediction cutoffs, posted-card
-dedupe, and optional football-data.org result sync.
+matchday prediction cards, operator slash commands, prediction cutoffs,
+posted-card dedupe, and optional football-data.org result sync.
 
 Useful commands:
 
@@ -37,15 +37,17 @@ Useful commands:
 - `npm run dev -- leaderboard`
 
 Run `npm run dev -- bot` for the normal Discord experience. While the bot is
-running it registers `/copanalhas` operator commands, posts daily match cards at
-the configured local time, listens for prediction button/modal interactions, and
-can sync finished results from football-data.org when a token is configured.
+running it registers `/copanalhas` operator commands, posts daily matchday cards
+with one prediction button per match at the configured local time, listens for
+prediction button/modal interactions, and can sync finished results from
+football-data.org when a token is configured.
 Terminal commands remain useful for setup and manual recovery, but Discord slash
 commands are the preferred operator controls during the game.
 
 Useful operator commands while the bot is running:
 
-- `/copanalhas post-date date:2026-06-11`: post reviewed cards for a date.
+- `/copanalhas post-date date:2026-06-11`: post the reviewed matchday card for a
+  date.
 - `/copanalhas predictions match:wc2026-001`: privately inspect submitted picks
   for one match before or after lock.
 - `/copanalhas reveal match:wc2026-001`: publicly reveal submitted picks only

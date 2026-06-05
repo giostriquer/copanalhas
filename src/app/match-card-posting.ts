@@ -1,4 +1,4 @@
-import { createMatchCardMessage, type MatchCardMessage } from "../discord/components.js";
+import { createMatchDayMessage, type MatchCardMessage } from "../discord/components.js";
 import type {
   PostedMatchCardSource,
   StoredPostedMatchCard
@@ -13,7 +13,7 @@ export interface PostDueMatchCardsOptions {
   timeZone: string;
   now(): Date;
   listPostedMatchCards(): StoredPostedMatchCard[];
-  sendMatchCard(matchId: string, message: MatchCardMessage): Promise<string>;
+  sendMatchCard(message: MatchCardMessage): Promise<string>;
   recordPostedMatchCard(card: StoredPostedMatchCard): void;
 }
 
@@ -33,6 +33,7 @@ export async function postDueMatchCards(
   );
   const posted: string[] = [];
   const skipped: string[] = [];
+  const dueMatches: WorldCupMatch[] = [];
 
   for (const match of options.matches.filter((candidate) => candidate.localDate === options.date)) {
     if (alreadyPosted.has(match.id)) {
@@ -40,15 +41,27 @@ export async function postDueMatchCards(
       continue;
     }
 
-    const message = createMatchCardMessage(match, { timeZone: options.timeZone });
-    const messageId = await options.sendMatchCard(match.id, message);
+    dueMatches.push(match);
+  }
 
+  if (dueMatches.length === 0) {
+    return { posted, skipped };
+  }
+
+  const message = createMatchDayMessage(dueMatches, {
+    date: options.date,
+    timeZone: options.timeZone
+  });
+  const messageId = await options.sendMatchCard(message);
+  const postedAt = options.now().toISOString();
+
+  for (const match of dueMatches) {
     options.recordPostedMatchCard({
       matchId: match.id,
       channelId: options.channelId,
       messageId,
       postedForDate: options.date,
-      postedAt: options.now().toISOString(),
+      postedAt,
       postSource: options.postSource
     });
     alreadyPosted.add(match.id);

@@ -3,6 +3,7 @@ import { describe, expect, test } from "vitest";
 import {
   buildPredictButtonCustomId,
   buildScoreModalCustomId,
+  createMatchDayMessage,
   buildMatchCardView,
   createMatchCardMessage,
   createPredictionModal,
@@ -64,6 +65,51 @@ describe("match cards", () => {
     });
   });
 
+  test("creates one matchday payload with multiple match-specific buttons", () => {
+    const payload = createMatchDayMessage([firstSeedMatch(), secondSeedMatch()], {
+      date: "2026-06-11",
+      timeZone: "UTC"
+    });
+
+    expect(payload.content).toBe(
+      [
+        "MATCHES OF THE DAY",
+        "2026-06-11",
+        "",
+        "Match #1 - Group A",
+        "México vs África do Sul",
+        "Kickoff: <t:1781204400:F> (<t:1781204400:R>)",
+        "Predictions close: <t:1781202600:F> (<t:1781202600:R>)",
+        "",
+        "Match #2 - Group A",
+        "Coreia do Sul vs Tchéquia",
+        "Kickoff: <t:1781229600:F> (<t:1781229600:R>)",
+        "Predictions close: <t:1781227800:F> (<t:1781227800:R>)",
+        "",
+        "Click a match button and enter a score like 2x1."
+      ].join("\n")
+    );
+    expect(payload.components.map((row) => row.toJSON())).toEqual([
+      {
+        type: 1,
+        components: [
+          {
+            type: 2,
+            custom_id: "copanalhas:predict:wc2026-001",
+            label: "Palpite #1",
+            style: 1
+          },
+          {
+            type: 2,
+            custom_id: "copanalhas:predict:wc2026-002",
+            label: "Palpite #2",
+            style: 1
+          }
+        ]
+      }
+    ]);
+  });
+
   test("creates a score modal payload for one match", () => {
     const modal = createPredictionModal(firstSeedMatch()).toJSON();
     const row = modal.components[0] as { components: Array<{ custom_id?: string }> } | undefined;
@@ -79,6 +125,16 @@ function firstSeedMatch() {
 
   if (!match) {
     throw new Error("World Cup seed needs at least one match");
+  }
+
+  return match;
+}
+
+function secondSeedMatch() {
+  const match = WORLD_CUP_2026_SEED.matches[1];
+
+  if (!match) {
+    throw new Error("World Cup seed needs at least two matches");
   }
 
   return match;

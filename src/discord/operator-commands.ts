@@ -237,13 +237,18 @@ async function postForDate(
   options: OperatorCommandOptions
 ): Promise<OperatorCommandResult> {
   const result = await options.postDueMatchCards(date, "command");
+  const matchdayCardCount = result.posted.length > 0 ? 1 : 0;
 
   return reply(
-    `Posted ${result.posted.length} ${count(
+    `Posted ${matchdayCardCount} ${count(
+      matchdayCardCount,
+      "matchday card",
+      "matchday cards"
+    )} for ${result.posted.length} ${count(
       result.posted.length,
-      "match card",
-      "match cards"
-    )} for ${date}. Skipped ${result.skipped.length} already posted.`
+      "match",
+      "matches"
+    )} on ${date}. Skipped ${result.skipped.length} already posted.`
   );
 }
 

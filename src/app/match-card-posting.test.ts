@@ -4,6 +4,42 @@ import { postDueMatchCards } from "./match-card-posting.js";
 import type { WorldCupMatch } from "../worldcup/types.js";
 
 describe("postDueMatchCards", () => {
+  test("posts one grouped message for all due matches on the date", async () => {
+    const sent: string[] = [];
+    const recorded: Array<{ matchId: string; messageId: string }> = [];
+
+    const result = await postDueMatchCards({
+      matches: [match("wc2026-001", 1, "2026-06-11"), match("wc2026-002", 2, "2026-06-11")],
+      channelId: "channel-1",
+      date: "2026-06-11",
+      postSource: "command",
+      timeZone: "UTC",
+      now: () => new Date("2026-06-11T12:00:00.000Z"),
+      listPostedMatchCards: () => [],
+      sendMatchCard: async (message) => {
+        sent.push(message.content);
+        return "daily-message-1";
+      },
+      recordPostedMatchCard: (card) => {
+        recorded.push({ matchId: card.matchId, messageId: card.messageId });
+      }
+    });
+
+    expect(result).toEqual({
+      posted: ["wc2026-001", "wc2026-002"],
+      skipped: []
+    });
+    expect(sent).toEqual([
+      expect.stringContaining("MATCHES OF THE DAY")
+    ]);
+    expect(sent[0]).toContain("Home 1 vs Away 1");
+    expect(sent[0]).toContain("Home 2 vs Away 2");
+    expect(recorded).toEqual([
+      { matchId: "wc2026-001", messageId: "daily-message-1" },
+      { matchId: "wc2026-002", messageId: "daily-message-1" }
+    ]);
+  });
+
   test("posts only cards not already recorded for the channel", async () => {
     const sent: Array<{ matchId: string; content: string }> = [];
     const recorded: string[] = ["wc2026-001"];
@@ -24,9 +60,9 @@ describe("postDueMatchCards", () => {
           postedAt: "2026-06-11T09:00:00.000Z",
           postSource: "auto"
         })),
-      sendMatchCard: async (matchId, message) => {
-        sent.push({ matchId, content: message.content });
-        return `message-${matchId}`;
+      sendMatchCard: async (message) => {
+        sent.push({ matchId: "daily", content: message.content });
+        return "daily-message-2";
       },
       recordPostedMatchCard: (card) => {
         recorded.push(card.matchId);
@@ -39,7 +75,7 @@ describe("postDueMatchCards", () => {
     });
     expect(sent).toEqual([
       {
-        matchId: "wc2026-002",
+        matchId: "daily",
         content: expect.stringContaining("Home 2 vs Away 2")
       }
     ]);

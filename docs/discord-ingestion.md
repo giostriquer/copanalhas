@@ -5,15 +5,17 @@
 The preferred member workflow is Discord-native:
 
 1. The operator starts the bot with `npm run dev -- bot`.
-2. The bot posts one match card per reviewed World Cup match on the configured
-   daily schedule while the bot process is running.
-3. Each card has a `Predict` button with the match ID in its custom ID.
-4. A member clicks `Predict` and the bot opens a score modal for that match.
+2. The bot posts one matchday card for the configured daily schedule while the
+   bot process is running.
+3. The matchday card contains one prediction button per reviewed match, with the
+   match ID in each button custom ID.
+4. A member clicks the match's prediction button and the bot opens a score modal
+   for that match.
 5. The member enters only a score, such as `2x1` or `2-1`.
 6. The bot validates the score, upserts that user's prediction for the match,
    and sends a private confirmation.
 
-Match cards render kickoff and prediction-close values with Discord-native
+Matchday cards render kickoff and prediction-close values with Discord-native
 timestamp tokens so each member sees local and relative time in their client.
 
 Raw channel message parsing can remain as a development fallback, but it is no
@@ -72,9 +74,9 @@ raw content can be removed.
 
 ## Commands
 
-- `npm run dev -- post-matches-today [YYYY-MM-DD]`: posts one reviewed match card
-  per match on the selected date. If the date is omitted, the command uses the
-  current ISO date.
+- `npm run dev -- post-matches-today [YYYY-MM-DD]`: posts one matchday card for
+  reviewed matches on the selected date. If the date is omitted, the command uses
+  the current ISO date.
 - `npm run dev -- bot`: starts the long-running bot. It listens for the card
   button and modal interactions, saves predictions, registers operator slash
   commands, runs auto-posting, and runs optional result sync.
@@ -89,8 +91,9 @@ While `bot` is running, use `/copanalhas` for normal operator work:
 - `/copanalhas reveal match:wc2026-001`
 - `/copanalhas result match:wc2026-001 score:2-1`
 
-Posted match cards are deduped by match and channel, so restarting the process
-or re-running an operator post command does not repost cards already recorded in
+Posted matchday cards are deduped by match and channel. The grouped Discord
+message ID is recorded once per included match, so restarting the process or
+re-running an operator post command does not repost matches already recorded in
 SQLite.
 
 `predictions` is an operator-only private audit view. It can show submitted
