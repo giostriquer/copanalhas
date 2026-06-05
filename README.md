@@ -23,17 +23,25 @@ money, and should not collect more Discord data than is needed to score the game
 
 ## Current Status
 
-This repository contains the initial Discord bot implementation, a reviewed
-World Cup seed subset, SQLite storage, scoring/leaderboard logic, and the
-Discord-native match card prediction flow.
+This repository contains an autonomous Discord operator runtime, a reviewed
+World Cup seed subset, SQLite storage, scoring/leaderboard logic, Discord-native
+match card predictions, operator slash commands, prediction cutoffs, posted-card
+dedupe, and optional football-data.org result sync.
 
 Useful commands:
 
 - `npm run dev -- seed-matches`
-- `npm run dev -- post-matches-today [YYYY-MM-DD]`
 - `npm run dev -- bot`
-- `npm run dev -- record-result <matchId> <homeScore> <awayScore>`
+- `npm run dev -- post-matches-today 2026-06-11`
+- `npm run dev -- record-result wc2026-001 2 1`
 - `npm run dev -- leaderboard`
+
+Run `npm run dev -- bot` for the normal Discord experience. While the bot is
+running it registers `/copanalhas` operator commands, posts daily match cards at
+the configured local time, listens for prediction button/modal interactions, and
+can sync finished results from football-data.org when a token is configured.
+Terminal commands remain useful for setup and manual recovery, but Discord slash
+commands are the preferred operator controls during the game.
 
 ## Documentation
 

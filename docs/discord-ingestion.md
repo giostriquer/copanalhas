@@ -4,8 +4,9 @@
 
 The preferred member workflow is Discord-native:
 
-1. The operator runs `npm run dev -- post-matches-today [YYYY-MM-DD]`.
-2. The bot posts one match card per reviewed World Cup match on that date.
+1. The operator starts the bot with `npm run dev -- bot`.
+2. The bot posts one match card per reviewed World Cup match on the configured
+   daily schedule while the bot process is running.
 3. Each card has a `Predict` button with the match ID in its custom ID.
 4. A member clicks `Predict` and the bot opens a score modal for that match.
 5. The member enters only a score, such as `2x1` or `2-1`.
@@ -40,6 +41,16 @@ Every message or interaction path must check:
 Events outside the configured guild/channel are ignored before parsing or
 opening modals.
 
+## Prediction Cutoff
+
+Predictions close 30 minutes before `kickoffAtUtc`.
+
+- If `kickoffAtUtc` is missing, predictions are closed for that match until the
+  fixture time is verified.
+- At the exact close timestamp, submissions are rejected.
+- Members may update a prediction by submitting the modal again before the
+  cutoff; storage upserts by `(userId, matchId)`.
+
 ## Storage Policy
 
 Prefer storing parsed prediction records:
@@ -62,7 +73,20 @@ raw content can be removed.
   per match on the selected date. If the date is omitted, the command uses the
   current ISO date.
 - `npm run dev -- bot`: starts the long-running bot. It listens for the card
-  button and modal interactions and saves predictions.
+  button and modal interactions, saves predictions, registers operator slash
+  commands, runs auto-posting, and runs optional result sync.
+
+While `bot` is running, use `/copanalhas` for normal operator work:
+
+- `/copanalhas post-today`
+- `/copanalhas post-date date:2026-06-11`
+- `/copanalhas status`
+- `/copanalhas leaderboard`
+- `/copanalhas result match:wc2026-001 score:2-1`
+
+Posted match cards are deduped by match and channel, so restarting the process
+or re-running an operator post command does not repost cards already recorded in
+SQLite.
 
 ## Permissions
 

@@ -8,6 +8,7 @@ become a broad Discord scraper, odds tool, payment tool, or wagering system.
 ## Secrets
 
 - Store Discord bot tokens outside git.
+- Store `FOOTBALL_DATA_TOKEN` outside git.
 - Add `.env` files to `.gitignore`.
 - Provide examples with placeholder IDs only.
 - Rotate tokens if they are ever pasted into chat, commits, logs, or screenshots.
@@ -26,10 +27,15 @@ Avoid retaining raw private message content. Avoid collecting display names,
 profile data, unrelated channel messages, attachments, reactions, or member lists
 unless a later documented feature truly needs them.
 
+Optional provider sync stores only result provenance needed for auditability:
+provider name, provider match ID, final score, and fetch timestamp. It must not
+store raw provider responses.
+
 ## Operational Safety
 
 - Ignore all messages outside the configured guild/channel.
 - Make source-data imports auditable.
 - Log failures without exposing tokens or raw private message bodies.
 - Keep admin/operator commands explicit and restricted.
+- Use `/copanalhas` commands only in the configured guild/channel.
 - Document permission changes before applying them to the Discord app.

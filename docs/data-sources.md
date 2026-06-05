@@ -8,8 +8,8 @@ not casual runtime decoration.
 The preferred source order is:
 
 1. Official FIFA schedule/results pages and PDFs for human verification.
-2. `football-data.org` if its free World Cup coverage, token requirements,
-   limits, and terms fit this private project.
+2. `football-data.org` for optional finished-result sync if its free World Cup
+   coverage, token requirements, limits, and terms fit this private project.
 3. A reviewed hardcoded dataset maintained in-repo.
 4. Unofficial community APIs only after a safety and trust review.
 
@@ -20,8 +20,9 @@ official schedule release. FIFA also noted that the schedule became final after
 March 2026 playoff berths were resolved.
 
 `football-data.org` lists FIFA World Cup coverage in its free coverage table and
-provides a v4 API. It requires checking token setup and current tournament access
-before making it a dependency.
+provides a v4 API. Copanalhas uses it only when `FOOTBALL_DATA_TOKEN` is set and
+`COPANALHAS_RESULT_SYNC_ENABLED` allows sync. The consumed fields are provider
+match ID, `utcDate`, `status`, and `score.fullTime`.
 
 Community APIs such as `rezarahiminia/worldcup2026`, `worldcup26.ir`, and
 `wc2026api.com` advertise World Cup 2026 fixtures and scores. They are useful to
@@ -46,6 +47,27 @@ move to `data/worldcup/` with:
 - schema version
 
 Use `.codex/skills/update-worldcup-data/SKILL.md` for that update workflow.
+
+## Result Sync Policy
+
+FIFA-reviewed fixture data remains the schedule source of truth. Provider data is
+used only to confirm finished results for local matches that already have a
+reviewed `externalIds.footballData` mapping.
+
+Result sync stores:
+
+- final score
+- source `"football-data"`
+- provider match ID
+- fetch timestamp
+
+Manual results use source `"manual"` and can overwrite provider results. Provider
+sync must not overwrite existing manual results.
+
+The bot checks provider results only while `npm run dev -- bot` is running and a
+token is configured. Keep polling conservative; the free football-data.org client
+limit is small, and failures such as rate limiting should not break prediction
+collection.
 
 ## Safety Bar For APIs
 
