@@ -30,8 +30,14 @@ maintenance, terms, rate limits, ownership, and data provenance.
 
 ## Hardcoded Dataset Path
 
-If no safe API is selected, store schedule snapshots under a future
-`data/worldcup/` folder with:
+The current MVP seed lives in `src/worldcup/seed.ts`. It contains a reviewed
+opening group-stage subset from FIFA's public schedule page and stores source
+metadata with the data. Kickoff times are intentionally `null` where this pass
+verified the fixture/date/stadium but did not independently verify the local
+kickoff time.
+
+If no safe API is selected for the full tournament, future schedule snapshots may
+move to `data/worldcup/` with:
 
 - machine-readable JSON
 - a short source note
