@@ -157,8 +157,8 @@ describe("runCli", () => {
     expect(output).toContain("World Cup 2026 Group Standings");
     expect(output).toContain("Groups A-F");
     expect(output).toContain("Groups G-L");
-    expect(output).toContain("Group A");
-    expect(output).toContain("1 MEX");
+    expect(output).toContain("| GROUP A      | GROUP B      | GROUP C      |");
+    expect(output).toContain("| MEX  3  +1   | BIH  0   0   | BRA  0   0   |");
   });
 
   test("starts the Discord bot with parsed environment config", async () => {

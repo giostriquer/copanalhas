@@ -17,16 +17,9 @@ export interface StandingsDashboardMessage {
 export interface StandingsDashboardEmbed {
   title: string;
   description?: string;
-  fields?: StandingsDashboardField[];
   footer?: {
     text: string;
   };
-}
-
-export interface StandingsDashboardField {
-  name: string;
-  value: string;
-  inline: boolean;
 }
 
 const dashboardGroups: Array<{ key: StandingsPostKey; label: string; groups: string[] }> = [
@@ -46,47 +39,76 @@ export function createStandingsDashboardMessages(
     embeds: [
       {
         title: dashboard.label,
-        fields: dashboard.groups.map((group) => {
-          const standings = standingsByGroup.get(group);
-
-          if (!standings) {
-            throw new Error(`Missing standings data for Group ${group}.`);
-          }
-
-          return {
-            name: `Group ${group}`,
-            value: renderGroupTable(standings.rows),
-            inline: true
-          };
-        }),
+        description: renderDashboardTable(dashboard.groups, standingsByGroup),
         footer: {
-          text: "Columns: P W D L GD Pts"
+          text: "Columns: TEAM PTS GD"
         }
       }
     ]
   }));
 }
 
-function renderGroupTable(rows: readonly GroupStandingRow[]): string {
-  return [
-    "```text",
-    "# Team P W D L GD Pts",
-    ...rows.map(formatStandingRow),
-    "```"
-  ].join("\n");
+function renderDashboardTable(
+  groups: readonly string[],
+  standingsByGroup: ReadonlyMap<string, GroupStandings>
+): string {
+  const bands = chunk(groups, 3).flatMap((groupBand, index) => {
+    const band = renderGroupBand(
+      groupBand.map((group) => {
+        const standings = standingsByGroup.get(group);
+
+        if (!standings) {
+          throw new Error(`Missing standings data for Group ${group}.`);
+        }
+
+        return standings;
+      })
+    );
+
+    return index === 0 ? band : band.slice(1);
+  });
+
+  return ["```text", ...bands, "```"].join("\n");
 }
 
-function formatStandingRow(row: GroupStandingRow): string {
+function renderGroupBand(groups: readonly GroupStandings[]): string[] {
   return [
-    row.rank.toString(),
-    row.teamCode,
-    row.played.toString(),
-    row.wins.toString(),
-    row.draws.toString(),
-    row.losses.toString(),
-    formatGoalDifference(row.goalDifference),
-    row.points.toString()
-  ].join(" ");
+    border(groups.length),
+    cells(groups.map((group) => `GROUP ${group.group}`)),
+    border(groups.length),
+    ...[0, 1, 2, 3].map((rowIndex) =>
+      cells(groups.map((group) => formatStandingRow(group.rows[rowIndex])))
+    ),
+    border(groups.length)
+  ];
+}
+
+function formatStandingRow(row: GroupStandingRow | undefined): string {
+  if (!row) {
+    return "";
+  }
+
+  return `${row.teamCode} ${row.points.toString().padStart(2)} ${formatGoalDifference(
+    row.goalDifference
+  ).padStart(3)}`;
+}
+
+function cells(values: readonly string[]): string {
+  return `| ${values.map((value) => value.padEnd(12)).join(" | ")} |`;
+}
+
+function border(columnCount: number): string {
+  return Array.from({ length: columnCount }, () => "+--------------").join("") + "+";
+}
+
+function chunk(values: readonly string[], size: number): string[][] {
+  const chunks: string[][] = [];
+
+  for (let index = 0; index < values.length; index += size) {
+    chunks.push(values.slice(index, index + size));
+  }
+
+  return chunks;
 }
 
 function formatGoalDifference(goalDifference: number): string {

@@ -32,8 +32,11 @@ mega table is fragile on mobile and one post per group would create too much
 channel noise.
 
 Each dashboard message should use normal message content for the title and last
-updated line, plus six embeds, one embed per group. Each group embed uses a
-compact code-block table so ranks and columns stay readable in Discord.
+updated line, plus one embed whose description is a full-width ASCII code-block
+table. The table shows three groups per row band and keeps only the scan-critical
+dashboard columns: team code, points, and goal difference. This uses more of
+Discord's available embed width than inline fields, which wrap inside narrow
+columns.
 
 Recommended structure for the `Groups A-F` message:
 
@@ -43,25 +46,35 @@ Updated: 2026-06-11 18:42 America/Sao_Paulo
 
 Groups A-F
 
-Group A
-# Team             P  W  D  L  GF GA GD Pts
-1 Mexico           0  0  0  0   0  0  0   0
-2 South Africa     0  0  0  0   0  0  0   0
-3 Korea Republic   0  0  0  0   0  0  0   0
-4 Czechia          0  0  0  0   0  0  0   0
++--------------+--------------+--------------+
+| GROUP A      | GROUP B      | GROUP C      |
++--------------+--------------+--------------+
+| MEX  0   0   | BIH  0   0   | BRA  0   0   |
+| RSA  0   0   | CAN  0   0   | HAI  0   0   |
+| KOR  0   0   | QAT  0   0   | MAR  0   0   |
+| CZE  0   0   | SUI  0   0   | SCO  0   0   |
++--------------+--------------+--------------+
+| GROUP D      | GROUP E      | GROUP F      |
++--------------+--------------+--------------+
+| USA  0   0   | GER  0   0   | NED  0   0   |
+| PAR  0   0   | CUW  0   0   | JPN  0   0   |
+| AUS  0   0   | CIV  0   0   | SWE  0   0   |
+| TUR  0   0   | ECU  0   0   | TUN  0   0   |
++--------------+--------------+--------------+
 ```
 
 The rendered dashboard must preserve:
 
 - group label
 - rank
-- team name
-- played
-- wins, draws, losses
-- goals for, goals against
+- team code
 - goal difference
 - points
 - last updated timestamp
+
+Full per-group records such as played, wins, draws, losses, goals for, and goals
+against remain available in the computation layer and can be exposed later via a
+detail command if the dashboard needs a drill-down.
 
 The standings messages should be edited in place. If stored message IDs are
 missing or the messages were deleted, the bot should post replacements and store

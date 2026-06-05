@@ -253,10 +253,6 @@ function printStandingsPreview(dependencies: CliDependencies): void {
       if (embed.description) {
         dependencies.writeLine(embed.description);
       }
-
-      for (const field of embed.fields ?? []) {
-        dependencies.writeLine(`${field.name}\n${field.value}`);
-      }
     }
   }
 }

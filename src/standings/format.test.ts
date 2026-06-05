@@ -28,26 +28,19 @@ describe("createStandingsDashboardMessages", () => {
     expect(messages[1]?.embeds).toHaveLength(1);
     expect(messages[0]?.embeds[0]).toMatchObject({
       title: "Groups A-F",
-      fields: expect.arrayContaining([
-        expect.objectContaining({
-          name: "Group A",
-          inline: true
-        }),
-        expect.objectContaining({
-          name: "Group F",
-          inline: true
-        })
-      ])
+      description: expect.stringContaining("GROUP A")
     });
-    expect(messages[0]?.embeds[0]?.fields).toHaveLength(6);
+    expect(messages[0]?.embeds[0]?.description).toContain("GROUP F");
+    expect(messages[0]?.embeds[0]).not.toHaveProperty("fields");
     expect(messages[1]?.embeds[0]).toMatchObject({
-      title: "Groups G-L"
+      title: "Groups G-L",
+      description: expect.stringContaining("GROUP L")
     });
-    expect(messages[1]?.embeds[0]?.fields).toHaveLength(6);
+    expect(messages[1]?.embeds[0]).not.toHaveProperty("fields");
     expect(messages[0]?.content).toContain("Updated: 2026-06-11 23:30 UTC");
   });
 
-  test("renders compact group table rows with points and goal records", () => {
+  test("renders a full-width ASCII table with three group columns per band", () => {
     const messages = createStandingsDashboardMessages({
       standings: computeGroupStandings(WORLD_CUP_2026_SEED.matches, [
         result("wc2026-001", 2, 1)
@@ -55,15 +48,15 @@ describe("createStandingsDashboardMessages", () => {
       updatedAt: new Date("2026-06-11T23:30:00.000Z"),
       timeZone: "UTC"
     });
-    const groupA = messages[0]?.embeds[0]?.fields?.find((field) => field.name === "Group A");
+    const description = messages[0]?.embeds[0]?.description;
 
-    expect(groupA?.inline).toBe(true);
-    expect(groupA?.value).toContain("```text");
-    expect(groupA?.value).toContain("# Team P W D L GD Pts");
-    expect(groupA?.value).toContain("1 MEX");
-    expect(groupA?.value).toContain("1 MEX 1 1 0 0 +1 3");
-    expect(groupA?.value).toContain("4 RSA");
-    expect(groupA?.value).toContain("4 RSA 1 0 0 1 -1 0");
+    expect(description).toContain("```text");
+    expect(description).toContain("+--------------+--------------+--------------+");
+    expect(description).toContain("| GROUP A      | GROUP B      | GROUP C      |");
+    expect(description).toContain("| MEX  3  +1   | BIH  0   0   | BRA  0   0   |");
+    expect(description).toContain("| RSA  0  -1   | SUI  0   0   | SCO  0   0   |");
+    expect(description).toContain("| GROUP D      | GROUP E      | GROUP F      |");
+    expect(messages[0]?.embeds[0]?.footer).toEqual({ text: "Columns: TEAM PTS GD" });
   });
 });
 
