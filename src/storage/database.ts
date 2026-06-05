@@ -367,6 +367,14 @@ export class CopanalhasDatabase {
     return Number(result.changes);
   }
 
+  clearPredictionsForMatches(matchIds: readonly string[]): number {
+    return this.clearRowsForMatches("predictions", matchIds);
+  }
+
+  clearResultsForMatches(matchIds: readonly string[]): number {
+    return this.clearRowsForMatches("results", matchIds);
+  }
+
   recordStandingsPost(post: StoredStandingsPost): void {
     this.database
       .prepare(`
@@ -445,6 +453,19 @@ export class CopanalhasDatabase {
     if (!columns.some((column) => column.name === columnName)) {
       this.database.exec(`ALTER TABLE ${tableName} ADD COLUMN ${columnName} ${columnType}`);
     }
+  }
+
+  private clearRowsForMatches(tableName: "predictions" | "results", matchIds: readonly string[]): number {
+    if (matchIds.length === 0) {
+      return 0;
+    }
+
+    const placeholders = matchIds.map(() => "?").join(", ");
+    const result = this.database
+      .prepare(`DELETE FROM ${tableName} WHERE match_id IN (${placeholders})`)
+      .run(...matchIds);
+
+    return Number(result.changes);
   }
 }
 

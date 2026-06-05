@@ -15,15 +15,36 @@ describe("Copanalhas slash command definition", () => {
         expect.objectContaining({ name: "post-today" }),
         expect.objectContaining({ name: "post-date" }),
         expect.objectContaining({ name: "clear-posted-date" }),
+        expect.objectContaining({ name: "reset-test-date" }),
         expect.objectContaining({ name: "status" }),
         expect.objectContaining({ name: "standings" }),
         expect.objectContaining({ name: "leaderboard" }),
+        expect.objectContaining({ name: "meus-palpites" }),
         expect.objectContaining({ name: "predictions" }),
         expect.objectContaining({ name: "reveal" }),
         expect.objectContaining({ name: "result" })
       ])
     });
     expect(copanalhasCommandName).toBe("copanalhas");
+  });
+
+  test("enables autocomplete for match-based operator commands", () => {
+    const command = createCopanalhasCommand().toJSON();
+    const matchSubcommands = command.options?.filter((option) =>
+      ["predictions", "reveal", "result"].includes(option.name)
+    );
+
+    expect(matchSubcommands).toHaveLength(3);
+    for (const subcommand of matchSubcommands ?? []) {
+      expect((subcommand as { options?: unknown[] }).options).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            name: "match",
+            autocomplete: true
+          })
+        ])
+      );
+    }
   });
 
   test("registers commands on the configured guild", async () => {

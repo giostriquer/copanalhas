@@ -12,7 +12,9 @@ import {
   type PredictionInteractionOptions
 } from "./interactions.js";
 import {
+  handleDiscordOperatorAutocomplete,
   handleDiscordOperatorCommand,
+  type OperatorAutocompleteResult,
   type OperatorCommandOptions,
   type OperatorCommandResult
 } from "./operator-commands.js";
@@ -43,6 +45,10 @@ export interface DiscordClientReadyOptions {
     interaction: Parameters<typeof handleDiscordOperatorCommand>[0],
     options: OperatorCommandOptions
   ): Promise<OperatorCommandResult>;
+  handleOperatorAutocomplete?(
+    interaction: Parameters<typeof handleDiscordOperatorAutocomplete>[0],
+    options: OperatorCommandOptions
+  ): Promise<OperatorAutocompleteResult>;
 }
 
 export interface DiscordReadyClient {
@@ -160,6 +166,16 @@ export function createDiscordClient(
 
   if (predictionInteractionOptions || readyOptions.operatorCommandOptions) {
     client.on(Events.InteractionCreate, (interaction) => {
+      if (interaction.isAutocomplete() && readyOptions.operatorCommandOptions) {
+        void (readyOptions.handleOperatorAutocomplete ?? handleDiscordOperatorAutocomplete)(
+          interaction,
+          readyOptions.operatorCommandOptions
+        ).catch((error: unknown) => {
+          console.error(error);
+        });
+        return;
+      }
+
       if (interaction.isChatInputCommand() && readyOptions.operatorCommandOptions) {
         void (readyOptions.handleOperatorCommand ?? handleDiscordOperatorCommand)(
           interaction,

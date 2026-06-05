@@ -114,6 +114,8 @@ function createStore(): BotRuntimeStore {
     listPostedMatchCards: vi.fn(() => []),
     recordPostedMatchCard: vi.fn(),
     clearPostedMatchCardsForDate: vi.fn(() => 0),
+    clearPredictionsForMatches: vi.fn(() => 0),
+    clearResultsForMatches: vi.fn(() => 0),
     listStandingsPosts: vi.fn(() => []),
     recordStandingsPost: vi.fn(),
     insertScoringRun: vi.fn()

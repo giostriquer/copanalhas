@@ -7,6 +7,7 @@ import {
   parsePredictButtonCustomId,
   parseScoreModalCustomId,
 } from "./components.js";
+import { formatUserPredictionSummary } from "../predictions/personal-summary.js";
 import type { StoredPrediction } from "../storage/database.js";
 import {
   canSubmitPredictionAt,
@@ -266,9 +267,18 @@ async function handleScoreModal(
 
   await options.upsertPrediction(prediction);
   await interaction.reply({
-    content: `Palpite salvo: ${formatTeamName(match.homeTeam)} ${
-      parsedScore.score.normalizedText
-    } ${formatTeamName(match.awayTeam)}`,
+    content: [
+      `Palpite salvo: ${formatTeamName(match.homeTeam)} ${
+        parsedScore.score.normalizedText
+      } ${formatTeamName(match.awayTeam)}`,
+      "",
+      formatUserPredictionSummary({
+        userId: interaction.userId,
+        date: match.localDate,
+        matches: options.matches,
+        predictions: withAcceptedPrediction(options.listPredictions(), prediction)
+      })
+    ].join("\n"),
     ephemeral: true
   });
 
@@ -286,6 +296,20 @@ function findExistingPrediction(
   return options
     .listPredictions()
     .find((prediction) => prediction.userId === userId && prediction.matchId === matchId);
+}
+
+function withAcceptedPrediction(
+  predictions: readonly StoredPrediction[],
+  acceptedPrediction: StoredPrediction
+): StoredPrediction[] {
+  return [
+    ...predictions.filter(
+      (prediction) =>
+        prediction.userId !== acceptedPrediction.userId ||
+        prediction.matchId !== acceptedPrediction.matchId
+    ),
+    acceptedPrediction
+  ];
 }
 
 function parseScoreFields(homeInput: string, awayInput: string) {

@@ -96,7 +96,12 @@ describe("handlePredictionInteraction", () => {
     }
     expect(storedPredictions).toEqual([result.prediction]);
     expect(interaction.reply).toHaveBeenCalledWith({
-      content: "Palpite salvo: México 2-1 África do Sul",
+      content: [
+        "Palpite salvo: México 2-1 África do Sul",
+        "",
+        "Meus palpites - 2026-06-11",
+        "#1 México x África do Sul: 2x1"
+      ].join("\n"),
       ephemeral: true
     });
   });
@@ -257,7 +262,12 @@ describe("handleDiscordPredictionInteraction", () => {
       parserVersion: modalPredictionParserVersion
     });
     expect(interaction.reply).toHaveBeenCalledWith({
-      content: "Palpite salvo: México 2-1 África do Sul",
+      content: [
+        "Palpite salvo: México 2-1 África do Sul",
+        "",
+        "Meus palpites - 2026-06-11",
+        "#1 México x África do Sul: 2x1"
+      ].join("\n"),
       flags: MessageFlags.Ephemeral
     });
   });

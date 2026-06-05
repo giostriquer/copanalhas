@@ -2,6 +2,7 @@ import { describe, expect, test, vi } from "vitest";
 import { MessageFlags, type Interaction } from "discord.js";
 
 import {
+  handleOperatorAutocomplete,
   handleDiscordOperatorCommand,
   handleOperatorCommand,
   type OperatorCommandInput,
@@ -62,6 +63,39 @@ describe("handleOperatorCommand", () => {
     expect(clearPostedMatchCards).toHaveBeenCalledWith("2026-06-11");
   });
 
+  test("reset-test-date clears posted cards, predictions, and results for the requested date", async () => {
+    const clearPostedMatchCards = vi.fn(() => 2);
+    const clearPredictionsForMatches = vi.fn(() => 3);
+    const clearResultsForMatches = vi.fn(() => 1);
+    const updateStandingsDashboard = vi.fn(async () => ({ action: "updated" as const, posts: [] }));
+
+    const result = await handleOperatorCommand(
+      command("reset-test-date", { date: "2026-06-11" }),
+      options({
+        clearPostedMatchCards,
+        clearPredictionsForMatches,
+        clearResultsForMatches,
+        updateStandingsDashboard
+      })
+    );
+
+    expect(result).toEqual({
+      action: "replied",
+      content: [
+        "Reset test data for 2026-06-11.",
+        "Posted card records: 2",
+        "Predictions: 3",
+        "Results: 1",
+        "Standings refreshed."
+      ].join("\n"),
+      ephemeral: true
+    });
+    expect(clearPostedMatchCards).toHaveBeenCalledWith("2026-06-11");
+    expect(clearPredictionsForMatches).toHaveBeenCalledWith(["wc2026-001", "wc2026-002"]);
+    expect(clearResultsForMatches).toHaveBeenCalledWith(["wc2026-001", "wc2026-002"]);
+    expect(updateStandingsDashboard).toHaveBeenCalledOnce();
+  });
+
   test("status reports missing kickoff times and result sync state", async () => {
     await expect(handleOperatorCommand(command("status"), options())).resolves.toEqual({
       action: "replied",
@@ -117,6 +151,46 @@ describe("handleOperatorCommand", () => {
         "Copanalhas Leaderboard",
         "1. u1 - 3 pts (1 exact, 0 closest, 1 match)",
         "2. u2 - 1 pt (0 exact, 1 closest, 1 match)"
+      ].join("\n"),
+      ephemeral: true
+    });
+  });
+
+  test("meus-palpites returns the caller's predictions for the current local date", async () => {
+    const result = await handleOperatorCommand(
+      command("meus-palpites"),
+      options({
+        listPredictions: () => [storedPrediction("operator-1", 2, 1, "2026-06-10T12:00:00.000Z")]
+      })
+    );
+
+    expect(result).toEqual({
+      action: "replied",
+      content: [
+        "Meus palpites - 2026-06-11",
+        "#1 México x África do Sul: 2x1",
+        "#2 Coreia do Sul x Tchéquia: sem palpite"
+      ].join("\n"),
+      ephemeral: true
+    });
+  });
+
+  test("meus-palpites can inspect another date without returning the whole tournament", async () => {
+    const result = await handleOperatorCommand(
+      command("meus-palpites", { date: "2026-06-12" }),
+      options({
+        listPredictions: () => [
+          { ...storedPrediction("operator-1", 1, 1, "2026-06-10T12:00:00.000Z"), matchId: "wc2026-003" }
+        ]
+      })
+    );
+
+    expect(result).toEqual({
+      action: "replied",
+      content: [
+        "Meus palpites - 2026-06-12",
+        "#3 Canadá x Bósnia e Herzegovina: 1x1",
+        "#4 Estados Unidos x Paraguai: sem palpite"
       ].join("\n"),
       ephemeral: true
     });
@@ -233,6 +307,59 @@ describe("handleOperatorCommand", () => {
   });
 });
 
+describe("handleOperatorAutocomplete", () => {
+  test("returns filtered match choices for match options", () => {
+    const result = handleOperatorAutocomplete(
+      {
+        guildId: "guild-1",
+        channelId: "channel-1",
+        userId: "operator-1",
+        subcommand: "predictions",
+        focusedOptionName: "match",
+        focusedValue: "mex"
+      },
+      options()
+    );
+
+    expect(result).toEqual({
+      action: "responded",
+      choices: [
+        {
+          name: "#1 · México x África do Sul · 2026-06-11 13:00",
+          value: "wc2026-001"
+        },
+        {
+          name: "#28 · México x Coreia do Sul · 2026-06-18 19:00",
+          value: "wc2026-028"
+        },
+        {
+          name: "#53 · Tchéquia x México · 2026-06-24 19:00",
+          value: "wc2026-053"
+        }
+      ]
+    });
+  });
+
+  test("limits autocomplete choices to Discord's maximum of 25", () => {
+    const result = handleOperatorAutocomplete(
+      {
+        guildId: "guild-1",
+        channelId: "channel-1",
+        userId: "operator-1",
+        subcommand: "result",
+        focusedOptionName: "match",
+        focusedValue: ""
+      },
+      options()
+    );
+
+    if (result.action !== "responded") {
+      throw new Error("expected autocomplete choices");
+    }
+    expect(result.choices).toHaveLength(25);
+  });
+});
+
 describe("handleDiscordOperatorCommand", () => {
   test("maps private Discord chat input commands to deferred ephemeral replies", async () => {
     const interaction = discordCommandInteraction("status");
@@ -321,6 +448,8 @@ function options(overrides: Partial<OperatorCommandOptions> = {}): OperatorComma
     now: () => new Date("2026-06-11T23:00:00.000Z"),
     postDueMatchCards: vi.fn(async () => ({ posted: [], skipped: [] })),
     clearPostedMatchCards: vi.fn(() => 0),
+    clearPredictionsForMatches: vi.fn(() => 0),
+    clearResultsForMatches: vi.fn(() => 0),
     listPredictions: vi.fn(() => []),
     listResults: vi.fn(() => []),
     upsertResult: vi.fn(),

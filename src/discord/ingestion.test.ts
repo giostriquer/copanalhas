@@ -171,11 +171,32 @@ describe("createDiscordClient interactions", () => {
     });
 
     client.emit(Events.InteractionCreate, {
+      isAutocomplete: () => false,
       isChatInputCommand: () => true
     } as unknown as Interaction);
     await new Promise((resolve) => setImmediate(resolve));
 
     expect(handleOperatorCommand).toHaveBeenCalledOnce();
+    client.destroy();
+  });
+
+  test("routes autocomplete interactions to the operator autocomplete handler", async () => {
+    const handleOperatorAutocomplete = vi.fn(async () => ({
+      action: "responded" as const,
+      choices: [{ name: "#1 · México x África do Sul", value: "wc2026-001" }]
+    }));
+    const client = createDiscordClient(config(), vi.fn(), undefined, {
+      handleOperatorAutocomplete,
+      operatorCommandOptions: operatorOptions()
+    });
+
+    client.emit(Events.InteractionCreate, {
+      isChatInputCommand: () => false,
+      isAutocomplete: () => true
+    } as unknown as Interaction);
+    await new Promise((resolve) => setImmediate(resolve));
+
+    expect(handleOperatorAutocomplete).toHaveBeenCalledOnce();
     client.destroy();
   });
 });
@@ -218,6 +239,8 @@ function operatorOptions(): OperatorCommandOptions {
     now: () => new Date("2026-06-11T23:00:00.000Z"),
     postDueMatchCards: vi.fn(async () => ({ posted: [], skipped: [] })),
     clearPostedMatchCards: vi.fn(() => 0),
+    clearPredictionsForMatches: vi.fn(() => 0),
+    clearResultsForMatches: vi.fn(() => 0),
     listPredictions: vi.fn(() => []),
     listResults: vi.fn(() => []),
     upsertResult: vi.fn(),

@@ -51,8 +51,13 @@ Useful operator commands while the bot is running:
   date.
 - `/copanalhas clear-posted-date date:2026-06-11`: clear posted-card dedupe
   records for a date so it can be reposted during testing.
+- `/copanalhas reset-test-date date:2026-06-11`: clear posted cards,
+  predictions, and results for one test date, then refresh standings.
+- `/copanalhas meus-palpites`: privately show your predictions for today's
+  matches. Add `date:2026-06-11` to inspect another matchday.
 - `/copanalhas predictions match:wc2026-001`: privately inspect submitted picks
-  for one match before or after lock.
+  for one match before or after lock. Match fields support autocomplete by team
+  or match number.
 - `/copanalhas reveal match:wc2026-001`: publicly reveal submitted picks only
   after predictions have closed.
 - `/copanalhas result match:wc2026-001 score:2-1`: record or override a result.

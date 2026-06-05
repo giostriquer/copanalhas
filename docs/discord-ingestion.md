@@ -93,8 +93,10 @@ While `bot` is running, use `/copanalhas` for normal operator work:
 - `/copanalhas post-today`
 - `/copanalhas post-date date:2026-06-11`
 - `/copanalhas clear-posted-date date:2026-06-11`
+- `/copanalhas reset-test-date date:2026-06-11`
 - `/copanalhas status`
 - `/copanalhas leaderboard`
+- `/copanalhas meus-palpites`
 - `/copanalhas predictions match:wc2026-001`
 - `/copanalhas reveal match:wc2026-001`
 - `/copanalhas result match:wc2026-001 score:2-1`
@@ -105,11 +107,23 @@ re-running an operator post command does not repost matches already recorded in
 SQLite. During smoke tests, `clear-posted-date` removes only those dedupe rows
 for the configured channel and selected date.
 
+`reset-test-date` is the broader smoke-test reset. It clears posted-card dedupe
+records, predictions, and results for matches on the selected date, then refreshes
+standings so temporary manual results do not keep affecting group tables.
+
+`meus-palpites` is member-facing and private. It defaults to the current local
+date in the configured timezone and shows only that matchday's predictions for
+the caller. The optional `date` argument exists for test runs and catch-up days.
+
 `predictions` is an operator-only private audit view. It can show submitted
 picks before the prediction window closes, which helps with smoke tests and
 moderation without exposing picks to other members. `reveal` is the public view:
 it refuses while the prediction window is still open and posts the pick list only
 after the match cutoff has passed.
+
+Match arguments for `predictions`, `reveal`, and `result` use Discord
+autocomplete. Operators can search by match number, team code, translated team
+name, original team name, or date instead of typing internal match IDs.
 
 ## Permissions
 

@@ -99,6 +99,66 @@ describe("CopanalhasDatabase", () => {
     store.close();
   });
 
+  test("clears predictions and results for selected matches only", () => {
+    const store = openCopanalhasDatabase(":memory:");
+    store.migrate();
+
+    store.upsertPrediction({
+      userId: "user-1",
+      matchId: "wc2026-001",
+      messageId: "message-1",
+      homeScore: 1,
+      awayScore: 0,
+      submittedAt: "2026-06-10T12:00:00.000Z",
+      updatedAt: null,
+      parserVersion: "prediction-modal-v1"
+    });
+    store.upsertPrediction({
+      userId: "user-2",
+      matchId: "wc2026-002",
+      messageId: "message-2",
+      homeScore: 2,
+      awayScore: 1,
+      submittedAt: "2026-06-10T12:01:00.000Z",
+      updatedAt: null,
+      parserVersion: "prediction-modal-v1"
+    });
+    store.upsertPrediction({
+      userId: "user-3",
+      matchId: "wc2026-003",
+      messageId: "message-3",
+      homeScore: 0,
+      awayScore: 0,
+      submittedAt: "2026-06-10T12:02:00.000Z",
+      updatedAt: null,
+      parserVersion: "prediction-modal-v1"
+    });
+    store.upsertResult({
+      matchId: "wc2026-001",
+      homeScore: 2,
+      awayScore: 1,
+      recordedAt: "2026-06-11T23:00:00.000Z",
+      resultSource: "manual",
+      externalMatchId: null,
+      fetchedAt: null
+    });
+    store.upsertResult({
+      matchId: "wc2026-003",
+      homeScore: 1,
+      awayScore: 1,
+      recordedAt: "2026-06-12T23:00:00.000Z",
+      resultSource: "manual",
+      externalMatchId: null,
+      fetchedAt: null
+    });
+
+    expect(store.clearPredictionsForMatches(["wc2026-001", "wc2026-002"])).toBe(2);
+    expect(store.clearResultsForMatches(["wc2026-001", "wc2026-002"])).toBe(1);
+    expect(store.listPredictions().map((prediction) => prediction.matchId)).toEqual(["wc2026-003"]);
+    expect(store.listResults().map((result) => result.matchId)).toEqual(["wc2026-003"]);
+    store.close();
+  });
+
   test("records posted match cards by match and channel", () => {
     const store = openCopanalhasDatabase(":memory:");
     store.migrate();

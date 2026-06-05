@@ -44,6 +44,17 @@ export function createCopanalhasCommand() {
         )
     )
     .addSubcommand((subcommand) =>
+      subcommand
+        .setName("reset-test-date")
+        .setDescription("Clear test data for one matchday")
+        .addStringOption((option) =>
+          option
+            .setName("date")
+            .setDescription("Date to reset in YYYY-MM-DD format")
+            .setRequired(true)
+        )
+    )
+    .addSubcommand((subcommand) =>
       subcommand.setName("status").setDescription("Show Copanalhas operator status")
     )
     .addSubcommand((subcommand) =>
@@ -54,10 +65,25 @@ export function createCopanalhasCommand() {
     )
     .addSubcommand((subcommand) =>
       subcommand
+        .setName("meus-palpites")
+        .setDescription("Show your predictions for one matchday")
+        .addStringOption((option) =>
+          option
+            .setName("date")
+            .setDescription("Date to inspect in YYYY-MM-DD format; defaults to today")
+            .setRequired(false)
+        )
+    )
+    .addSubcommand((subcommand) =>
+      subcommand
         .setName("predictions")
         .setDescription("Privately inspect predictions for one match")
         .addStringOption((option) =>
-          option.setName("match").setDescription("Match id, like wc2026-001").setRequired(true)
+          option
+            .setName("match")
+            .setDescription("Search by match number or team")
+            .setRequired(true)
+            .setAutocomplete(true)
         )
     )
     .addSubcommand((subcommand) =>
@@ -65,7 +91,11 @@ export function createCopanalhasCommand() {
         .setName("reveal")
         .setDescription("Publicly reveal locked predictions for one match")
         .addStringOption((option) =>
-          option.setName("match").setDescription("Match id, like wc2026-001").setRequired(true)
+          option
+            .setName("match")
+            .setDescription("Search by match number or team")
+            .setRequired(true)
+            .setAutocomplete(true)
         )
     )
     .addSubcommand((subcommand) =>
@@ -73,7 +103,11 @@ export function createCopanalhasCommand() {
         .setName("result")
         .setDescription("Record or override a match result")
         .addStringOption((option) =>
-          option.setName("match").setDescription("Match id, like wc2026-001").setRequired(true)
+          option
+            .setName("match")
+            .setDescription("Search by match number or team")
+            .setRequired(true)
+            .setAutocomplete(true)
         )
         .addStringOption((option) =>
           option.setName("score").setDescription("Final score, like 2-1").setRequired(true)
