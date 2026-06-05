@@ -4,9 +4,11 @@ import type { PostDueMatchCardsResult } from "../app/match-card-posting.js";
 import { getLocalDateTimeParts } from "../app/scheduler.js";
 import { formatLeaderboard } from "../leaderboard/format.js";
 import { parseScoreInput } from "../predictions/score-parser.js";
-import { buildLeaderboard, scoreMatch, type MatchResult, type ScorePrediction } from "../scoring/scoring.js";
+import { formatPredictionAudit, formatPredictionReveal } from "../predictions/visibility.js";
+import { buildLeaderboard, scoreMatch, type MatchResult } from "../scoring/scoring.js";
 import type {
   PostedMatchCardSource,
+  StoredPrediction,
   StoredResult,
   StoredStandingsPost
 } from "../storage/database.js";
@@ -20,6 +22,8 @@ export type OperatorSubcommand =
   | "status"
   | "standings"
   | "leaderboard"
+  | "predictions"
+  | "reveal"
   | "result";
 
 export interface OperatorCommandInput {
@@ -38,7 +42,7 @@ export interface OperatorCommandOptions {
   resultSyncEnabled: boolean;
   now(): Date;
   postDueMatchCards(date: string, postSource: PostedMatchCardSource): Promise<PostDueMatchCardsResult>;
-  listPredictions(): ScorePrediction[];
+  listPredictions(): StoredPrediction[];
   listResults(): MatchResult[];
   upsertResult(result: StoredResult): void | Promise<void>;
   listStandingsPosts(): StoredStandingsPost[];
@@ -47,7 +51,7 @@ export interface OperatorCommandOptions {
 
 export type OperatorCommandResult =
   | { action: "ignored"; reason: "wrong-guild" | "wrong-channel" | "unknown-command" }
-  | { action: "replied"; content: string; ephemeral: true };
+  | { action: "replied"; content: string; ephemeral: boolean };
 
 export async function handleOperatorCommand(
   command: OperatorCommandInput,
@@ -100,6 +104,38 @@ export async function handleOperatorCommand(
       .flatMap((result) => scoreMatch(result, options.listPredictions()));
 
     return reply(formatLeaderboard(buildLeaderboard(scoredPredictions)));
+  }
+
+  if (command.subcommand === "predictions") {
+    const match = matchFromCommand(command, options);
+
+    if (!match) {
+      return reply(`Unknown match ${command.options.match}.`);
+    }
+
+    return reply(
+      formatPredictionAudit({
+        match,
+        predictions: options.listPredictions(),
+        now: options.now()
+      })
+    );
+  }
+
+  if (command.subcommand === "reveal") {
+    const match = matchFromCommand(command, options);
+
+    if (!match) {
+      return reply(`Unknown match ${command.options.match}.`);
+    }
+
+    const reveal = formatPredictionReveal({
+      match,
+      predictions: options.listPredictions(),
+      now: options.now()
+    });
+
+    return reply(reveal.content, !reveal.ok);
   }
 
   if (command.subcommand === "result") {
@@ -159,10 +195,17 @@ export async function handleDiscordOperatorCommand(
   );
 
   if (result.action === "replied") {
-    await interaction.reply({
-      content: result.content,
-      flags: MessageFlags.Ephemeral
-    });
+    if (result.ephemeral) {
+      await interaction.reply({
+        content: result.content,
+        flags: MessageFlags.Ephemeral
+      });
+    } else {
+      await interaction.reply({
+        content: result.content,
+        allowedMentions: { parse: [] }
+      });
+    }
   }
 
   return result;
@@ -193,6 +236,12 @@ function readCommandOptions(
     };
   }
 
+  if (subcommand === "predictions" || subcommand === "reveal") {
+    return {
+      match: interaction.options.getString("match", true)
+    };
+  }
+
   if (subcommand === "result") {
     return {
       match: interaction.options.getString("match", true),
@@ -210,6 +259,8 @@ function parseOperatorSubcommand(value: string): OperatorSubcommand | undefined 
     value === "status" ||
     value === "standings" ||
     value === "leaderboard" ||
+    value === "predictions" ||
+    value === "reveal" ||
     value === "result"
   ) {
     return value;
@@ -218,12 +269,19 @@ function parseOperatorSubcommand(value: string): OperatorSubcommand | undefined 
   return undefined;
 }
 
-function reply(content: string): OperatorCommandResult {
+function reply(content: string, ephemeral = true): OperatorCommandResult {
   return {
     action: "replied",
     content,
-    ephemeral: true
+    ephemeral
   };
+}
+
+function matchFromCommand(
+  command: OperatorCommandInput,
+  options: OperatorCommandOptions
+): WorldCupMatch | undefined {
+  return options.matches.find((candidate) => candidate.id === command.options.match);
 }
 
 function isDateString(value: string | undefined): value is string {

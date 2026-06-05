@@ -43,6 +43,16 @@ can sync finished results from football-data.org when a token is configured.
 Terminal commands remain useful for setup and manual recovery, but Discord slash
 commands are the preferred operator controls during the game.
 
+Useful operator commands while the bot is running:
+
+- `/copanalhas post-date date:2026-06-11`: post reviewed cards for a date.
+- `/copanalhas predictions match:wc2026-001`: privately inspect submitted picks
+  for one match before or after lock.
+- `/copanalhas reveal match:wc2026-001`: publicly reveal submitted picks only
+  after predictions have closed.
+- `/copanalhas result match:wc2026-001 score:2-1`: record or override a result.
+- `/copanalhas leaderboard`: privately show the current leaderboard.
+
 ## Documentation
 
 - `docs/product-brief.md` describes the product scope.

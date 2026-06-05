@@ -17,6 +17,8 @@ export interface FormattedPredictionWindow {
   closesText: string;
 }
 
+export type DiscordTimestampStyle = "F" | "R";
+
 export function getPredictionWindow(match: WorldCupMatch): PredictionWindow {
   if (!match.kickoffAtUtc) {
     return {
@@ -59,16 +61,16 @@ export function canSubmitPredictionAt(
 
 export function formatPredictionWindow(
   match: WorldCupMatch,
-  timeZone: string
+  _timeZone: string
 ): FormattedPredictionWindow {
   const window = getPredictionWindow(match);
 
   return {
     kickoffText: window.kickoffAtUtc
-      ? `Kickoff: ${formatInstant(window.kickoffAtUtc, timeZone)}`
+      ? `Kickoff: ${formatDiscordInstant(window.kickoffAtUtc)}`
       : "Kickoff: not verified",
     closesText: window.closesAtUtc
-      ? `Predictions close: ${formatInstant(window.closesAtUtc, timeZone)}`
+      ? `Predictions close: ${formatDiscordInstant(window.closesAtUtc)}`
       : "Predictions close: not available"
   };
 }
@@ -77,24 +79,12 @@ function normalizeIsoTimestamp(value: string): string {
   return new Date(value).toISOString();
 }
 
-function formatInstant(value: string, timeZone: string): string {
-  const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-    timeZoneName: "short"
-  }).formatToParts(new Date(value));
-
-  return `${part(parts, "year")}-${part(parts, "month")}-${part(parts, "day")} ${part(
-    parts,
-    "hour"
-  )}:${part(parts, "minute")} ${part(parts, "timeZoneName")}`;
+export function formatDiscordInstant(value: string): string {
+  return `${formatDiscordTimestamp(value, "F")} (${formatDiscordTimestamp(value, "R")})`;
 }
 
-function part(parts: Intl.DateTimeFormatPart[], type: Intl.DateTimeFormatPartTypes): string {
-  return parts.find((entry) => entry.type === type)?.value ?? "";
+export function formatDiscordTimestamp(value: string, style: DiscordTimestampStyle): string {
+  const unixSeconds = Math.floor(Date.parse(value) / 1000);
+
+  return `<t:${unixSeconds}:${style}>`;
 }

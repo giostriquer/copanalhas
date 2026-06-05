@@ -149,7 +149,8 @@ describe("handlePredictionInteraction", () => {
     });
     expect(upsertPrediction).not.toHaveBeenCalled();
     expect(interaction.reply).toHaveBeenCalledWith({
-      content: "Predictions are closed for this match. Predictions close: 2026-06-11 18:30 UTC",
+      content:
+        "Predictions are closed for this match. Predictions close: <t:1781202600:F> (<t:1781202600:R>)",
       ephemeral: true
     });
   });

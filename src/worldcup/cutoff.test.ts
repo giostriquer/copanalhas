@@ -41,8 +41,8 @@ describe("prediction cutoff", () => {
 
   test("formats kickoff and close time for match cards", () => {
     expect(formatPredictionWindow(timedMatch("2026-06-11T19:00:00.000Z"), "UTC")).toEqual({
-      kickoffText: "Kickoff: 2026-06-11 19:00 UTC",
-      closesText: "Predictions close: 2026-06-11 18:30 UTC"
+      kickoffText: "Kickoff: <t:1781204400:F> (<t:1781204400:R>)",
+      closesText: "Predictions close: <t:1781202600:F> (<t:1781202600:R>)"
     });
   });
 });

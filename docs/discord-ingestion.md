@@ -13,6 +13,9 @@ The preferred member workflow is Discord-native:
 6. The bot validates the score, upserts that user's prediction for the match,
    and sends a private confirmation.
 
+Match cards render kickoff and prediction-close values with Discord-native
+timestamp tokens so each member sees local and relative time in their client.
+
 Raw channel message parsing can remain as a development fallback, but it is no
 longer the desired member-facing prediction workflow.
 
@@ -82,11 +85,19 @@ While `bot` is running, use `/copanalhas` for normal operator work:
 - `/copanalhas post-date date:2026-06-11`
 - `/copanalhas status`
 - `/copanalhas leaderboard`
+- `/copanalhas predictions match:wc2026-001`
+- `/copanalhas reveal match:wc2026-001`
 - `/copanalhas result match:wc2026-001 score:2-1`
 
 Posted match cards are deduped by match and channel, so restarting the process
 or re-running an operator post command does not repost cards already recorded in
 SQLite.
+
+`predictions` is an operator-only private audit view. It can show submitted
+picks before the prediction window closes, which helps with smoke tests and
+moderation without exposing picks to other members. `reveal` is the public view:
+it refuses while the prediction window is still open and posts the pick list only
+after the match cutoff has passed.
 
 ## Permissions
 

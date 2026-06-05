@@ -11,7 +11,6 @@ import type {
 import type { PredictionInteractionOptions } from "../discord/interactions.js";
 import type { OperatorCommandOptions } from "../discord/operator-commands.js";
 import { registerCopanalhasCommands } from "../discord/commands.js";
-import type { ScorePrediction } from "../scoring/scoring.js";
 import type { StandingsDashboardMessage } from "../standings/format.js";
 import type {
   NewScoringRun,
@@ -36,7 +35,7 @@ export interface BotRuntimeStore {
   upsertMatches(matches: WorldCupMatch[]): void;
   upsertPrediction(prediction: StoredPrediction): void;
   upsertResult(result: StoredResult): void | Promise<void>;
-  listPredictions(): ScorePrediction[];
+  listPredictions(): StoredPrediction[];
   listResults(): StoredResult[];
   listPostedMatchCards(): StoredPostedMatchCard[];
   recordPostedMatchCard(card: StoredPostedMatchCard): void;

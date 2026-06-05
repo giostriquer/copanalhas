@@ -43,6 +43,22 @@ export function createCopanalhasCommand() {
     )
     .addSubcommand((subcommand) =>
       subcommand
+        .setName("predictions")
+        .setDescription("Privately inspect predictions for one match")
+        .addStringOption((option) =>
+          option.setName("match").setDescription("Match id, like wc2026-001").setRequired(true)
+        )
+    )
+    .addSubcommand((subcommand) =>
+      subcommand
+        .setName("reveal")
+        .setDescription("Publicly reveal locked predictions for one match")
+        .addStringOption((option) =>
+          option.setName("match").setDescription("Match id, like wc2026-001").setRequired(true)
+        )
+    )
+    .addSubcommand((subcommand) =>
+      subcommand
         .setName("result")
         .setDescription("Record or override a match result")
         .addStringOption((option) =>

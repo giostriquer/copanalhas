@@ -7,6 +7,7 @@ import {
   type OperatorCommandInput,
   type OperatorCommandOptions
 } from "./operator-commands.js";
+import type { StoredPrediction } from "../storage/database.js";
 import { WORLD_CUP_2026_SEED } from "../worldcup/seed.js";
 
 describe("handleOperatorCommand", () => {
@@ -85,8 +86,8 @@ describe("handleOperatorCommand", () => {
         command("leaderboard"),
         options({
           listPredictions: () => [
-            { userId: "u1", matchId: "wc2026-001", homeScore: 2, awayScore: 1 },
-            { userId: "u2", matchId: "wc2026-001", homeScore: 1, awayScore: 1 }
+            storedPrediction("u1", 2, 1, "2026-06-10T12:00:00.000Z"),
+            storedPrediction("u2", 1, 1, "2026-06-10T12:00:00.000Z")
           ],
           listResults: () => [{ matchId: "wc2026-001", homeScore: 2, awayScore: 1 }]
         })
@@ -99,6 +100,70 @@ describe("handleOperatorCommand", () => {
         "2. u2 - 1 pt (0 exact, 1 closest, 1 match)"
       ].join("\n"),
       ephemeral: true
+    });
+  });
+
+  test("predictions returns a private operator audit for one match", async () => {
+    const result = await handleOperatorCommand(
+      command("predictions", { match: "wc2026-001" }),
+      options({
+        listPredictions: () => [storedPrediction("user-1", 2, 1, "2026-06-10T12:00:00.000Z")],
+        now: () => new Date("2026-06-10T13:00:00.000Z")
+      })
+    );
+
+    expect(result).toEqual({
+      action: "replied",
+      content: [
+        "Prediction Audit",
+        "Match #1 - Mexico vs South Africa",
+        "Window: open, closes <t:1781202600:R>",
+        "",
+        "1 submitted",
+        "<@user-1>  2x1  submitted <t:1781092800:R>"
+      ].join("\n"),
+      ephemeral: true
+    });
+  });
+
+  test("reveal refuses to publicly show picks before predictions close", async () => {
+    const result = await handleOperatorCommand(
+      command("reveal", { match: "wc2026-001" }),
+      options({
+        listPredictions: () => [storedPrediction("user-1", 2, 1, "2026-06-10T12:00:00.000Z")],
+        now: () => new Date("2026-06-10T13:00:00.000Z")
+      })
+    );
+
+    expect(result).toEqual({
+      action: "replied",
+      content: [
+        "Predictions are still open for Match #1 - Mexico vs South Africa.",
+        "Public reveal unlocks when predictions close: <t:1781202600:F> (<t:1781202600:R>)."
+      ].join("\n"),
+      ephemeral: true
+    });
+  });
+
+  test("reveal returns a public pick list after predictions close", async () => {
+    const result = await handleOperatorCommand(
+      command("reveal", { match: "wc2026-001" }),
+      options({
+        listPredictions: () => [storedPrediction("user-1", 2, 1, "2026-06-10T12:00:00.000Z")],
+        now: () => new Date("2026-06-11T18:30:00.000Z")
+      })
+    );
+
+    expect(result).toEqual({
+      action: "replied",
+      content: [
+        "Picks are locked for Match #1",
+        "Mexico vs South Africa",
+        "",
+        "1 submitted",
+        "<@user-1>  2x1"
+      ].join("\n"),
+      ephemeral: false
     });
   });
 
@@ -164,10 +229,27 @@ describe("handleDiscordOperatorCommand", () => {
       flags: MessageFlags.Ephemeral
     });
   });
+
+  test("maps public operator replies without the ephemeral flag", async () => {
+    const interaction = discordCommandInteraction("reveal");
+
+    await handleDiscordOperatorCommand(
+      interaction as unknown as Interaction,
+      options({
+        listPredictions: () => [storedPrediction("user-1", 2, 1, "2026-06-10T12:00:00.000Z")],
+        now: () => new Date("2026-06-11T18:30:00.000Z")
+      })
+    );
+
+    expect(interaction.reply).toHaveBeenCalledWith({
+      content: expect.stringContaining("Picks are locked"),
+      allowedMentions: { parse: [] }
+    });
+  });
 });
 
 function command(
-  subcommand: OperatorCommandInput["subcommand"],
+  subcommand: OperatorCommandInput["subcommand"] | "predictions" | "reveal",
   commandOptions: Record<string, string> = {},
   overrides: Partial<OperatorCommandInput> = {}
 ): OperatorCommandInput {
@@ -175,7 +257,7 @@ function command(
     guildId: "guild-1",
     channelId: "channel-1",
     userId: "operator-1",
-    subcommand,
+    subcommand: subcommand as OperatorCommandInput["subcommand"],
     options: commandOptions,
     ...overrides
   };
@@ -199,7 +281,9 @@ function options(overrides: Partial<OperatorCommandOptions> = {}): OperatorComma
   };
 }
 
-function discordCommandInteraction(subcommand: OperatorCommandInput["subcommand"]) {
+function discordCommandInteraction(
+  subcommand: OperatorCommandInput["subcommand"] | "predictions" | "reveal"
+) {
   return {
     isChatInputCommand: () => true,
     commandName: "copanalhas",
@@ -227,5 +311,23 @@ function discordCommandInteraction(subcommand: OperatorCommandInput["subcommand"
       })
     },
     reply: vi.fn(async () => undefined)
+  };
+}
+
+function storedPrediction(
+  userId: string,
+  homeScore: number,
+  awayScore: number,
+  submittedAt: string
+): StoredPrediction {
+  return {
+    userId,
+    matchId: "wc2026-001",
+    messageId: `interaction-${userId}`,
+    homeScore,
+    awayScore,
+    submittedAt,
+    updatedAt: null,
+    parserVersion: "prediction-modal-v1"
   };
 }
