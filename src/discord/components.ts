@@ -2,16 +2,19 @@ import {
   ActionRowBuilder,
   ButtonBuilder,
   ButtonStyle,
+  EmbedBuilder,
   ModalBuilder,
   TextInputBuilder,
   TextInputStyle
 } from "discord.js";
 
+import type { StoredPrediction } from "../storage/database.js";
 import type { WorldCupMatch } from "../worldcup/types.js";
-import { formatPredictionWindow } from "../worldcup/cutoff.js";
+import { formatDiscordTimestamp, formatPredictionWindow, getPredictionWindow } from "../worldcup/cutoff.js";
 import { formatTeamName } from "../worldcup/team-display.js";
 
-export const scoreInputCustomId = "score";
+export const homeScoreInputCustomId = "homeScore";
+export const awayScoreInputCustomId = "awayScore";
 
 const customIdPrefix = "copanalhas";
 const predictAction = "predict";
@@ -30,6 +33,7 @@ export interface MatchCardView {
 
 export interface MatchCardMessage {
   content: string;
+  embeds?: EmbedBuilder[];
   components: ActionRowBuilder<ButtonBuilder>[];
 }
 
@@ -98,17 +102,14 @@ export function createMatchDayMessage(
   options: MatchDayMessageOptions
 ): MatchCardMessage {
   return {
-    content: [
-      "MATCHES OF THE DAY",
-      options.date,
-      "",
-      ...matches.flatMap((match, index) => [
-        ...(index === 0 ? [] : [""]),
-        ...formatMatchDaySection(match, options)
-      ]),
-      "",
-      "Click a match button and enter a score like 2x1."
-    ].join("\n"),
+    content: "JOGOS DO DIA",
+    embeds: [
+      new EmbedBuilder()
+        .setColor(0x22a66a)
+        .setTitle(formatMatchDayDate(options.date, options.timeZone ?? defaultTimeZone))
+        .setDescription("Use os botões abaixo para enviar seu palpite.")
+        .addFields(matches.map((match) => formatMatchDayEmbedField(match)))
+    ],
     components: chunk(
       matches.map((match) => createPredictButton(match, `Palpite #${match.matchNumber}`)),
       5
@@ -116,18 +117,34 @@ export function createMatchDayMessage(
   };
 }
 
-export function createPredictionModal(match: WorldCupMatch): ModalBuilder {
+export function createPredictionModal(
+  match: WorldCupMatch,
+  existingPrediction?: StoredPrediction
+): ModalBuilder {
+  return createPredictionModalWithInitialScores(match, existingPrediction);
+}
+
+export function createPredictionModalWithInitialScores(
+  match: WorldCupMatch,
+  existingPrediction?: StoredPrediction
+): ModalBuilder {
   return new ModalBuilder()
     .setCustomId(buildScoreModalCustomId(match.id))
-    .setTitle(`${formatTeamName(match.homeTeam)} vs ${formatTeamName(match.awayTeam)}`)
+    .setTitle(`${formatTeamName(match.homeTeam)} x ${formatTeamName(match.awayTeam)}`)
     .addComponents(
       new ActionRowBuilder<TextInputBuilder>().addComponents(
-        new TextInputBuilder()
-          .setCustomId(scoreInputCustomId)
-          .setLabel("Score")
-          .setPlaceholder("2x1")
-          .setRequired(true)
-          .setStyle(TextInputStyle.Short)
+        createScoreTextInput({
+          customId: homeScoreInputCustomId,
+          label: formatTeamName(match.homeTeam),
+          value: existingPrediction?.homeScore
+        })
+      ),
+      new ActionRowBuilder<TextInputBuilder>().addComponents(
+        createScoreTextInput({
+          customId: awayScoreInputCustomId,
+          label: formatTeamName(match.awayTeam),
+          value: existingPrediction?.awayScore
+        })
       )
     );
 }
@@ -151,6 +168,58 @@ function formatMatchDaySection(match: WorldCupMatch, options: MatchCardViewOptio
     predictionWindow.kickoffText,
     predictionWindow.closesText
   ];
+}
+
+function formatMatchDayEmbedField(match: WorldCupMatch) {
+  const predictionWindow = getPredictionWindow(match);
+
+  return {
+    name: `#${match.matchNumber} · Grupo ${match.group}`,
+    value: [
+      `${formatTeamName(match.homeTeam)} x ${formatTeamName(match.awayTeam)}`,
+      predictionWindow.kickoffAtUtc
+        ? `Partida: ${formatDiscordTimestamp(predictionWindow.kickoffAtUtc, "t")} (${formatDiscordTimestamp(
+            predictionWindow.kickoffAtUtc,
+            "R"
+          )})`
+        : "Partida: horário não verificado",
+      predictionWindow.closesAtUtc
+        ? `Apostas encerram: ${formatDiscordTimestamp(predictionWindow.closesAtUtc, "t")}`
+        : "Apostas encerram: indisponível"
+    ].join("\n"),
+    inline: true
+  };
+}
+
+function formatMatchDayDate(date: string, timeZone: string): string {
+  return new Intl.DateTimeFormat("pt-BR", {
+    weekday: "long",
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+    timeZone
+  }).format(new Date(`${date}T12:00:00.000Z`));
+}
+
+function createScoreTextInput(options: {
+  customId: string;
+  label: string;
+  value?: number | undefined;
+}): TextInputBuilder {
+  const input = new TextInputBuilder()
+    .setCustomId(options.customId)
+    .setLabel(options.label)
+    .setPlaceholder("0")
+    .setRequired(true)
+    .setMinLength(1)
+    .setMaxLength(2)
+    .setStyle(TextInputStyle.Short);
+
+  if (options.value !== undefined) {
+    input.setValue(String(options.value));
+  }
+
+  return input;
 }
 
 function createPredictButton(match: WorldCupMatch, label: string): ButtonBuilder {

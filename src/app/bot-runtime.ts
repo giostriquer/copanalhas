@@ -122,6 +122,7 @@ function createPredictionInteractionOptions(
     matches: options.matches,
     timeZone: options.config.timezone,
     now: options.now,
+    listPredictions: () => options.store.listPredictions(),
     upsertPrediction: (prediction) => options.store.upsertPrediction(prediction)
   };
 }

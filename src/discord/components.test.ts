@@ -1,15 +1,16 @@
 import { describe, expect, test } from "vitest";
 
 import {
+  awayScoreInputCustomId,
   buildPredictButtonCustomId,
   buildScoreModalCustomId,
   createMatchDayMessage,
   buildMatchCardView,
   createMatchCardMessage,
   createPredictionModal,
+  homeScoreInputCustomId,
   parsePredictButtonCustomId,
   parseScoreModalCustomId,
-  scoreInputCustomId
 } from "./components.js";
 import { WORLD_CUP_2026_SEED } from "../worldcup/seed.js";
 
@@ -71,24 +72,33 @@ describe("match cards", () => {
       timeZone: "UTC"
     });
 
-    expect(payload.content).toBe(
-      [
-        "MATCHES OF THE DAY",
-        "2026-06-11",
-        "",
-        "Match #1 - Group A",
-        "México vs África do Sul",
-        "Kickoff: <t:1781204400:F> (<t:1781204400:R>)",
-        "Predictions close: <t:1781202600:F> (<t:1781202600:R>)",
-        "",
-        "Match #2 - Group A",
-        "Coreia do Sul vs Tchéquia",
-        "Kickoff: <t:1781229600:F> (<t:1781229600:R>)",
-        "Predictions close: <t:1781227800:F> (<t:1781227800:R>)",
-        "",
-        "Click a match button and enter a score like 2x1."
-      ].join("\n")
-    );
+    expect(payload.content).toBe("JOGOS DO DIA");
+    expect(payload.embeds?.map((embed) => embed.toJSON())).toEqual([
+      expect.objectContaining({
+        title: "quinta-feira, 11 de junho de 2026",
+        description: "Use os botões abaixo para enviar seu palpite.",
+        fields: [
+          {
+            name: "#1 · Grupo A",
+            value: [
+              "México x África do Sul",
+              "Partida: <t:1781204400:t> (<t:1781204400:R>)",
+              "Apostas encerram: <t:1781202600:t>"
+            ].join("\n"),
+            inline: true
+          },
+          {
+            name: "#2 · Grupo A",
+            value: [
+              "Coreia do Sul x Tchéquia",
+              "Partida: <t:1781229600:t> (<t:1781229600:R>)",
+              "Apostas encerram: <t:1781227800:t>"
+            ].join("\n"),
+            inline: true
+          }
+        ]
+      })
+    ]);
     expect(payload.components.map((row) => row.toJSON())).toEqual([
       {
         type: 1,
@@ -112,11 +122,45 @@ describe("match cards", () => {
 
   test("creates a score modal payload for one match", () => {
     const modal = createPredictionModal(firstSeedMatch()).toJSON();
-    const row = modal.components[0] as { components: Array<{ custom_id?: string }> } | undefined;
+    const firstRow = modal.components[0] as { components: Array<{ custom_id?: string }> } | undefined;
+    const secondRow = modal.components[1] as { components: Array<{ custom_id?: string }> } | undefined;
 
     expect(modal.custom_id).toBe("copanalhas:score:wc2026-001");
-    expect(modal.title).toBe("México vs África do Sul");
-    expect(row?.components[0]?.custom_id).toBe(scoreInputCustomId);
+    expect(modal.title).toBe("México x África do Sul");
+    expect(firstRow?.components[0]).toMatchObject({
+      custom_id: homeScoreInputCustomId,
+      label: "México",
+      placeholder: "0",
+      required: true,
+      min_length: 1,
+      max_length: 2
+    });
+    expect(secondRow?.components[0]).toMatchObject({
+      custom_id: awayScoreInputCustomId,
+      label: "África do Sul",
+      placeholder: "0",
+      required: true,
+      min_length: 1,
+      max_length: 2
+    });
+  });
+
+  test("pre-fills the score modal with an existing prediction", () => {
+    const modal = createPredictionModal(firstSeedMatch(), {
+      userId: "user-1",
+      matchId: "wc2026-001",
+      messageId: "interaction-1",
+      homeScore: 2,
+      awayScore: 1,
+      submittedAt: "2026-06-10T12:00:00.000Z",
+      updatedAt: null,
+      parserVersion: "prediction-modal-v1"
+    }).toJSON();
+    const firstRow = modal.components[0] as { components: Array<{ value?: string }> } | undefined;
+    const secondRow = modal.components[1] as { components: Array<{ value?: string }> } | undefined;
+
+    expect(firstRow?.components[0]?.value).toBe("2");
+    expect(secondRow?.components[0]?.value).toBe("1");
   });
 });
 

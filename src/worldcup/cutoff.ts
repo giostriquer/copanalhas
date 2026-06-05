@@ -17,7 +17,7 @@ export interface FormattedPredictionWindow {
   closesText: string;
 }
 
-export type DiscordTimestampStyle = "F" | "R";
+export type DiscordTimestampStyle = "F" | "R" | "t";
 
 export function getPredictionWindow(match: WorldCupMatch): PredictionWindow {
   if (!match.kickoffAtUtc) {

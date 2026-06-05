@@ -1,12 +1,12 @@
 import { MessageFlags, type Interaction, type ModalBuilder } from "discord.js";
 
 import {
+  awayScoreInputCustomId,
   createPredictionModal,
+  homeScoreInputCustomId,
   parsePredictButtonCustomId,
   parseScoreModalCustomId,
-  scoreInputCustomId
 } from "./components.js";
-import { parseScoreInput } from "../predictions/score-parser.js";
 import type { StoredPrediction } from "../storage/database.js";
 import {
   canSubmitPredictionAt,
@@ -25,6 +25,7 @@ export interface PredictionInteractionOptions {
   matches: WorldCupMatch[];
   timeZone?: string;
   now?(): Date;
+  listPredictions(): StoredPrediction[];
   upsertPrediction(prediction: StoredPrediction): void | Promise<void>;
 }
 
@@ -194,7 +195,9 @@ async function handlePredictButton(
     return rejectForPredictionWindow(interaction, match, submissionWindow, options);
   }
 
-  await interaction.showModal(createPredictionModal(match));
+  await interaction.showModal(
+    createPredictionModal(match, findExistingPrediction(options, interaction.userId, match.id))
+  );
 
   return { action: "opened-modal", matchId: match.id };
 }
@@ -231,11 +234,14 @@ async function handleScoreModal(
     return rejectForPredictionWindow(interaction, match, submissionWindow, options);
   }
 
-  const parsedScore = parseScoreInput(interaction.getTextInputValue(scoreInputCustomId));
+  const parsedScore = parseScoreFields(
+    interaction.getTextInputValue(homeScoreInputCustomId),
+    interaction.getTextInputValue(awayScoreInputCustomId)
+  );
 
   if (!parsedScore.ok) {
     await interaction.reply({
-      content: "Use a score like 2x1 or 2-1.",
+      content: "Use apenas números nos dois campos do placar.",
       ephemeral: true
     });
     return {
@@ -246,20 +252,21 @@ async function handleScoreModal(
     };
   }
 
+  const existingPrediction = findExistingPrediction(options, interaction.userId, match.id);
   const prediction: StoredPrediction = {
     userId: interaction.userId,
     matchId: match.id,
     messageId: interaction.interactionId,
     homeScore: parsedScore.score.homeScore,
     awayScore: parsedScore.score.awayScore,
-    submittedAt: interaction.createdAt.toISOString(),
-    updatedAt: null,
+    submittedAt: existingPrediction?.submittedAt ?? interaction.createdAt.toISOString(),
+    updatedAt: existingPrediction ? interaction.createdAt.toISOString() : null,
     parserVersion: modalPredictionParserVersion
   };
 
   await options.upsertPrediction(prediction);
   await interaction.reply({
-    content: `Saved: ${formatTeamName(match.homeTeam)} ${
+    content: `Palpite salvo: ${formatTeamName(match.homeTeam)} ${
       parsedScore.score.normalizedText
     } ${formatTeamName(match.awayTeam)}`,
     ephemeral: true
@@ -268,6 +275,34 @@ async function handleScoreModal(
   return {
     action: "accepted",
     prediction
+  };
+}
+
+function findExistingPrediction(
+  options: PredictionInteractionOptions,
+  userId: string,
+  matchId: string
+): StoredPrediction | undefined {
+  return options
+    .listPredictions()
+    .find((prediction) => prediction.userId === userId && prediction.matchId === matchId);
+}
+
+function parseScoreFields(homeInput: string, awayInput: string) {
+  if (!/^\d{1,2}$/u.test(homeInput.trim()) || !/^\d{1,2}$/u.test(awayInput.trim())) {
+    return { ok: false as const, reason: "invalid-score-format" as const };
+  }
+
+  const homeScore = Number.parseInt(homeInput.trim(), 10);
+  const awayScore = Number.parseInt(awayInput.trim(), 10);
+
+  return {
+    ok: true as const,
+    score: {
+      homeScore,
+      awayScore,
+      normalizedText: `${homeScore}-${awayScore}`
+    }
   };
 }
 

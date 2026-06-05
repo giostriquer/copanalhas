@@ -173,7 +173,8 @@ describe("runCli", () => {
       }),
       [
         expect.objectContaining({
-          content: expect.stringContaining("MATCHES OF THE DAY"),
+          content: "JOGOS DO DIA",
+          embeds: expect.arrayContaining([expect.anything()]),
           components: expect.arrayContaining([expect.anything()])
         })
       ]
@@ -185,8 +186,16 @@ describe("runCli", () => {
       throw new Error("expected a grouped matchday message");
     }
 
-    expect(postedMessage.content).toContain("México vs África do Sul");
-    expect(postedMessage.content).toContain("Coreia do Sul vs Tchéquia");
+    const matchdayEmbed = postedMessage.embeds?.[0]?.toJSON();
+
+    expect(matchdayEmbed).toMatchObject({
+      title: "quinta-feira, 11 de junho de 2026",
+      description: "Use os botões abaixo para enviar seu palpite."
+    });
+    expect(matchdayEmbed?.fields?.map((field) => field.value)).toEqual([
+      expect.stringContaining("México x África do Sul"),
+      expect.stringContaining("Coreia do Sul x Tchéquia")
+    ]);
     expect(postedMessage.components[0]?.toJSON()).toMatchObject({
       components: [
         { custom_id: "copanalhas:predict:wc2026-001", label: "Palpite #1" },

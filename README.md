@@ -40,8 +40,8 @@ Useful commands:
 Run `npm run dev -- bot` for the normal Discord experience. While the bot is
 running it registers `/copanalhas` operator commands, posts daily matchday cards
 with one prediction button per match at the configured local time, listens for
-prediction button/modal interactions, and can sync finished results from
-football-data.org when a token is configured.
+prediction button/modal interactions with team-specific score fields, and can
+sync finished results from football-data.org when a token is configured.
 Terminal commands remain useful for setup and manual recovery, but Discord slash
 commands are the preferred operator controls during the game.
 

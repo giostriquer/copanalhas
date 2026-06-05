@@ -11,12 +11,16 @@ The preferred member workflow is Discord-native:
    match ID in each button custom ID.
 4. A member clicks the match's prediction button and the bot opens a score modal
    for that match.
-5. The member enters only a score, such as `2x1` or `2-1`.
-6. The bot validates the score, upserts that user's prediction for the match,
-   and sends a private confirmation.
+5. The member enters one numeric field for each team. If that member already
+   has a prediction for the match, the modal opens with the saved values
+   pre-filled.
+6. The bot validates the score fields, upserts that user's prediction for the
+   match, and sends a private confirmation.
 
 Matchday cards render kickoff and prediction-close values with Discord-native
 timestamp tokens so each member sees local and relative time in their client.
+Shared Discord buttons cannot change color per member, so the per-member state
+lives in the private modal and confirmation flow instead of the public card.
 
 Raw channel message parsing can remain as a development fallback, but it is no
 longer the desired member-facing prediction workflow.
