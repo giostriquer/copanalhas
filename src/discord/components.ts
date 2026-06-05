@@ -8,12 +8,14 @@ import {
 } from "discord.js";
 
 import type { WorldCupMatch } from "../worldcup/types.js";
+import { formatPredictionWindow } from "../worldcup/cutoff.js";
 
 export const scoreInputCustomId = "score";
 
 const customIdPrefix = "copanalhas";
 const predictAction = "predict";
 const scoreAction = "score";
+const defaultTimeZone = "UTC";
 
 export interface ParsedComponentCustomId {
   matchId: string;
@@ -28,6 +30,10 @@ export interface MatchCardView {
 export interface MatchCardMessage {
   content: string;
   components: ActionRowBuilder<ButtonBuilder>[];
+}
+
+export interface MatchCardViewOptions {
+  timeZone?: string;
 }
 
 export function buildPredictButtonCustomId(matchId: string): string {
@@ -46,7 +52,12 @@ export function parseScoreModalCustomId(customId: string): ParsedComponentCustom
   return parseCustomId(customId, scoreAction);
 }
 
-export function buildMatchCardView(match: WorldCupMatch): MatchCardView {
+export function buildMatchCardView(
+  match: WorldCupMatch,
+  options: MatchCardViewOptions = {}
+): MatchCardView {
+  const predictionWindow = formatPredictionWindow(match, options.timeZone ?? defaultTimeZone);
+
   return {
     matchId: match.id,
     predictButtonCustomId: buildPredictButtonCustomId(match.id),
@@ -54,14 +65,18 @@ export function buildMatchCardView(match: WorldCupMatch): MatchCardView {
       "MATCH OF THE DAY",
       `Match #${match.matchNumber} - Group ${match.group}`,
       `${match.homeTeam.name} vs ${match.awayTeam.name}`,
-      `Kickoff: ${match.localDate}${match.kickoffTimeLocal ? ` ${match.kickoffTimeLocal}` : ""}`,
+      predictionWindow.kickoffText,
+      predictionWindow.closesText,
       "Click Predict and enter a score like 2x1."
     ].join("\n")
   };
 }
 
-export function createMatchCardMessage(match: WorldCupMatch): MatchCardMessage {
-  const view = buildMatchCardView(match);
+export function createMatchCardMessage(
+  match: WorldCupMatch,
+  options: MatchCardViewOptions = {}
+): MatchCardMessage {
+  const view = buildMatchCardView(match, options);
 
   return {
     content: view.content,

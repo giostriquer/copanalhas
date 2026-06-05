@@ -10,6 +10,7 @@ import {
 import { buildPredictButtonCustomId, buildScoreModalCustomId } from "./components.js";
 import type { StoredPrediction } from "../storage/database.js";
 import { WORLD_CUP_2026_SEED } from "../worldcup/seed.js";
+import type { WorldCupMatch } from "../worldcup/types.js";
 
 describe("handlePredictionInteraction", () => {
   test("opens a score modal when a member clicks a match Predict button", async () => {
@@ -94,6 +95,64 @@ describe("handlePredictionInteraction", () => {
       ephemeral: true
     });
   });
+
+  test("rejects modal predictions until the match kickoff is verified", async () => {
+    const upsertPrediction = vi.fn();
+    const interaction = modalInteraction({
+      customId: buildScoreModalCustomId("wc2026-001"),
+      scoreText: "2x1"
+    });
+
+    const result = await handlePredictionInteraction(
+      interaction,
+      options({
+        matches: [firstSeedMatch()],
+        upsertPrediction
+      })
+    );
+
+    expect(result).toEqual({
+      action: "rejected",
+      reason: "missing-kickoff",
+      matchId: "wc2026-001",
+      userId: "user-1"
+    });
+    expect(upsertPrediction).not.toHaveBeenCalled();
+    expect(interaction.reply).toHaveBeenCalledWith({
+      content: "Predictions are not open yet because this match kickoff is not verified.",
+      ephemeral: true
+    });
+  });
+
+  test("rejects modal predictions at the exact cutoff", async () => {
+    const upsertPrediction = vi.fn();
+    const interaction = modalInteraction({
+      customId: buildScoreModalCustomId("wc2026-001"),
+      scoreText: "2x1",
+      createdAt: new Date("2026-06-11T18:30:00.000Z")
+    });
+
+    const result = await handlePredictionInteraction(
+      interaction,
+      options({
+        matches: [matchWithKickoff("2026-06-11T19:00:00.000Z")],
+        upsertPrediction
+      })
+    );
+
+    expect(result).toEqual({
+      action: "rejected",
+      reason: "closed",
+      closesAtUtc: "2026-06-11T18:30:00.000Z",
+      matchId: "wc2026-001",
+      userId: "user-1"
+    });
+    expect(upsertPrediction).not.toHaveBeenCalled();
+    expect(interaction.reply).toHaveBeenCalledWith({
+      content: "Predictions are closed for this match. Predictions close: 2026-06-11 18:30 UTC",
+      ephemeral: true
+    });
+  });
 });
 
 describe("handleDiscordPredictionInteraction", () => {
@@ -128,7 +187,8 @@ function options(overrides: Partial<Parameters<typeof handlePredictionInteractio
   return {
     guildId: "guild-1",
     channelId: "channel-1",
-    matches: WORLD_CUP_2026_SEED.matches,
+    matches: [matchWithKickoff()],
+    timeZone: "UTC",
     upsertPrediction: vi.fn(),
     ...overrides
   };
@@ -188,4 +248,21 @@ function discordModalInteraction() {
     },
     reply: vi.fn(async () => undefined)
   };
+}
+
+function matchWithKickoff(kickoffAtUtc = "2026-06-11T19:00:00.000Z"): WorldCupMatch {
+  return {
+    ...firstSeedMatch(),
+    kickoffAtUtc
+  };
+}
+
+function firstSeedMatch(): WorldCupMatch {
+  const match = WORLD_CUP_2026_SEED.matches[0];
+
+  if (!match) {
+    throw new Error("World Cup seed needs at least one match");
+  }
+
+  return match;
 }

@@ -32,14 +32,15 @@ describe("prediction component ids", () => {
 
 describe("match cards", () => {
   test("builds a member-friendly match card view", () => {
-    expect(buildMatchCardView(firstSeedMatch())).toEqual({
+    expect(buildMatchCardView(firstSeedMatch(), { timeZone: "UTC" })).toEqual({
       matchId: "wc2026-001",
       predictButtonCustomId: "copanalhas:predict:wc2026-001",
       content: [
         "MATCH OF THE DAY",
         "Match #1 - Group A",
         "Mexico vs South Africa",
-        "Kickoff: 2026-06-11",
+        "Kickoff: not verified",
+        "Predictions close: not available",
         "Click Predict and enter a score like 2x1."
       ].join("\n")
     });

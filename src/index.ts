@@ -110,7 +110,12 @@ async function postMatchesToday(argv: string[], dependencies: CliDependencies): 
   }
 
   const postMatchCards = dependencies.postMatchCards ?? postDiscordMatchCards;
-  await postMatchCards(configResult.config, matches.map(createMatchCardMessage));
+  await postMatchCards(
+    configResult.config,
+    matches.map((match) =>
+      createMatchCardMessage(match, { timeZone: configResult.config.timezone })
+    )
+  );
   dependencies.writeLine(`Posted ${matches.length} match cards for ${date}.`);
 }
 
@@ -182,6 +187,7 @@ async function startBot(dependencies: CliDependencies): Promise<void> {
       guildId: configResult.config.guildId,
       channelId: configResult.config.channelId,
       matches: WORLD_CUP_2026_SEED.matches,
+      timeZone: configResult.config.timezone,
       upsertPrediction: (prediction) => store.upsertPrediction(prediction)
     }
   );

@@ -8,14 +8,22 @@ import {
 } from "./components.js";
 import { parseScoreInput } from "../predictions/score-parser.js";
 import type { StoredPrediction } from "../storage/database.js";
+import {
+  canSubmitPredictionAt,
+  formatPredictionWindow,
+  type PredictionSubmissionWindow
+} from "../worldcup/cutoff.js";
 import type { WorldCupMatch } from "../worldcup/types.js";
 
 export const modalPredictionParserVersion = "prediction-modal-v1";
+const defaultTimeZone = "UTC";
 
 export interface PredictionInteractionOptions {
   guildId: string;
   channelId: string;
   matches: WorldCupMatch[];
+  timeZone?: string;
+  now?(): Date;
   upsertPrediction(prediction: StoredPrediction): void | Promise<void>;
 }
 
@@ -27,6 +35,7 @@ export interface PredictionButtonInteraction {
   guildId: string | null;
   channelId: string;
   userId: string;
+  createdAt?: Date;
   showModal(modal: ModalBuilder): Promise<void>;
   reply(reply: PredictionInteractionReply): Promise<void>;
 }
@@ -59,7 +68,14 @@ export type PredictionInteractionResult =
     }
   | {
       action: "rejected";
-      reason: "unknown-match" | "invalid-score-format";
+      reason: "unknown-match" | "invalid-score-format" | "missing-kickoff";
+      matchId: string;
+      userId: string;
+    }
+  | {
+      action: "rejected";
+      reason: "closed";
+      closesAtUtc: string;
       matchId: string;
       userId: string;
     }
@@ -83,7 +99,7 @@ export async function handlePredictionInteraction(
   const matchesById = new Map(options.matches.map((match) => [match.id, match]));
 
   if (interaction.kind === "button") {
-    return handlePredictButton(interaction, matchesById);
+    return handlePredictButton(interaction, matchesById, options);
   }
 
   return handleScoreModal(interaction, matchesById, options);
@@ -105,6 +121,7 @@ export async function handleDiscordPredictionInteraction(
         guildId: interaction.guildId,
         channelId: interaction.channelId,
         userId: interaction.user.id,
+        createdAt: interaction.createdAt,
         showModal: async (modal) => {
           await interaction.showModal(modal);
         },
@@ -146,7 +163,8 @@ export async function handleDiscordPredictionInteraction(
 
 async function handlePredictButton(
   interaction: PredictionButtonInteraction,
-  matchesById: Map<string, WorldCupMatch>
+  matchesById: Map<string, WorldCupMatch>,
+  options: PredictionInteractionOptions
 ): Promise<PredictionInteractionResult> {
   const parsed = parsePredictButtonCustomId(interaction.customId);
 
@@ -167,6 +185,12 @@ async function handlePredictButton(
       matchId: parsed.matchId,
       userId: interaction.userId
     };
+  }
+
+  const submissionWindow = canSubmitPredictionAt(match, interactionTime(interaction, options));
+
+  if (!submissionWindow.ok) {
+    return rejectForPredictionWindow(interaction, match, submissionWindow, options);
   }
 
   await interaction.showModal(createPredictionModal(match));
@@ -198,6 +222,12 @@ async function handleScoreModal(
       matchId: parsed.matchId,
       userId: interaction.userId
     };
+  }
+
+  const submissionWindow = canSubmitPredictionAt(match, interactionTime(interaction, options));
+
+  if (!submissionWindow.ok) {
+    return rejectForPredictionWindow(interaction, match, submissionWindow, options);
   }
 
   const parsedScore = parseScoreInput(interaction.getTextInputValue(scoreInputCustomId));
@@ -235,5 +265,48 @@ async function handleScoreModal(
   return {
     action: "accepted",
     prediction
+  };
+}
+
+function interactionTime(
+  interaction: PredictionButtonInteraction | PredictionModalSubmitInteraction,
+  options: PredictionInteractionOptions
+): Date {
+  return options.now?.() ?? interaction.createdAt ?? new Date();
+}
+
+async function rejectForPredictionWindow(
+  interaction: PredictionButtonInteraction | PredictionModalSubmitInteraction,
+  match: WorldCupMatch,
+  submissionWindow: Extract<PredictionSubmissionWindow, { ok: false }>,
+  options: PredictionInteractionOptions
+): Promise<PredictionInteractionResult> {
+  if (submissionWindow.reason === "missing-kickoff") {
+    await interaction.reply({
+      content: "Predictions are not open yet because this match kickoff is not verified.",
+      ephemeral: true
+    });
+
+    return {
+      action: "rejected",
+      reason: "missing-kickoff",
+      matchId: match.id,
+      userId: interaction.userId
+    };
+  }
+
+  const predictionWindow = formatPredictionWindow(match, options.timeZone ?? defaultTimeZone);
+
+  await interaction.reply({
+    content: `Predictions are closed for this match. ${predictionWindow.closesText}`,
+    ephemeral: true
+  });
+
+  return {
+    action: "rejected",
+    reason: "closed",
+    closesAtUtc: submissionWindow.closesAtUtc,
+    matchId: match.id,
+    userId: interaction.userId
   };
 }
