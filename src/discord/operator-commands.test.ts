@@ -215,7 +215,7 @@ describe("handleOperatorCommand", () => {
 });
 
 describe("handleDiscordOperatorCommand", () => {
-  test("maps Discord chat input commands to ephemeral operator replies", async () => {
+  test("maps private Discord chat input commands to deferred ephemeral replies", async () => {
     const interaction = discordCommandInteraction("status");
 
     const result = await handleDiscordOperatorCommand(
@@ -224,10 +224,38 @@ describe("handleDiscordOperatorCommand", () => {
     );
 
     expect(result.action).toBe("replied");
-    expect(interaction.reply).toHaveBeenCalledWith({
-      content: expect.stringContaining("Copanalhas Status"),
+    expect(interaction.deferReply).toHaveBeenCalledWith({
       flags: MessageFlags.Ephemeral
     });
+    expect(interaction.editReply).toHaveBeenCalledWith({
+      content: expect.stringContaining("Copanalhas Status"),
+      allowedMentions: { parse: [] }
+    });
+    expect(interaction.reply).not.toHaveBeenCalled();
+  });
+
+  test("defers private operator commands before running slow work", async () => {
+    const events: string[] = [];
+    const interaction = discordCommandInteraction("post-date", events);
+    const postDueMatchCards = vi.fn(async () => {
+      events.push("work");
+      return { posted: ["wc2026-001"], skipped: [] };
+    });
+
+    await handleDiscordOperatorCommand(
+      interaction as unknown as Interaction,
+      options({ postDueMatchCards })
+    );
+
+    expect(events).toEqual(["defer", "work", "edit"]);
+    expect(interaction.deferReply).toHaveBeenCalledWith({
+      flags: MessageFlags.Ephemeral
+    });
+    expect(interaction.editReply).toHaveBeenCalledWith({
+      content: "Posted 1 match card for 2026-06-11. Skipped 0 already posted.",
+      allowedMentions: { parse: [] }
+    });
+    expect(interaction.reply).not.toHaveBeenCalled();
   });
 
   test("maps public operator replies without the ephemeral flag", async () => {
@@ -241,6 +269,7 @@ describe("handleDiscordOperatorCommand", () => {
       })
     );
 
+    expect(interaction.deferReply).not.toHaveBeenCalled();
     expect(interaction.reply).toHaveBeenCalledWith({
       content: expect.stringContaining("Picks are locked"),
       allowedMentions: { parse: [] }
@@ -282,7 +311,8 @@ function options(overrides: Partial<OperatorCommandOptions> = {}): OperatorComma
 }
 
 function discordCommandInteraction(
-  subcommand: OperatorCommandInput["subcommand"] | "predictions" | "reveal"
+  subcommand: OperatorCommandInput["subcommand"] | "predictions" | "reveal",
+  events: string[] = []
 ) {
   return {
     isChatInputCommand: () => true,
@@ -310,7 +340,15 @@ function discordCommandInteraction(
         return null;
       })
     },
-    reply: vi.fn(async () => undefined)
+    deferReply: vi.fn(async () => {
+      events.push("defer");
+    }),
+    editReply: vi.fn(async () => {
+      events.push("edit");
+    }),
+    reply: vi.fn(async () => {
+      events.push("reply");
+    })
   };
 }
 

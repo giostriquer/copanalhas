@@ -177,10 +177,26 @@ export async function handleDiscordOperatorCommand(
     return { action: "ignored", reason: "unknown-command" };
   }
 
+  if (interaction.guildId !== options.guildId) {
+    return { action: "ignored", reason: "wrong-guild" };
+  }
+
+  if (interaction.channelId !== options.channelId) {
+    return { action: "ignored", reason: "wrong-channel" };
+  }
+
   const subcommand = parseOperatorSubcommand(interaction.options.getSubcommand(true));
 
   if (!subcommand) {
     return { action: "ignored", reason: "unknown-command" };
+  }
+
+  const shouldDeferPrivately = subcommand !== "reveal";
+
+  if (shouldDeferPrivately) {
+    await interaction.deferReply({
+      flags: MessageFlags.Ephemeral
+    });
   }
 
   const result = await handleOperatorCommand(
@@ -195,7 +211,12 @@ export async function handleDiscordOperatorCommand(
   );
 
   if (result.action === "replied") {
-    if (result.ephemeral) {
+    if (shouldDeferPrivately) {
+      await interaction.editReply({
+        content: result.content,
+        allowedMentions: { parse: [] }
+      });
+    } else if (result.ephemeral) {
       await interaction.reply({
         content: result.content,
         flags: MessageFlags.Ephemeral
