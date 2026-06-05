@@ -95,7 +95,10 @@ describe("handleOperatorCommand", () => {
       matchId: "wc2026-001",
       homeScore: 2,
       awayScore: 1,
-      recordedAt: "2026-06-11T23:00:00.000Z"
+      recordedAt: "2026-06-11T23:00:00.000Z",
+      resultSource: "manual",
+      externalMatchId: null,
+      fetchedAt: null
     });
   });
 

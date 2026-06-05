@@ -137,7 +137,10 @@ function recordResult(argv: string[], dependencies: CliDependencies): void {
       matchId,
       homeScore,
       awayScore,
-      recordedAt: new Date().toISOString()
+      recordedAt: new Date().toISOString(),
+      resultSource: "manual",
+      externalMatchId: null,
+      fetchedAt: null
     });
     dependencies.writeLine(`Recorded result ${matchId} ${homeScore}-${awayScore}.`);
   } finally {

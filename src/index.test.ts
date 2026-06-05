@@ -92,7 +92,10 @@ describe("runCli", () => {
       matchId: "wc2026-001",
       homeScore: 2,
       awayScore: 1,
-      recordedAt: expect.any(String)
+      recordedAt: expect.any(String),
+      resultSource: "manual",
+      externalMatchId: null,
+      fetchedAt: null
     });
     expect(lines).toEqual(["Recorded result wc2026-001 2-1."]);
   });

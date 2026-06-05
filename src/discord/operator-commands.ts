@@ -105,7 +105,10 @@ export async function handleOperatorCommand(
       matchId: match.id,
       homeScore: parsedScore.score.homeScore,
       awayScore: parsedScore.score.awayScore,
-      recordedAt: options.now().toISOString()
+      recordedAt: options.now().toISOString(),
+      resultSource: "manual",
+      externalMatchId: null,
+      fetchedAt: null
     });
 
     return reply(`Recorded result ${match.id} ${parsedScore.score.normalizedText}.`);

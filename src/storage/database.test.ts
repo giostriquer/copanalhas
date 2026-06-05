@@ -70,13 +70,19 @@ describe("CopanalhasDatabase", () => {
       matchId: "wc2026-001",
       homeScore: 2,
       awayScore: 1,
-      recordedAt: "2026-06-11T23:00:00.000Z"
+      recordedAt: "2026-06-11T23:00:00.000Z",
+      resultSource: "football-data",
+      externalMatchId: "12345",
+      fetchedAt: "2026-06-11T23:01:00.000Z"
     });
     store.upsertResult({
       matchId: "wc2026-001",
       homeScore: 3,
       awayScore: 1,
-      recordedAt: "2026-06-11T23:05:00.000Z"
+      recordedAt: "2026-06-11T23:05:00.000Z",
+      resultSource: "manual",
+      externalMatchId: null,
+      fetchedAt: null
     });
 
     expect(store.listResults()).toEqual([
@@ -84,7 +90,10 @@ describe("CopanalhasDatabase", () => {
         matchId: "wc2026-001",
         homeScore: 3,
         awayScore: 1,
-        recordedAt: "2026-06-11T23:05:00.000Z"
+        recordedAt: "2026-06-11T23:05:00.000Z",
+        resultSource: "manual",
+        externalMatchId: null,
+        fetchedAt: null
       }
     ]);
     store.close();

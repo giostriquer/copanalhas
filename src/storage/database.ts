@@ -20,6 +20,9 @@ export interface StoredResult {
   homeScore: number;
   awayScore: number;
   recordedAt: string;
+  resultSource: "manual" | "football-data";
+  externalMatchId: string | null;
+  fetchedAt: string | null;
 }
 
 export type PostedMatchCardSource = "auto" | "command";
@@ -81,7 +84,10 @@ export class CopanalhasDatabase {
         match_id TEXT PRIMARY KEY,
         home_score INTEGER NOT NULL,
         away_score INTEGER NOT NULL,
-        recorded_at TEXT NOT NULL
+        recorded_at TEXT NOT NULL,
+        result_source TEXT NOT NULL,
+        external_match_id TEXT,
+        fetched_at TEXT
       ) STRICT;
 
       CREATE TABLE IF NOT EXISTS posted_match_cards (
@@ -104,6 +110,9 @@ export class CopanalhasDatabase {
 
     this.ensureColumn("matches", "kickoff_at_utc", "TEXT");
     this.ensureColumn("matches", "football_data_match_id", "INTEGER");
+    this.ensureColumn("results", "result_source", "TEXT NOT NULL DEFAULT 'manual'");
+    this.ensureColumn("results", "external_match_id", "TEXT");
+    this.ensureColumn("results", "fetched_at", "TEXT");
   }
 
   upsertMatches(matches: WorldCupMatch[]): void {
@@ -242,14 +251,33 @@ export class CopanalhasDatabase {
   upsertResult(result: StoredResult): void {
     this.database
       .prepare(`
-        INSERT INTO results (match_id, home_score, away_score, recorded_at)
-        VALUES (?, ?, ?, ?)
+        INSERT INTO results (
+          match_id,
+          home_score,
+          away_score,
+          recorded_at,
+          result_source,
+          external_match_id,
+          fetched_at
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(match_id) DO UPDATE SET
           home_score = excluded.home_score,
           away_score = excluded.away_score,
-          recorded_at = excluded.recorded_at
+          recorded_at = excluded.recorded_at,
+          result_source = excluded.result_source,
+          external_match_id = excluded.external_match_id,
+          fetched_at = excluded.fetched_at
       `)
-      .run(result.matchId, result.homeScore, result.awayScore, result.recordedAt);
+      .run(
+        result.matchId,
+        result.homeScore,
+        result.awayScore,
+        result.recordedAt,
+        result.resultSource,
+        result.externalMatchId,
+        result.fetchedAt
+      );
   }
 
   listResults(): StoredResult[] {
@@ -261,7 +289,10 @@ export class CopanalhasDatabase {
       matchId: row.match_id,
       homeScore: row.home_score,
       awayScore: row.away_score,
-      recordedAt: row.recorded_at
+      recordedAt: row.recorded_at,
+      resultSource: row.result_source,
+      externalMatchId: row.external_match_id,
+      fetchedAt: row.fetched_at
     }));
   }
 
@@ -391,6 +422,9 @@ interface ResultRow {
   home_score: number;
   away_score: number;
   recorded_at: string;
+  result_source: "manual" | "football-data";
+  external_match_id: string | null;
+  fetched_at: string | null;
 }
 
 interface PostedMatchCardRow {
