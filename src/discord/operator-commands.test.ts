@@ -49,10 +49,34 @@ describe("handleOperatorCommand", () => {
         "Copanalhas Status",
         "Matches loaded: 72",
         "Missing kickoff times: 0",
-        "Result sync: off"
+        "Result sync: off",
+        "Standings posts: 0/2",
+        "Standings last updated: never"
       ].join("\n"),
       ephemeral: true
     });
+  });
+
+  test("standings posts or updates the standings dashboard", async () => {
+    const updateStandingsDashboard = vi.fn(async () => ({
+      action: "updated" as const,
+      posts: [
+        { postKey: "groups_a_f" as const, messageId: "message-a", action: "posted" as const },
+        { postKey: "groups_g_l" as const, messageId: "message-b", action: "posted" as const }
+      ]
+    }));
+
+    const result = await handleOperatorCommand(
+      command("standings"),
+      options({ updateStandingsDashboard })
+    );
+
+    expect(result).toEqual({
+      action: "replied",
+      content: "Updated standings dashboard: 2 posts.",
+      ephemeral: true
+    });
+    expect(updateStandingsDashboard).toHaveBeenCalledOnce();
   });
 
   test("leaderboard returns formatted standings", async () => {
@@ -100,6 +124,23 @@ describe("handleOperatorCommand", () => {
       externalMatchId: null,
       fetchedAt: null
     });
+  });
+
+  test("result refreshes standings after recording a manual result", async () => {
+    const updateStandingsDashboard = vi.fn(async () => ({
+      action: "updated" as const,
+      posts: [
+        { postKey: "groups_a_f" as const, messageId: "message-a", action: "edited" as const },
+        { postKey: "groups_g_l" as const, messageId: "message-b", action: "edited" as const }
+      ]
+    }));
+
+    await handleOperatorCommand(
+      command("result", { match: "wc2026-001", score: "2-1" }),
+      options({ updateStandingsDashboard })
+    );
+
+    expect(updateStandingsDashboard).toHaveBeenCalledOnce();
   });
 
   test("ignores commands outside the configured guild", async () => {
@@ -152,6 +193,8 @@ function options(overrides: Partial<OperatorCommandOptions> = {}): OperatorComma
     listPredictions: vi.fn(() => []),
     listResults: vi.fn(() => []),
     upsertResult: vi.fn(),
+    listStandingsPosts: vi.fn(() => []),
+    updateStandingsDashboard: vi.fn(async () => ({ action: "updated", posts: [] })),
     ...overrides
   };
 }

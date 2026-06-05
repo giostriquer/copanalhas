@@ -5,14 +5,20 @@ import { getLocalDateTimeParts } from "../app/scheduler.js";
 import { formatLeaderboard } from "../leaderboard/format.js";
 import { parseScoreInput } from "../predictions/score-parser.js";
 import { buildLeaderboard, scoreMatch, type MatchResult, type ScorePrediction } from "../scoring/scoring.js";
-import type { PostedMatchCardSource, StoredResult } from "../storage/database.js";
+import type {
+  PostedMatchCardSource,
+  StoredResult,
+  StoredStandingsPost
+} from "../storage/database.js";
 import type { WorldCupMatch } from "../worldcup/types.js";
+import type { UpdateStandingsDashboardResult } from "../app/standings-posting.js";
 import { copanalhasCommandName } from "./commands.js";
 
 export type OperatorSubcommand =
   | "post-today"
   | "post-date"
   | "status"
+  | "standings"
   | "leaderboard"
   | "result";
 
@@ -35,6 +41,8 @@ export interface OperatorCommandOptions {
   listPredictions(): ScorePrediction[];
   listResults(): MatchResult[];
   upsertResult(result: StoredResult): void | Promise<void>;
+  listStandingsPosts(): StoredStandingsPost[];
+  updateStandingsDashboard(): Promise<UpdateStandingsDashboardResult>;
 }
 
 export type OperatorCommandResult =
@@ -74,9 +82,16 @@ export async function handleOperatorCommand(
         "Copanalhas Status",
         `Matches loaded: ${options.matches.length}`,
         `Missing kickoff times: ${options.matches.filter((match) => !match.kickoffAtUtc).length}`,
-        `Result sync: ${options.resultSyncEnabled ? "on" : "off"}`
+        `Result sync: ${options.resultSyncEnabled ? "on" : "off"}`,
+        ...formatStandingsStatus(options.listStandingsPosts(), options.guildId, options.channelId)
       ].join("\n")
     );
+  }
+
+  if (command.subcommand === "standings") {
+    const result = await options.updateStandingsDashboard();
+
+    return reply(`Updated standings dashboard: ${result.posts.length} posts.`);
   }
 
   if (command.subcommand === "leaderboard") {
@@ -110,6 +125,7 @@ export async function handleOperatorCommand(
       externalMatchId: null,
       fetchedAt: null
     });
+    await options.updateStandingsDashboard();
 
     return reply(`Recorded result ${match.id} ${parsedScore.score.normalizedText}.`);
   }
@@ -192,6 +208,7 @@ function parseOperatorSubcommand(value: string): OperatorSubcommand | undefined 
     value === "post-today" ||
     value === "post-date" ||
     value === "status" ||
+    value === "standings" ||
     value === "leaderboard" ||
     value === "result"
   ) {
@@ -215,4 +232,23 @@ function isDateString(value: string | undefined): value is string {
 
 function count(value: number, singular: string, plural: string): string {
   return value === 1 ? singular : plural;
+}
+
+function formatStandingsStatus(
+  posts: StoredStandingsPost[],
+  guildId: string,
+  channelId: string
+): string[] {
+  const matchingPosts = posts.filter(
+    (post) => post.guildId === guildId && post.channelId === channelId
+  );
+  const latestUpdatedAt = matchingPosts
+    .map((post) => post.updatedAt)
+    .sort()
+    .at(-1);
+
+  return [
+    `Standings posts: ${matchingPosts.length}/2`,
+    `Standings last updated: ${latestUpdatedAt ?? "never"}`
+  ];
 }

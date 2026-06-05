@@ -1,6 +1,7 @@
 import { createPredictionPersistenceHandler } from "./collector.js";
 import { runAutoPostTick } from "./auto-posting.js";
 import { postDueMatchCards } from "./match-card-posting.js";
+import { updateStandingsDashboard } from "./standings-posting.js";
 import type { MatchCardMessage } from "../discord/components.js";
 import type { CopanalhasConfig } from "../discord/config.js";
 import type {
@@ -11,15 +12,21 @@ import type { PredictionInteractionOptions } from "../discord/interactions.js";
 import type { OperatorCommandOptions } from "../discord/operator-commands.js";
 import { registerCopanalhasCommands } from "../discord/commands.js";
 import type { ScorePrediction } from "../scoring/scoring.js";
+import type { StandingsDashboardMessage } from "../standings/format.js";
 import type {
   NewScoringRun,
   StoredPostedMatchCard,
   StoredPrediction,
-  StoredResult
+  StoredResult,
+  StoredStandingsPost
 } from "../storage/database.js";
 import type { WorldCupMatch } from "../worldcup/types.js";
 import { getLocalDateTimeParts } from "./scheduler.js";
-import { syncFinishedResults } from "../results/sync.js";
+import {
+  syncFinishedResults as syncFinishedResultsDefault,
+  type SyncFinishedResultsOptions,
+  type SyncFinishedResultsResult
+} from "../results/sync.js";
 
 const autoPostIntervalMs = 60 * 1000;
 const resultSyncIntervalMs = 15 * 60 * 1000;
@@ -33,6 +40,8 @@ export interface BotRuntimeStore {
   listResults(): StoredResult[];
   listPostedMatchCards(): StoredPostedMatchCard[];
   recordPostedMatchCard(card: StoredPostedMatchCard): void;
+  listStandingsPosts(): StoredStandingsPost[];
+  recordStandingsPost(post: StoredStandingsPost): void;
   insertScoringRun(run: NewScoringRun): unknown;
 }
 
@@ -56,6 +65,13 @@ export interface StartCopanalhasBotRuntimeOptions {
   ): Promise<unknown>;
   startInterval(callback: () => void | Promise<void>, intervalMs: number): RuntimeInterval;
   sendMatchCard(matchId: string, message: MatchCardMessage): Promise<string>;
+  upsertStandingsMessage(
+    message: StandingsDashboardMessage,
+    existingMessageId: string | null
+  ): Promise<string>;
+  syncFinishedResults?(
+    options: SyncFinishedResultsOptions
+  ): Promise<SyncFinishedResultsResult>;
   now(): Date;
   writeLine(line: string): void;
 }
@@ -81,6 +97,7 @@ export async function startCopanalhasBotRuntime(
       registerCommands: registerCopanalhasCommands
     }
   );
+  await operatorCommandOptions.updateStandingsDashboard();
   const intervals = startRuntimeIntervals(options, operatorCommandOptions);
 
   return {
@@ -133,7 +150,20 @@ function createOperatorCommandOptions(
       }),
     listPredictions: () => options.store.listPredictions(),
     listResults: () => options.store.listResults(),
-    upsertResult: (result) => options.store.upsertResult(result)
+    upsertResult: (result) => options.store.upsertResult(result),
+    listStandingsPosts: () => options.store.listStandingsPosts(),
+    updateStandingsDashboard: () =>
+      updateStandingsDashboard({
+        guildId: options.config.guildId,
+        channelId: options.config.channelId,
+        matches: options.matches,
+        results: options.store.listResults(),
+        timeZone: options.config.timezone,
+        now: options.now,
+        listStandingsPosts: () => options.store.listStandingsPosts(),
+        recordStandingsPost: (post) => options.store.recordStandingsPost(post),
+        upsertStandingsMessage: options.upsertStandingsMessage
+      })
   };
 }
 
@@ -165,8 +195,10 @@ function startRuntimeIntervals(
     intervals.push(
       options.startInterval(async () => {
         const { localDate } = getLocalDateTimeParts(options.now(), options.config.timezone);
+        const syncFinishedResults =
+          options.syncFinishedResults ?? syncFinishedResultsDefault;
 
-        await syncFinishedResults({
+        const syncResult = await syncFinishedResults({
           enabled: options.config.resultSyncEnabled,
           token: options.config.footballDataToken,
           matches: options.matches,
@@ -178,6 +210,10 @@ function startRuntimeIntervals(
           upsertResult: (result) => options.store.upsertResult(result),
           insertScoringRun: (run) => options.store.insertScoringRun(run)
         });
+
+        if (syncResult.action === "synced" && syncResult.storedResults.length > 0) {
+          await operatorCommandOptions.updateStandingsDashboard();
+        }
       }, resultSyncIntervalMs)
     );
   }

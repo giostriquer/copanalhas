@@ -10,6 +10,7 @@ describe("startCopanalhasBotRuntime", () => {
     const startDiscord = vi.fn(async () => ({ destroy: vi.fn(async () => undefined) }));
     const startInterval = vi.fn(() => ({ stop: vi.fn() }));
     const sendMatchCard = vi.fn(async () => "discord-message-1");
+    const upsertStandingsMessage = vi.fn(async (message) => `standings-${message.key}`);
     const writeLine = vi.fn();
 
     const runtime = await startCopanalhasBotRuntime({
@@ -19,6 +20,7 @@ describe("startCopanalhasBotRuntime", () => {
       startDiscord,
       startInterval,
       sendMatchCard,
+      upsertStandingsMessage,
       now: () => new Date("2026-06-11T12:00:00.000Z"),
       writeLine
     });
@@ -38,14 +40,52 @@ describe("startCopanalhasBotRuntime", () => {
         operatorCommandOptions: expect.objectContaining({
           matches: WORLD_CUP_2026_SEED.matches,
           postDueMatchCards: expect.any(Function),
-          upsertResult: expect.any(Function)
+          upsertResult: expect.any(Function),
+          updateStandingsDashboard: expect.any(Function)
         }),
         registerCommands: expect.any(Function)
       })
     );
     expect(startInterval).toHaveBeenCalled();
+    expect(upsertStandingsMessage).toHaveBeenCalledTimes(2);
+    expect(store.recordStandingsPost).toHaveBeenCalledTimes(2);
 
     await runtime.stop();
+  });
+
+  test("refreshes standings after result sync stores final scores", async () => {
+    const store = createStore();
+    const intervalCallbacks: Array<() => void | Promise<void>> = [];
+    const startDiscord = vi.fn(async () => ({ destroy: vi.fn(async () => undefined) }));
+    const startInterval = vi.fn((callback) => {
+      intervalCallbacks.push(callback);
+      return { stop: vi.fn() };
+    });
+    const upsertStandingsMessage = vi.fn(async (message) => `standings-${message.key}`);
+    const syncFinishedResults = vi.fn(async () => ({
+      action: "synced" as const,
+      storedResults: ["wc2026-001"],
+      skipped: []
+    }));
+
+    await startCopanalhasBotRuntime({
+      config: { ...config(), footballDataToken: "token-value", resultSyncEnabled: true },
+      store,
+      matches: WORLD_CUP_2026_SEED.matches,
+      startDiscord,
+      startInterval,
+      sendMatchCard: vi.fn(async () => "discord-message-1"),
+      upsertStandingsMessage,
+      syncFinishedResults,
+      now: () => new Date("2026-06-11T12:00:00.000Z"),
+      writeLine: vi.fn()
+    });
+    upsertStandingsMessage.mockClear();
+
+    await intervalCallbacks[1]?.();
+
+    expect(syncFinishedResults).toHaveBeenCalledOnce();
+    expect(upsertStandingsMessage).toHaveBeenCalledTimes(2);
   });
 });
 
@@ -73,6 +113,8 @@ function createStore(): BotRuntimeStore {
     listResults: vi.fn(() => []),
     listPostedMatchCards: vi.fn(() => []),
     recordPostedMatchCard: vi.fn(),
+    listStandingsPosts: vi.fn(() => []),
+    recordStandingsPost: vi.fn(),
     insertScoringRun: vi.fn()
   };
 }
