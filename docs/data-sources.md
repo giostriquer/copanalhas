@@ -31,14 +31,15 @@ maintenance, terms, rate limits, ownership, and data provenance.
 
 ## Hardcoded Dataset Path
 
-The current MVP seed lives in `src/worldcup/seed.ts`. It contains a reviewed
-opening group-stage subset from FIFA's public schedule page and stores source
-metadata with the data. Kickoff times are intentionally `null` where this pass
-verified the fixture/date/stadium but did not independently verify the local
-kickoff time.
+The current seed lives in `src/worldcup/seed.ts`. It contains the reviewed full
+72-match group stage with groups, teams, local fixture dates, venue-local kickoff
+times, UTC kickoff timestamps, and FIFA-style venue names. The seed stores source
+metadata with the data.
 
-If no safe API is selected for the full tournament, future schedule snapshots may
-move to `data/worldcup/` with:
+Knockout fixtures should stay out of this seed until the participating teams are
+known or represented with an explicit placeholder type. If future schedule
+snapshots become too large for inline TypeScript, they may move to
+`data/worldcup/` with:
 
 - machine-readable JSON
 - a short source note

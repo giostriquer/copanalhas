@@ -106,7 +106,7 @@ describe("handlePredictionInteraction", () => {
     const result = await handlePredictionInteraction(
       interaction,
       options({
-        matches: [firstSeedMatch()],
+        matches: [matchWithKickoff(null)],
         upsertPrediction
       })
     );
@@ -250,7 +250,7 @@ function discordModalInteraction() {
   };
 }
 
-function matchWithKickoff(kickoffAtUtc = "2026-06-11T19:00:00.000Z"): WorldCupMatch {
+function matchWithKickoff(kickoffAtUtc: string | null = "2026-06-11T19:00:00.000Z"): WorldCupMatch {
   return {
     ...firstSeedMatch(),
     kickoffAtUtc

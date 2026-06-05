@@ -39,8 +39,8 @@ describe("match cards", () => {
         "MATCH OF THE DAY",
         "Match #1 - Group A",
         "Mexico vs South Africa",
-        "Kickoff: not verified",
-        "Predictions close: not available",
+        "Kickoff: 2026-06-11 19:00 UTC",
+        "Predictions close: 2026-06-11 18:30 UTC",
         "Click Predict and enter a score like 2x1."
       ].join("\n")
     });

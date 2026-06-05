@@ -77,7 +77,7 @@ describe("runCli", () => {
         })
       ])
     );
-    expect(lines).toEqual(["Seeded 12 World Cup matches."]);
+    expect(lines).toEqual(["Seeded 72 World Cup matches."]);
   });
 
   test("records a match result", async () => {

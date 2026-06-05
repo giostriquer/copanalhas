@@ -47,8 +47,8 @@ describe("handleOperatorCommand", () => {
       action: "replied",
       content: [
         "Copanalhas Status",
-        "Matches loaded: 12",
-        "Missing kickoff times: 12",
+        "Matches loaded: 72",
+        "Missing kickoff times: 0",
         "Result sync: off"
       ].join("\n"),
       ephemeral: true

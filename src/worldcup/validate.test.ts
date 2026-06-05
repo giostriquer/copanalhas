@@ -11,6 +11,36 @@ describe("validateTournamentSeed", () => {
     });
   });
 
+  test("contains all reviewed group-stage fixtures with kickoff times", () => {
+    expect(WORLD_CUP_2026_SEED.matches).toHaveLength(72);
+    expect(WORLD_CUP_2026_SEED.matches.every((match) => match.phase === "group")).toBe(true);
+    expect(WORLD_CUP_2026_SEED.matches.every((match) => match.kickoffAtUtc)).toBe(true);
+    expect(WORLD_CUP_2026_SEED.matches.every((match) => match.kickoffTimeLocal)).toBe(true);
+  });
+
+  test("has the opening match day fixtures ready for auto-post smoke tests", () => {
+    expect(
+      WORLD_CUP_2026_SEED.matches
+        .filter((match) => match.localDate === "2026-06-11")
+        .map((match) => ({
+          id: match.id,
+          teams: `${match.homeTeam.name} vs ${match.awayTeam.name}`,
+          kickoffAtUtc: match.kickoffAtUtc
+        }))
+    ).toEqual([
+      {
+        id: "wc2026-001",
+        teams: "Mexico vs South Africa",
+        kickoffAtUtc: "2026-06-11T19:00:00.000Z"
+      },
+      {
+        id: "wc2026-002",
+        teams: "Korea Republic vs Czechia",
+        kickoffAtUtc: "2026-06-12T02:00:00.000Z"
+      }
+    ]);
+  });
+
   test("rejects duplicate match ids", () => {
     const firstMatch = seedMatch(0);
     const secondMatch = seedMatch(1);

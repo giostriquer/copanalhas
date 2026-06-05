@@ -1,6 +1,6 @@
 import type { TournamentSeed, WorldCupExternalIds, WorldCupMatch } from "./types.js";
 
-const fifaScheduleSourceId = "fifa-schedule-2026-03-31";
+const fifaScheduleSourceId = "fifa-match-schedule-2026-03-31";
 
 export const WORLD_CUP_2026_SEED: TournamentSeed = {
   schemaVersion: 1,
@@ -9,26 +9,94 @@ export const WORLD_CUP_2026_SEED: TournamentSeed = {
   sources: [
     {
       id: fifaScheduleSourceId,
-      title: "View the FIFA World Cup 2026 match schedule",
-      url: "https://www.fifa.com/en/tournaments/mens/worldcup/canadamexicousa2026/articles/match-schedule-fixtures-results-teams-stadiums",
+      title: "FIFA World Cup 2026 match schedule",
+      url: "https://digitalhub.fifa.com/asset/4b5d4417-3343-4732-9cdf-14b6662af407/FWC26-Match-Schedule_English.pdf",
       accessedAt: "2026-06-05",
       notes:
-        "Reviewed opening group-stage subset from FIFA's public schedule page snippets. Kickoff times are left null unless explicitly verified in this import pass."
+        "Official FIFA match schedule PDF for fixture order, groups, host cities, venues, dates, and kick-off times. Times are recorded as venue-local time plus UTC ISO timestamps."
+    },
+    {
+      id: "kickofftimes-jsonld-2026-06-05",
+      title: "Kickoff Times JSON-LD extraction helper",
+      url: "https://kickofftimes.tv/",
+      accessedAt: "2026-06-05",
+      notes:
+        "Fan-made static JSON-LD payload used only as an extraction aid for venue-local ISO offsets. Fixture source of truth remains the FIFA schedule."
     }
   ],
   matches: [
-    groupMatch(1, "A", "MEX", "Mexico", "RSA", "South Africa", "2026-06-11", "Mexico City Stadium"),
-    groupMatch(2, "A", "KOR", "Korea Republic", "CZE", "Czechia", "2026-06-11", "Estadio Guadalajara"),
-    groupMatch(3, "B", "CAN", "Canada", "BIH", "Bosnia and Herzegovina", "2026-06-12", "Toronto Stadium"),
-    groupMatch(4, "D", "USA", "USA", "PAR", "Paraguay", "2026-06-12", "Los Angeles Stadium"),
-    groupMatch(5, "C", "HAI", "Haiti", "SCO", "Scotland", "2026-06-13", "Boston Stadium"),
-    groupMatch(6, "D", "AUS", "Australia", "TUR", "Turkiye", "2026-06-13", "BC Place Vancouver"),
-    groupMatch(7, "C", "BRA", "Brazil", "MAR", "Morocco", "2026-06-13", "New York New Jersey Stadium"),
-    groupMatch(8, "B", "QAT", "Qatar", "SUI", "Switzerland", "2026-06-13", "San Francisco Bay Area Stadium"),
-    groupMatch(9, "E", "CIV", "Cote d'Ivoire", "ECU", "Ecuador", "2026-06-14", "Philadelphia Stadium"),
-    groupMatch(10, "E", "GER", "Germany", "CUW", "Curacao", "2026-06-14", "Houston Stadium"),
-    groupMatch(11, "F", "NED", "Netherlands", "JPN", "Japan", "2026-06-14", "Dallas Stadium"),
-    groupMatch(12, "F", "SWE", "Sweden", "TUN", "Tunisia", "2026-06-14", "Estadio Monterrey")
+    groupMatch(1, "A", "MEX", "Mexico", "RSA", "South Africa", "2026-06-11", "13:00", "2026-06-11T19:00:00.000Z", "Mexico City Stadium"),
+    groupMatch(2, "A", "KOR", "Korea Republic", "CZE", "Czechia", "2026-06-11", "20:00", "2026-06-12T02:00:00.000Z", "Estadio Guadalajara"),
+    groupMatch(3, "B", "CAN", "Canada", "BIH", "Bosnia and Herzegovina", "2026-06-12", "15:00", "2026-06-12T19:00:00.000Z", "Toronto Stadium"),
+    groupMatch(4, "D", "USA", "USA", "PAR", "Paraguay", "2026-06-12", "18:00", "2026-06-13T01:00:00.000Z", "Los Angeles Stadium"),
+    groupMatch(5, "B", "QAT", "Qatar", "SUI", "Switzerland", "2026-06-13", "12:00", "2026-06-13T19:00:00.000Z", "San Francisco Bay Area Stadium"),
+    groupMatch(6, "C", "BRA", "Brazil", "MAR", "Morocco", "2026-06-13", "18:00", "2026-06-13T22:00:00.000Z", "New York New Jersey Stadium"),
+    groupMatch(7, "C", "HAI", "Haiti", "SCO", "Scotland", "2026-06-13", "21:00", "2026-06-14T01:00:00.000Z", "Boston Stadium"),
+    groupMatch(8, "D", "AUS", "Australia", "TUR", "Turkiye", "2026-06-13", "21:00", "2026-06-14T04:00:00.000Z", "BC Place Vancouver"),
+    groupMatch(9, "E", "GER", "Germany", "CUW", "Curacao", "2026-06-14", "12:00", "2026-06-14T17:00:00.000Z", "Houston Stadium"),
+    groupMatch(10, "F", "NED", "Netherlands", "JPN", "Japan", "2026-06-14", "15:00", "2026-06-14T20:00:00.000Z", "Dallas Stadium"),
+    groupMatch(11, "E", "CIV", "Cote d'Ivoire", "ECU", "Ecuador", "2026-06-14", "19:00", "2026-06-14T23:00:00.000Z", "Philadelphia Stadium"),
+    groupMatch(12, "F", "SWE", "Sweden", "TUN", "Tunisia", "2026-06-14", "20:00", "2026-06-15T02:00:00.000Z", "Estadio Monterrey"),
+    groupMatch(13, "H", "ESP", "Spain", "CPV", "Cape Verde", "2026-06-15", "12:00", "2026-06-15T16:00:00.000Z", "Atlanta Stadium"),
+    groupMatch(14, "G", "BEL", "Belgium", "EGY", "Egypt", "2026-06-15", "12:00", "2026-06-15T19:00:00.000Z", "Seattle Stadium"),
+    groupMatch(15, "H", "KSA", "Saudi Arabia", "URU", "Uruguay", "2026-06-15", "18:00", "2026-06-15T22:00:00.000Z", "Miami Stadium"),
+    groupMatch(16, "G", "IRN", "Iran", "NZL", "New Zealand", "2026-06-15", "18:00", "2026-06-16T01:00:00.000Z", "Los Angeles Stadium"),
+    groupMatch(17, "I", "FRA", "France", "SEN", "Senegal", "2026-06-16", "15:00", "2026-06-16T19:00:00.000Z", "New York New Jersey Stadium"),
+    groupMatch(18, "I", "IRQ", "Iraq", "NOR", "Norway", "2026-06-16", "18:00", "2026-06-16T22:00:00.000Z", "Boston Stadium"),
+    groupMatch(19, "J", "ARG", "Argentina", "ALG", "Algeria", "2026-06-16", "20:00", "2026-06-17T01:00:00.000Z", "Kansas City Stadium"),
+    groupMatch(20, "J", "AUT", "Austria", "JOR", "Jordan", "2026-06-16", "21:00", "2026-06-17T04:00:00.000Z", "San Francisco Bay Area Stadium"),
+    groupMatch(21, "K", "POR", "Portugal", "COD", "DR Congo", "2026-06-17", "12:00", "2026-06-17T17:00:00.000Z", "Houston Stadium"),
+    groupMatch(22, "L", "ENG", "England", "CRO", "Croatia", "2026-06-17", "15:00", "2026-06-17T20:00:00.000Z", "Dallas Stadium"),
+    groupMatch(23, "L", "GHA", "Ghana", "PAN", "Panama", "2026-06-17", "19:00", "2026-06-17T23:00:00.000Z", "Toronto Stadium"),
+    groupMatch(24, "K", "UZB", "Uzbekistan", "COL", "Colombia", "2026-06-17", "20:00", "2026-06-18T02:00:00.000Z", "Mexico City Stadium"),
+    groupMatch(25, "A", "CZE", "Czechia", "RSA", "South Africa", "2026-06-18", "12:00", "2026-06-18T16:00:00.000Z", "Atlanta Stadium"),
+    groupMatch(26, "B", "SUI", "Switzerland", "BIH", "Bosnia and Herzegovina", "2026-06-18", "12:00", "2026-06-18T19:00:00.000Z", "Los Angeles Stadium"),
+    groupMatch(27, "B", "CAN", "Canada", "QAT", "Qatar", "2026-06-18", "15:00", "2026-06-18T22:00:00.000Z", "BC Place Vancouver"),
+    groupMatch(28, "A", "MEX", "Mexico", "KOR", "Korea Republic", "2026-06-18", "19:00", "2026-06-19T01:00:00.000Z", "Estadio Guadalajara"),
+    groupMatch(29, "D", "USA", "USA", "AUS", "Australia", "2026-06-19", "12:00", "2026-06-19T19:00:00.000Z", "Seattle Stadium"),
+    groupMatch(30, "C", "SCO", "Scotland", "MAR", "Morocco", "2026-06-19", "18:00", "2026-06-19T22:00:00.000Z", "Boston Stadium"),
+    groupMatch(31, "C", "BRA", "Brazil", "HAI", "Haiti", "2026-06-19", "20:30", "2026-06-20T00:30:00.000Z", "Philadelphia Stadium"),
+    groupMatch(32, "D", "TUR", "Turkiye", "PAR", "Paraguay", "2026-06-19", "20:00", "2026-06-20T03:00:00.000Z", "San Francisco Bay Area Stadium"),
+    groupMatch(33, "F", "NED", "Netherlands", "SWE", "Sweden", "2026-06-20", "12:00", "2026-06-20T17:00:00.000Z", "Houston Stadium"),
+    groupMatch(34, "E", "GER", "Germany", "CIV", "Cote d'Ivoire", "2026-06-20", "16:00", "2026-06-20T20:00:00.000Z", "Toronto Stadium"),
+    groupMatch(35, "E", "ECU", "Ecuador", "CUW", "Curacao", "2026-06-20", "19:00", "2026-06-21T00:00:00.000Z", "Kansas City Stadium"),
+    groupMatch(36, "F", "TUN", "Tunisia", "JPN", "Japan", "2026-06-20", "22:00", "2026-06-21T04:00:00.000Z", "Estadio Monterrey"),
+    groupMatch(37, "H", "ESP", "Spain", "KSA", "Saudi Arabia", "2026-06-21", "12:00", "2026-06-21T16:00:00.000Z", "Atlanta Stadium"),
+    groupMatch(38, "G", "BEL", "Belgium", "IRN", "Iran", "2026-06-21", "12:00", "2026-06-21T19:00:00.000Z", "Los Angeles Stadium"),
+    groupMatch(39, "H", "URU", "Uruguay", "CPV", "Cape Verde", "2026-06-21", "18:00", "2026-06-21T22:00:00.000Z", "Miami Stadium"),
+    groupMatch(40, "G", "NZL", "New Zealand", "EGY", "Egypt", "2026-06-21", "18:00", "2026-06-22T01:00:00.000Z", "BC Place Vancouver"),
+    groupMatch(41, "J", "ARG", "Argentina", "AUT", "Austria", "2026-06-22", "12:00", "2026-06-22T17:00:00.000Z", "Dallas Stadium"),
+    groupMatch(42, "I", "FRA", "France", "IRQ", "Iraq", "2026-06-22", "17:00", "2026-06-22T21:00:00.000Z", "Philadelphia Stadium"),
+    groupMatch(43, "I", "NOR", "Norway", "SEN", "Senegal", "2026-06-22", "20:00", "2026-06-23T00:00:00.000Z", "New York New Jersey Stadium"),
+    groupMatch(44, "J", "JOR", "Jordan", "ALG", "Algeria", "2026-06-22", "20:00", "2026-06-23T03:00:00.000Z", "San Francisco Bay Area Stadium"),
+    groupMatch(45, "K", "POR", "Portugal", "UZB", "Uzbekistan", "2026-06-23", "12:00", "2026-06-23T17:00:00.000Z", "Houston Stadium"),
+    groupMatch(46, "L", "ENG", "England", "GHA", "Ghana", "2026-06-23", "16:00", "2026-06-23T20:00:00.000Z", "Boston Stadium"),
+    groupMatch(47, "L", "PAN", "Panama", "CRO", "Croatia", "2026-06-23", "19:00", "2026-06-23T23:00:00.000Z", "Toronto Stadium"),
+    groupMatch(48, "K", "COL", "Colombia", "COD", "DR Congo", "2026-06-23", "20:00", "2026-06-24T02:00:00.000Z", "Estadio Guadalajara"),
+    groupMatch(49, "B", "SUI", "Switzerland", "CAN", "Canada", "2026-06-24", "12:00", "2026-06-24T19:00:00.000Z", "BC Place Vancouver"),
+    groupMatch(50, "B", "BIH", "Bosnia and Herzegovina", "QAT", "Qatar", "2026-06-24", "12:00", "2026-06-24T19:00:00.000Z", "Seattle Stadium"),
+    groupMatch(51, "C", "SCO", "Scotland", "BRA", "Brazil", "2026-06-24", "18:00", "2026-06-24T22:00:00.000Z", "Miami Stadium"),
+    groupMatch(52, "C", "MAR", "Morocco", "HAI", "Haiti", "2026-06-24", "18:00", "2026-06-24T22:00:00.000Z", "Atlanta Stadium"),
+    groupMatch(53, "A", "CZE", "Czechia", "MEX", "Mexico", "2026-06-24", "19:00", "2026-06-25T01:00:00.000Z", "Mexico City Stadium"),
+    groupMatch(54, "A", "RSA", "South Africa", "KOR", "Korea Republic", "2026-06-24", "19:00", "2026-06-25T01:00:00.000Z", "Estadio Monterrey"),
+    groupMatch(55, "E", "CUW", "Curacao", "CIV", "Cote d'Ivoire", "2026-06-25", "16:00", "2026-06-25T20:00:00.000Z", "Philadelphia Stadium"),
+    groupMatch(56, "E", "ECU", "Ecuador", "GER", "Germany", "2026-06-25", "16:00", "2026-06-25T20:00:00.000Z", "New York New Jersey Stadium"),
+    groupMatch(57, "F", "JPN", "Japan", "SWE", "Sweden", "2026-06-25", "18:00", "2026-06-25T23:00:00.000Z", "Dallas Stadium"),
+    groupMatch(58, "F", "TUN", "Tunisia", "NED", "Netherlands", "2026-06-25", "18:00", "2026-06-25T23:00:00.000Z", "Kansas City Stadium"),
+    groupMatch(59, "D", "TUR", "Turkiye", "USA", "USA", "2026-06-25", "19:00", "2026-06-26T02:00:00.000Z", "Los Angeles Stadium"),
+    groupMatch(60, "D", "PAR", "Paraguay", "AUS", "Australia", "2026-06-25", "19:00", "2026-06-26T02:00:00.000Z", "San Francisco Bay Area Stadium"),
+    groupMatch(61, "I", "NOR", "Norway", "FRA", "France", "2026-06-26", "15:00", "2026-06-26T19:00:00.000Z", "Boston Stadium"),
+    groupMatch(62, "I", "SEN", "Senegal", "IRQ", "Iraq", "2026-06-26", "15:00", "2026-06-26T19:00:00.000Z", "Toronto Stadium"),
+    groupMatch(63, "H", "CPV", "Cape Verde", "KSA", "Saudi Arabia", "2026-06-26", "19:00", "2026-06-27T00:00:00.000Z", "Houston Stadium"),
+    groupMatch(64, "H", "URU", "Uruguay", "ESP", "Spain", "2026-06-26", "18:00", "2026-06-27T00:00:00.000Z", "Estadio Guadalajara"),
+    groupMatch(65, "G", "EGY", "Egypt", "IRN", "Iran", "2026-06-26", "20:00", "2026-06-27T03:00:00.000Z", "Seattle Stadium"),
+    groupMatch(66, "G", "NZL", "New Zealand", "BEL", "Belgium", "2026-06-26", "20:00", "2026-06-27T03:00:00.000Z", "BC Place Vancouver"),
+    groupMatch(67, "L", "PAN", "Panama", "ENG", "England", "2026-06-27", "17:00", "2026-06-27T21:00:00.000Z", "New York New Jersey Stadium"),
+    groupMatch(68, "L", "CRO", "Croatia", "GHA", "Ghana", "2026-06-27", "17:00", "2026-06-27T21:00:00.000Z", "Philadelphia Stadium"),
+    groupMatch(69, "K", "COL", "Colombia", "POR", "Portugal", "2026-06-27", "19:30", "2026-06-27T23:30:00.000Z", "Miami Stadium"),
+    groupMatch(70, "K", "COD", "DR Congo", "UZB", "Uzbekistan", "2026-06-27", "19:30", "2026-06-27T23:30:00.000Z", "Atlanta Stadium"),
+    groupMatch(71, "J", "ALG", "Algeria", "AUT", "Austria", "2026-06-27", "21:00", "2026-06-28T02:00:00.000Z", "Kansas City Stadium"),
+    groupMatch(72, "J", "JOR", "Jordan", "ARG", "Argentina", "2026-06-27", "21:00", "2026-06-28T02:00:00.000Z", "Dallas Stadium")
   ]
 };
 
@@ -40,8 +108,9 @@ function groupMatch(
   awayCode: string,
   awayName: string,
   localDate: string,
+  kickoffTimeLocal: string,
+  kickoffAtUtc: string,
   venue: string,
-  kickoffAtUtc: string | null = null,
   externalIds: WorldCupExternalIds = {}
 ): WorldCupMatch {
   return {
@@ -52,7 +121,7 @@ function groupMatch(
     homeTeam: { code: homeCode, name: homeName },
     awayTeam: { code: awayCode, name: awayName },
     localDate,
-    kickoffTimeLocal: null,
+    kickoffTimeLocal,
     kickoffAtUtc,
     venue,
     sourceId: fifaScheduleSourceId,
