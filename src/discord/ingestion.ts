@@ -1,6 +1,11 @@
 import { Client, Events, GatewayIntentBits, type Message } from "discord.js";
 
 import { parsePredictionMessage, type PredictionParseResult } from "../predictions/parser.js";
+import {
+  registerCopanalhasCommands,
+  type CopanalhasCommandGuild,
+  type RegisterCopanalhasCommandsOptions
+} from "./commands.js";
 import type { CopanalhasConfig } from "./config.js";
 import {
   handleDiscordPredictionInteraction,
@@ -24,6 +29,19 @@ export interface DiscordIngestionOptions {
   guildId: string;
   channelId: string;
   parsePrediction: (content: string) => PredictionParseResult;
+}
+
+export interface DiscordClientReadyOptions {
+  registerCommands?(options: RegisterCopanalhasCommandsOptions): Promise<void>;
+}
+
+export interface DiscordReadyClient {
+  user: {
+    tag: string;
+  };
+  guilds: {
+    fetch(guildId: string): Promise<CopanalhasCommandGuild>;
+  };
 }
 
 export type DiscordIngestionResult =
@@ -103,7 +121,8 @@ export function handleDiscordMessage(
 export function createDiscordClient(
   config: CopanalhasConfig,
   onMessageResult: (result: DiscordIngestionResult) => void,
-  predictionInteractionOptions?: PredictionInteractionOptions
+  predictionInteractionOptions?: PredictionInteractionOptions,
+  readyOptions: DiscordClientReadyOptions = {}
 ): Client {
   const client = new Client({
     intents: [
@@ -114,7 +133,9 @@ export function createDiscordClient(
   });
 
   client.once(Events.ClientReady, (readyClient) => {
-    console.log(`Logged in as ${readyClient.user.tag}`);
+    void handleDiscordClientReady(readyClient, config, readyOptions).catch((error: unknown) => {
+      console.error(error);
+    });
   });
 
   client.on(Events.MessageCreate, (message) => {
@@ -143,11 +164,24 @@ export function createDiscordClient(
 export async function startDiscordClient(
   config: CopanalhasConfig,
   onMessageResult: (result: DiscordIngestionResult) => void,
-  predictionInteractionOptions?: PredictionInteractionOptions
+  predictionInteractionOptions?: PredictionInteractionOptions,
+  readyOptions?: DiscordClientReadyOptions
 ): Promise<Client> {
-  const client = createDiscordClient(config, onMessageResult, predictionInteractionOptions);
+  const client = createDiscordClient(config, onMessageResult, predictionInteractionOptions, readyOptions);
   await client.login(config.discordToken);
   return client;
+}
+
+export async function handleDiscordClientReady(
+  readyClient: DiscordReadyClient,
+  config: CopanalhasConfig,
+  options: DiscordClientReadyOptions = {}
+): Promise<void> {
+  console.log(`Logged in as ${readyClient.user.tag}`);
+  await (options.registerCommands ?? registerCopanalhasCommands)({
+    guildId: config.guildId,
+    fetchGuild: (guildId) => readyClient.guilds.fetch(guildId)
+  });
 }
 
 function fromDiscordMessage(message: Message): DiscordMessageInput {

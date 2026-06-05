@@ -1,6 +1,8 @@
 import { describe, expect, test, vi } from "vitest";
 
-import { handleDiscordMessage } from "./ingestion.js";
+import { handleDiscordClientReady, handleDiscordMessage } from "./ingestion.js";
+import type { RegisterCopanalhasCommandsOptions } from "./commands.js";
+import type { CopanalhasConfig } from "./config.js";
 import type { PredictionParseResult } from "../predictions/parser.js";
 
 describe("handleDiscordMessage", () => {
@@ -114,6 +116,45 @@ describe("handleDiscordMessage", () => {
   });
 });
 
+describe("handleDiscordClientReady", () => {
+  test("registers slash commands for the configured guild", async () => {
+    const registerCommands = vi.fn(
+      async (_options: RegisterCopanalhasCommandsOptions) => undefined
+    );
+    const readyClient = {
+      user: {
+        tag: "Copanalhas#0001"
+      },
+      guilds: {
+        fetch: vi.fn(async (guildId: string) => ({
+          id: guildId,
+          commands: {
+            set: vi.fn(async () => undefined)
+          }
+        }))
+      }
+    };
+    const log = vi.spyOn(console, "log").mockImplementation(() => undefined);
+
+    try {
+      await handleDiscordClientReady(readyClient, config(), { registerCommands });
+    } finally {
+      log.mockRestore();
+    }
+
+    expect(registerCommands).toHaveBeenCalledWith({
+      guildId: "guild-1",
+      fetchGuild: expect.any(Function)
+    });
+
+    const registrationOptions = registerCommands.mock.calls[0]?.[0];
+    await expect(registrationOptions?.fetchGuild("guild-1")).resolves.toEqual(
+      expect.objectContaining({ id: "guild-1" })
+    );
+    expect(readyClient.guilds.fetch).toHaveBeenCalledWith("guild-1");
+  });
+});
+
 function message(overrides: Partial<Parameters<typeof handleDiscordMessage>[0]> = {}) {
   return {
     id: "message-1",
@@ -125,5 +166,19 @@ function message(overrides: Partial<Parameters<typeof handleDiscordMessage>[0]> 
     createdAt: new Date("2026-06-10T12:00:00.000Z"),
     editedAt: null,
     ...overrides
+  };
+}
+
+function config(): CopanalhasConfig {
+  return {
+    discordToken: "token-value",
+    guildId: "guild-1",
+    channelId: "channel-1",
+    databasePath: "./data/copanalhas.sqlite",
+    autoPostEnabled: true,
+    autoPostTime: "09:00",
+    timezone: "America/Sao_Paulo",
+    footballDataToken: null,
+    resultSyncEnabled: false
   };
 }
