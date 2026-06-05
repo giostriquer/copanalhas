@@ -14,8 +14,14 @@ import {
   type DiscordIngestionResult
 } from "./discord/ingestion.js";
 import { postDiscordMatchCards } from "./discord/posting.js";
+import { upsertDiscordStandingsMessage } from "./discord/standings-posting.js";
 import { formatLeaderboard } from "./leaderboard/format.js";
 import { buildLeaderboard, scoreMatch } from "./scoring/scoring.js";
+import {
+  createStandingsDashboardMessages,
+  type StandingsDashboardMessage
+} from "./standings/format.js";
+import { computeGroupStandings, type StandingsResult } from "./standings/standings.js";
 import { openCopanalhasDatabase } from "./storage/database.js";
 import { WORLD_CUP_2026_SEED } from "./worldcup/seed.js";
 
@@ -35,6 +41,10 @@ export interface CliDependencies {
   ): Promise<unknown>;
   startInterval?(callback: () => void | Promise<void>, intervalMs: number): RuntimeInterval;
   sendMatchCard?(matchId: string, message: MatchCardMessage): Promise<string>;
+  upsertStandingsMessage?(
+    message: StandingsDashboardMessage,
+    existingMessageId: string | null
+  ): Promise<string>;
   now?(): Date;
   postMatchCards?(config: CopanalhasConfig, messages: MatchCardMessage[]): Promise<unknown>;
 }
@@ -62,6 +72,11 @@ export async function runCli(
 
   if (command === "leaderboard") {
     printLeaderboard(dependencies);
+    return;
+  }
+
+  if (command === "standings-preview") {
+    printStandingsPreview(dependencies);
     return;
   }
 
@@ -186,6 +201,10 @@ async function startBot(dependencies: CliDependencies): Promise<void> {
     sendMatchCard:
       dependencies.sendMatchCard ??
       ((matchId, message) => sendDiscordMatchCard(configResult.config, matchId, message)),
+    upsertStandingsMessage:
+      dependencies.upsertStandingsMessage ??
+      ((message, existingMessageId) =>
+        upsertDiscordStandingsMessage(configResult.config, message, existingMessageId)),
     now: dependencies.now ?? (() => new Date()),
     writeLine: dependencies.writeLine
   });
@@ -216,6 +235,37 @@ function defaultDependencies(): CliDependencies {
     startInterval: startNodeInterval,
     postMatchCards: postDiscordMatchCards
   };
+}
+
+function printStandingsPreview(dependencies: CliDependencies): void {
+  const messages = createStandingsDashboardMessages({
+    standings: computeGroupStandings(WORLD_CUP_2026_SEED.matches, firstDayPreviewResults()),
+    updatedAt: new Date("2026-06-11T23:30:00.000Z"),
+    timeZone: "UTC"
+  });
+
+  for (const message of messages) {
+    dependencies.writeLine(message.content);
+
+    for (const embed of message.embeds) {
+      dependencies.writeLine(`${embed.title}\n${embed.description}`);
+    }
+  }
+}
+
+function firstDayPreviewResults(): StandingsResult[] {
+  return [
+    {
+      matchId: "wc2026-001",
+      homeScore: 2,
+      awayScore: 1
+    },
+    {
+      matchId: "wc2026-002",
+      homeScore: 1,
+      awayScore: 1
+    }
+  ];
 }
 
 function startNodeInterval(
@@ -270,7 +320,7 @@ function dateFromOptionalArg(value: string | undefined): string | undefined {
 }
 
 function usage(): string {
-  return "Usage: npm run dev -- seed-matches | post-matches-today [YYYY-MM-DD] | record-result <matchId> <homeScore> <awayScore> | leaderboard | bot";
+  return "Usage: npm run dev -- seed-matches | post-matches-today [YYYY-MM-DD] | record-result <matchId> <homeScore> <awayScore> | leaderboard | standings-preview | bot";
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {

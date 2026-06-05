@@ -140,6 +140,27 @@ describe("runCli", () => {
     expect(lines).toEqual(["Posted 2 match cards for 2026-06-11."]);
   });
 
+  test("prints a local standings preview with simulated first-day results", async () => {
+    const lines: string[] = [];
+
+    await runCli(["standings-preview"], {
+      openDatabase: () => {
+        throw new Error("database should not open");
+      },
+      writeLine: (line) => lines.push(line),
+      env: {},
+      startDiscord: async () => undefined
+    });
+
+    const output = lines.join("\n");
+
+    expect(output).toContain("World Cup 2026 Group Standings");
+    expect(output).toContain("Groups A-F");
+    expect(output).toContain("Groups G-L");
+    expect(output).toContain("Group A");
+    expect(output).toContain("1 Mexico");
+  });
+
   test("starts the Discord bot with parsed environment config", async () => {
     const lines: string[] = [];
     const store = createStore();
@@ -158,6 +179,7 @@ describe("runCli", () => {
       startDiscord,
       startInterval,
       sendMatchCard: vi.fn(async () => "discord-message-1"),
+      upsertStandingsMessage: vi.fn(async (message) => `standings-${message.key}`),
       now: () => new Date("2026-06-11T12:00:00.000Z")
     });
 
@@ -230,7 +252,7 @@ describe("runCli", () => {
     });
 
     expect(lines).toEqual([
-      "Usage: npm run dev -- seed-matches | post-matches-today [YYYY-MM-DD] | record-result <matchId> <homeScore> <awayScore> | leaderboard | bot"
+      "Usage: npm run dev -- seed-matches | post-matches-today [YYYY-MM-DD] | record-result <matchId> <homeScore> <awayScore> | leaderboard | standings-preview | bot"
     ]);
   });
 });
@@ -252,6 +274,8 @@ function createStoreShape(): CliStore {
     listResults: vi.fn(() => [] as ReturnType<CliStore["listResults"]>),
     listPostedMatchCards: vi.fn(() => [] as ReturnType<CliStore["listPostedMatchCards"]>),
     recordPostedMatchCard: vi.fn(),
+    listStandingsPosts: vi.fn(() => [] as ReturnType<CliStore["listStandingsPosts"]>),
+    recordStandingsPost: vi.fn(),
     insertScoringRun: vi.fn(),
     close: vi.fn()
   };
