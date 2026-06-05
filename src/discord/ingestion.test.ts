@@ -219,6 +219,8 @@ function operatorOptions(): OperatorCommandOptions {
     postDueMatchCards: vi.fn(async () => ({ posted: [], skipped: [] })),
     listPredictions: vi.fn(() => []),
     listResults: vi.fn(() => []),
-    upsertResult: vi.fn()
+    upsertResult: vi.fn(),
+    listStandingsPosts: vi.fn(() => []),
+    updateStandingsDashboard: vi.fn(async () => ({ action: "updated" as const, posts: [] }))
   };
 }

@@ -2,19 +2,36 @@ import { describe, expect, test, vi } from "vitest";
 
 import {
   upsertDiscordStandingsMessageWithClient,
-  type DiscordStandingsClient
+  type DiscordEditableStandingsMessage,
+  type DiscordStandingsChannel,
+  type DiscordStandingsClient,
+  type DiscordStandingsMessagePayload,
+  type DiscordStandingsSentMessage
 } from "./standings-posting.js";
 import type { CopanalhasConfig } from "./config.js";
 import type { StandingsDashboardMessage } from "../standings/format.js";
 
 describe("upsertDiscordStandingsMessageWithClient", () => {
   test("edits an existing standings message in the configured channel", async () => {
-    const edit = vi.fn(async () => ({ id: "message-1" }));
-    const send = vi.fn(async () => ({ id: "replacement-message" }));
+    const edit = vi.fn(
+      async (_payload: DiscordStandingsMessagePayload): Promise<DiscordStandingsSentMessage> => ({
+        id: "message-1"
+      })
+    );
+    const send = vi.fn(
+      async (_payload: DiscordStandingsMessagePayload): Promise<DiscordStandingsSentMessage> => ({
+        id: "replacement-message"
+      })
+    );
     const client = clientWithChannel({
       send,
       messages: {
-        fetch: vi.fn(async () => ({ id: "message-1", edit }))
+        fetch: vi.fn(
+          async (_messageId: string): Promise<DiscordEditableStandingsMessage> => ({
+            id: "message-1",
+            edit
+          })
+        )
       }
     });
 
@@ -33,11 +50,15 @@ describe("upsertDiscordStandingsMessageWithClient", () => {
   });
 
   test("sends a replacement when the existing standings message cannot be fetched", async () => {
-    const send = vi.fn(async () => ({ id: "replacement-message" }));
+    const send = vi.fn(
+      async (_payload: DiscordStandingsMessagePayload): Promise<DiscordStandingsSentMessage> => ({
+        id: "replacement-message"
+      })
+    );
     const client = clientWithChannel({
       send,
       messages: {
-        fetch: vi.fn(async () => {
+        fetch: vi.fn(async (_messageId: string): Promise<DiscordEditableStandingsMessage> => {
           throw new Error("missing message");
         })
       }
@@ -55,8 +76,17 @@ describe("upsertDiscordStandingsMessageWithClient", () => {
   });
 
   test("sends a new standings message when no existing id is stored", async () => {
-    const send = vi.fn(async () => ({ id: "new-message" }));
-    const fetch = vi.fn();
+    const send = vi.fn(
+      async (_payload: DiscordStandingsMessagePayload): Promise<DiscordStandingsSentMessage> => ({
+        id: "new-message"
+      })
+    );
+    const fetch = vi.fn(
+      async (_messageId: string): Promise<DiscordEditableStandingsMessage> => ({
+        id: "unused",
+        edit: vi.fn()
+      })
+    );
     const client = clientWithChannel({
       send,
       messages: { fetch }
@@ -75,16 +105,19 @@ describe("upsertDiscordStandingsMessageWithClient", () => {
 });
 
 function clientWithChannel(channel: {
-  send: ReturnType<typeof vi.fn>;
-  messages?: { fetch: ReturnType<typeof vi.fn> };
+  send: NonNullable<DiscordStandingsChannel["send"]>;
+  messages?: NonNullable<DiscordStandingsChannel["messages"]>;
 }): DiscordStandingsClient {
+  const discordChannel: DiscordStandingsChannel = {
+    isTextBased: () => true,
+    send: channel.send,
+    ...(channel.messages ? { messages: channel.messages } : {})
+  };
+
   return {
     login: vi.fn(async () => undefined),
     channels: {
-      fetch: vi.fn(async () => ({
-        isTextBased: () => true,
-        ...channel
-      }))
+      fetch: vi.fn(async () => discordChannel)
     },
     destroy: vi.fn(async () => undefined)
   };

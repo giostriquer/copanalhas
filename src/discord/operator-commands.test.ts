@@ -194,7 +194,7 @@ function options(overrides: Partial<OperatorCommandOptions> = {}): OperatorComma
     listResults: vi.fn(() => []),
     upsertResult: vi.fn(),
     listStandingsPosts: vi.fn(() => []),
-    updateStandingsDashboard: vi.fn(async () => ({ action: "updated", posts: [] })),
+    updateStandingsDashboard: vi.fn(async () => ({ action: "updated" as const, posts: [] })),
     ...overrides
   };
 }
