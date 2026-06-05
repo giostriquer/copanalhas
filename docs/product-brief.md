@@ -3,9 +3,10 @@
 ## Purpose
 
 Copanalhas runs a private points-based World Cup prediction game inside a Discord
-server owned by the operator. Members post predictions in one agreed channel. The
-system collects those predictions, scores them after matches finish, and produces
-a leaderboard that can be shared back to the group.
+server owned by the operator. The bot posts match cards in one agreed channel,
+members click `Predict`, and the system collects score predictions through a
+Discord modal. It scores predictions after matches finish and produces a
+leaderboard that can be shared back to the group.
 
 ## Scope
 
@@ -29,7 +30,8 @@ The first version should handle:
 
 - The operator can configure the server, channel, and bot token without editing
   source code.
-- Predictions can be parsed into `{ user, match, homeScore, awayScore }` records.
+- Modal score predictions can be stored as `{ user, match, homeScore, awayScore }`
+  records.
 - Scoring can be reproduced from stored predictions and match results.
 - World Cup schedule/results updates are traceable to reviewed sources.
 - The bot never needs broader Discord permissions than the configured channel

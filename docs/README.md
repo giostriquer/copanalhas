@@ -1,7 +1,8 @@
 # Documentation
 
-This docs folder is the source of truth for Copanalhas until implementation code
-exists. Keep changes small and tied to a concrete product or safety decision.
+This docs folder is the source of truth for Copanalhas product, safety, and
+architecture decisions. Keep changes small and tied to a concrete product or
+safety decision.
 
 ## Map
 

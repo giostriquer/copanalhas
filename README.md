@@ -8,7 +8,8 @@ money, and should not collect more Discord data than is needed to score the game
 ## Goals
 
 - Collect match predictions from a single configured Discord guild/channel.
-- Parse predictions into structured records tied to Discord user IDs and match IDs.
+- Let members click match cards and submit score predictions through Discord modals.
+- Store predictions as structured records tied to Discord user IDs and match IDs.
 - Keep World Cup match data reviewable and updateable as the tournament changes.
 - Score exact scoreline predictions and closest misses deterministically.
 - Preserve enough audit history to explain leaderboard changes.
@@ -22,10 +23,17 @@ money, and should not collect more Discord data than is needed to score the game
 
 ## Current Status
 
-This repository currently contains the project brief, architecture notes, safety
-policy, scoring rules, and repo-local Agent Workshop onboarding. Implementation
-should start from the docs in `docs/` and use `AGENTS.md` as the contributor and
-agent routing guide.
+This repository contains the initial Discord bot implementation, a reviewed
+World Cup seed subset, SQLite storage, scoring/leaderboard logic, and the
+Discord-native match card prediction flow.
+
+Useful commands:
+
+- `npm run dev -- seed-matches`
+- `npm run dev -- post-matches-today [YYYY-MM-DD]`
+- `npm run dev -- bot`
+- `npm run dev -- record-result <matchId> <homeScore> <awayScore>`
+- `npm run dev -- leaderboard`
 
 ## Documentation
 

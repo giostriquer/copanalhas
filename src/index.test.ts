@@ -97,6 +97,43 @@ describe("runCli", () => {
     expect(lines).toEqual(["Recorded result wc2026-001 2-1."]);
   });
 
+  test("posts match cards for a selected World Cup date", async () => {
+    const lines: string[] = [];
+    const postMatchCards = vi.fn(async () => undefined);
+
+    await runCli(["post-matches-today", "2026-06-11"], {
+      openDatabase: () => {
+        throw new Error("database should not open");
+      },
+      writeLine: (line) => lines.push(line),
+      env: {
+        DISCORD_BOT_TOKEN: "token-value",
+        DISCORD_GUILD_ID: "guild-1",
+        DISCORD_CHANNEL_ID: "channel-1"
+      },
+      startDiscord: async () => undefined,
+      postMatchCards
+    });
+
+    expect(postMatchCards).toHaveBeenCalledWith(
+      {
+        discordToken: "token-value",
+        guildId: "guild-1",
+        channelId: "channel-1",
+        databasePath: "./data/copanalhas.sqlite"
+      },
+      [
+        expect.objectContaining({
+          content: expect.stringContaining("Mexico vs South Africa")
+        }),
+        expect.objectContaining({
+          content: expect.stringContaining("Korea Republic vs Czechia")
+        })
+      ]
+    );
+    expect(lines).toEqual(["Posted 2 match cards for 2026-06-11."]);
+  });
+
   test("starts the Discord bot with parsed environment config", async () => {
     const lines: string[] = [];
     const store = createStore();
@@ -172,7 +209,7 @@ describe("runCli", () => {
     });
 
     expect(lines).toEqual([
-      "Usage: npm run dev -- seed-matches | record-result <matchId> <homeScore> <awayScore> | leaderboard | bot"
+      "Usage: npm run dev -- seed-matches | post-matches-today [YYYY-MM-DD] | record-result <matchId> <homeScore> <awayScore> | leaderboard | bot"
     ]);
   });
 });

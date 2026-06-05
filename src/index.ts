@@ -2,9 +2,11 @@ import { pathToFileURL } from "node:url";
 
 import { createPredictionPersistenceHandler } from "./app/collector.js";
 import { loadLocalEnvFile } from "./config/env.js";
+import { createMatchCardMessage, type MatchCardMessage } from "./discord/components.js";
 import { parseCopanalhasConfig, type CopanalhasConfig } from "./discord/config.js";
 import { startDiscordClient } from "./discord/ingestion.js";
 import type { PredictionInteractionOptions } from "./discord/interactions.js";
+import { postDiscordMatchCards } from "./discord/posting.js";
 import { formatLeaderboard } from "./leaderboard/format.js";
 import { buildLeaderboard, scoreMatch, type MatchResult, type ScorePrediction } from "./scoring/scoring.js";
 import {
@@ -34,6 +36,7 @@ export interface CliDependencies {
     onMessageResult: Parameters<typeof startDiscordClient>[1],
     predictionInteractionOptions?: PredictionInteractionOptions
   ): Promise<unknown>;
+  postMatchCards?(config: CopanalhasConfig, messages: MatchCardMessage[]): Promise<void>;
 }
 
 export async function runCli(
@@ -44,6 +47,11 @@ export async function runCli(
 
   if (command === "seed-matches") {
     seedMatches(dependencies);
+    return;
+  }
+
+  if (command === "post-matches-today") {
+    await postMatchesToday(argv, dependencies);
     return;
   }
 
@@ -75,6 +83,35 @@ function seedMatches(dependencies: CliDependencies): void {
   } finally {
     store.close();
   }
+}
+
+async function postMatchesToday(argv: string[], dependencies: CliDependencies): Promise<void> {
+  const date = dateFromOptionalArg(argv[1]);
+
+  if (!date) {
+    dependencies.writeLine(usage());
+    return;
+  }
+
+  const configResult = parseCopanalhasConfig(dependencies.env);
+
+  if (!configResult.ok) {
+    for (const error of configResult.errors) {
+      dependencies.writeLine(error);
+    }
+    return;
+  }
+
+  const matches = WORLD_CUP_2026_SEED.matches.filter((match) => match.localDate === date);
+
+  if (matches.length === 0) {
+    dependencies.writeLine(`No reviewed World Cup matches found for ${date}.`);
+    return;
+  }
+
+  const postMatchCards = dependencies.postMatchCards ?? postDiscordMatchCards;
+  await postMatchCards(configResult.config, matches.map(createMatchCardMessage));
+  dependencies.writeLine(`Posted ${matches.length} match cards for ${date}.`);
 }
 
 function recordResult(argv: string[], dependencies: CliDependencies): void {
@@ -164,7 +201,8 @@ function defaultDependencies(): CliDependencies {
     openDatabase: openCopanalhasDatabase,
     writeLine: (line) => console.log(line),
     env: process.env,
-    startDiscord: startDiscordClient
+    startDiscord: startDiscordClient,
+    postMatchCards: postDiscordMatchCards
   };
 }
 
@@ -180,8 +218,18 @@ function parseScore(value: string | undefined): number | undefined {
   return Number.parseInt(value, 10);
 }
 
+function dateFromOptionalArg(value: string | undefined): string | undefined {
+  const date = value?.trim() || new Date().toISOString().slice(0, 10);
+
+  if (!/^\d{4}-\d{2}-\d{2}$/u.test(date)) {
+    return undefined;
+  }
+
+  return date;
+}
+
 function usage(): string {
-  return "Usage: npm run dev -- seed-matches | record-result <matchId> <homeScore> <awayScore> | leaderboard | bot";
+  return "Usage: npm run dev -- seed-matches | post-matches-today [YYYY-MM-DD] | record-result <matchId> <homeScore> <awayScore> | leaderboard | bot";
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
