@@ -69,6 +69,7 @@ export interface OperatorCommandOptions {
   updateStandingsDashboard(): Promise<UpdateStandingsDashboardResult>;
   listLeaderboardPosts(): StoredLeaderboardPost[];
   updateLeaderboardDashboard(): Promise<UpdateLeaderboardDashboardResult>;
+  resolveUserDisplayNames?(userIds: readonly string[]): Promise<ReadonlyMap<string, string>>;
   logOperatorCommand?(input: OperatorCommandInput, result: OperatorCommandResult): void;
   logOperatorAutocomplete?(
     input: OperatorAutocompleteInput,
@@ -230,8 +231,13 @@ export async function handleOperatorCommand(
     const scoredPredictions = options
       .listResults()
       .flatMap((result) => scoreMatch(result, predictions));
+    const rows = buildLeaderboard(scoredPredictions, predictions);
+    const displayNames = await resolveLeaderboardDisplayNames(
+      options,
+      rows.map((row) => row.userId)
+    );
 
-    return reply(formatLeaderboard(buildLeaderboard(scoredPredictions, predictions)));
+    return reply(formatLeaderboard(rows, displayNames));
   }
 
   if (command.subcommand === "meus-palpites") {
@@ -561,6 +567,21 @@ function reply(content: string, ephemeral = true): OperatorCommandResult {
     content,
     ephemeral
   };
+}
+
+async function resolveLeaderboardDisplayNames(
+  options: Pick<OperatorCommandOptions, "resolveUserDisplayNames">,
+  userIds: readonly string[]
+): Promise<ReadonlyMap<string, string>> {
+  if (!options.resolveUserDisplayNames || userIds.length === 0) {
+    return new Map();
+  }
+
+  try {
+    return await options.resolveUserDisplayNames(userIds);
+  } catch {
+    return new Map();
+  }
 }
 
 function matchFromCommand(

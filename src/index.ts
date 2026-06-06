@@ -8,6 +8,7 @@ import {
 import { loadLocalEnvFile } from "./config/env.js";
 import { createMatchDayMessage, type MatchCardMessage } from "./discord/components.js";
 import { parseCopanalhasConfig, type CopanalhasConfig } from "./discord/config.js";
+import { fetchDiscordDisplayNames } from "./discord/display-names.js";
 import {
   startDiscordClient,
   type DiscordClientReadyOptions,
@@ -51,6 +52,10 @@ export interface CliDependencies {
     message: LeaderboardDashboardMessage,
     existingMessageId: string | null
   ): Promise<string>;
+  resolveDiscordDisplayNames?(
+    config: CopanalhasConfig,
+    userIds: readonly string[]
+  ): Promise<ReadonlyMap<string, string>>;
   now?(): Date;
   postMatchCards?(config: CopanalhasConfig, messages: MatchCardMessage[]): Promise<unknown>;
 }
@@ -248,6 +253,11 @@ async function startBot(dependencies: CliDependencies): Promise<void> {
       dependencies.upsertLeaderboardMessage ??
       ((message, existingMessageId) =>
         upsertDiscordLeaderboardMessage(configResult.config, message, existingMessageId)),
+    resolveUserDisplayNames: (userIds) =>
+      (dependencies.resolveDiscordDisplayNames ?? fetchDiscordDisplayNames)(
+        configResult.config,
+        userIds
+      ),
     now: dependencies.now ?? (() => new Date()),
     writeLine: dependencies.writeLine
   });

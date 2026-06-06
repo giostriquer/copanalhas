@@ -196,6 +196,14 @@ describe("handleOperatorCommand", () => {
   });
 
   test("leaderboard returns formatted standings", async () => {
+    const resolveUserDisplayNames = vi.fn(async (userIds: readonly string[]) => {
+      expect(userIds).toEqual(["u1", "u2"]);
+
+      return new Map([
+        ["u1", "Alice"],
+        ["u2", "Bob"]
+      ]);
+    });
     const result = await handleOperatorCommand(
       command("leaderboard"),
       options({
@@ -203,7 +211,8 @@ describe("handleOperatorCommand", () => {
           storedPrediction("u1", 2, 1, "2026-06-10T12:00:00.000Z"),
           storedPrediction("u2", 1, 1, "2026-06-10T12:00:00.000Z")
         ],
-        listResults: () => [{ matchId: "wc2026-001", homeScore: 2, awayScore: 1 }]
+        listResults: () => [{ matchId: "wc2026-001", homeScore: 2, awayScore: 1 }],
+        resolveUserDisplayNames
       })
     );
 
@@ -215,8 +224,10 @@ describe("handleOperatorCommand", () => {
     if (result.action !== "replied") {
       throw new Error("expected leaderboard reply");
     }
+    expect(resolveUserDisplayNames).toHaveBeenCalledOnce();
     expect(result.content).toContain("Ranking Copanalhas");
-    expect(result.content).toContain("1. u1 - 3 pts (1 exato, 0 mais próximos, 1 partida)");
+    expect(result.content).toContain("1. Alice - 3 pts (1 exato, 0 mais próximos, 1 partida)");
+    expect(result.content).toContain("2. Bob - 1 pt (0 exatos, 1 mais próximo, 1 partida)");
     expect(result.content).toContain("Como funciona");
   });
 

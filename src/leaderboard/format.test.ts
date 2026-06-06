@@ -67,6 +67,16 @@ describe("formatLeaderboard", () => {
       ].join("\n")
     );
   });
+
+  test("normalizes display names before rendering them", () => {
+    const output = formatLeaderboard(
+      [{ userId: "u1", points: 0, exactCount: 0, closestCount: 0, matchesScored: 0 }],
+      new Map([["u1", "Ana\nMaria"]])
+    );
+
+    expect(output).toContain("1. Ana Maria - 0 pts");
+    expect(output).not.toContain("Ana\nMaria");
+  });
 });
 
 describe("createLeaderboardDashboardMessage", () => {
@@ -138,5 +148,17 @@ describe("createLeaderboardDashboardMessage", () => {
         "- O ponto de mais próximo também vale quando alguém acerta o placar exato; empates recebem a mesma posição."
       ].join("\n")
     );
+  });
+
+  test("normalizes dashboard display names before placing them in the table", () => {
+    const content = createLeaderboardDashboardMessage({
+      rows: [{ userId: "user-1", points: 0, exactCount: 0, closestCount: 0, matchesScored: 0 }],
+      displayNames: new Map([["user-1", "Ana\nMaria"]]),
+      updatedAt: new Date("2026-06-11T23:30:00.000Z"),
+      timeZone: "UTC"
+    }).content;
+
+    expect(content).toContain("1  Ana Maria            0     0     0     0");
+    expect(content).not.toContain("Ana\nMaria");
   });
 });

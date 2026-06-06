@@ -39,7 +39,7 @@ export function formatLeaderboard(
     previousRank = rank;
 
     lines.push(
-      `${rank}. ${displayNames.get(row.userId) ?? row.userId} - ${points(row.points)} (${count(
+      `${rank}. ${displayNameForRow(row, displayNames)} - ${points(row.points)} (${count(
         row.exactCount,
         "exato",
         "exatos"
@@ -103,9 +103,20 @@ function rankForRow(rows: LeaderboardRow[], index: number): number {
 }
 
 function playerName(row: LeaderboardRow, displayNames: ReadonlyMap<string, string>): string {
-  const name = displayNames.get(row.userId) ?? row.userId;
+  const name = displayNameForRow(row, displayNames);
 
   return name.length > 18 ? `${name.slice(0, 17)}.` : name;
+}
+
+function displayNameForRow(
+  row: LeaderboardRow,
+  displayNames: ReadonlyMap<string, string>
+): string {
+  return normalizeDisplayName(displayNames.get(row.userId)) || row.userId;
+}
+
+function normalizeDisplayName(name: string | undefined): string {
+  return (name ?? "").replace(/`/gu, "'").replace(/\s+/gu, " ").trim();
 }
 
 function points(value: number): string {

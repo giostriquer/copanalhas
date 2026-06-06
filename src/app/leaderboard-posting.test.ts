@@ -116,6 +116,46 @@ describe("updateLeaderboardDashboard", () => {
     expect(postedContent).toContain("1  user-2               0     0     0     0");
   });
 
+  test("renders resolved Discord display names instead of raw user ids", async () => {
+    let postedContent = "";
+    const resolveUserDisplayNames = vi.fn(async (userIds: readonly string[]) => {
+      expect(userIds).toEqual(["user-1", "user-2"]);
+
+      return new Map([
+        ["user-1", "Giova"],
+        ["user-2", "Ana"]
+      ]);
+    });
+    const upsertLeaderboardMessage = vi.fn(
+      async (message: LeaderboardDashboardMessage) => {
+        postedContent = message.content;
+        return "leaderboard-message-1";
+      }
+    );
+
+    await updateLeaderboardDashboard({
+      guildId: "guild-1",
+      channelId: "channel-1",
+      predictions: [
+        prediction("user-2", "wc2026-001", 1, 1),
+        prediction("user-1", "wc2026-002", 2, 0)
+      ],
+      results: [],
+      timeZone: "UTC",
+      now: () => new Date("2026-06-11T23:35:00.000Z"),
+      listLeaderboardPosts: () => [],
+      recordLeaderboardPost: vi.fn(),
+      resolveUserDisplayNames,
+      upsertLeaderboardMessage
+    });
+
+    expect(resolveUserDisplayNames).toHaveBeenCalledOnce();
+    expect(postedContent).toContain("1  Giova                0     0     0     0");
+    expect(postedContent).toContain("1  Ana                  0     0     0     0");
+    expect(postedContent).not.toContain("user-1");
+    expect(postedContent).not.toContain("user-2");
+  });
+
   test("records a replacement when the adapter returns a new message id", async () => {
     const records: StoredLeaderboardPost[] = [existingPost()];
     const upsertLeaderboardMessage = vi.fn(async () => "replacement-message");

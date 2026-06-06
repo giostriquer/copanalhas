@@ -110,6 +110,7 @@ export interface StartCopanalhasBotRuntimeOptions {
   syncFinishedResults?(
     options: SyncFinishedResultsOptions
   ): Promise<SyncFinishedResultsResult>;
+  resolveUserDisplayNames?(userIds: readonly string[]): Promise<ReadonlyMap<string, string>>;
   now(): Date;
   writeLine(line: string): void;
 }
@@ -247,6 +248,9 @@ function createOperatorCommandOptions(
         now: options.now,
         listLeaderboardPosts: () => options.store.listLeaderboardPosts(),
         recordLeaderboardPost: (post) => options.store.recordLeaderboardPost(post),
+        ...(options.resolveUserDisplayNames
+          ? { resolveUserDisplayNames: options.resolveUserDisplayNames }
+          : {}),
         upsertLeaderboardMessage: options.upsertLeaderboardMessage
       });
 
@@ -257,7 +261,10 @@ function createOperatorCommandOptions(
     logOperatorCommand: (input, result) =>
       options.writeLine(formatOperatorCommandLog(input, result)),
     logOperatorAutocomplete: (input, result) =>
-      options.writeLine(formatOperatorAutocompleteLog(input, result))
+      options.writeLine(formatOperatorAutocompleteLog(input, result)),
+    ...(options.resolveUserDisplayNames
+      ? { resolveUserDisplayNames: options.resolveUserDisplayNames }
+      : {})
   };
 }
 

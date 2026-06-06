@@ -14,6 +14,7 @@ export interface UpdateLeaderboardDashboardOptions {
   now(): Date;
   listLeaderboardPosts(): StoredLeaderboardPost[];
   recordLeaderboardPost(post: StoredLeaderboardPost): void;
+  resolveUserDisplayNames?(userIds: readonly string[]): Promise<ReadonlyMap<string, string>>;
   upsertLeaderboardMessage(
     message: LeaderboardDashboardMessage,
     existingMessageId: string | null
@@ -38,8 +39,11 @@ export async function updateLeaderboardDashboard(
   const scoredPredictions = options.results.flatMap((result) =>
     scoreMatch(result, [...options.predictions])
   );
+  const rows = buildLeaderboard(scoredPredictions, options.predictions);
+  const displayNames = await resolveLeaderboardDisplayNames(options, rows.map((row) => row.userId));
   const message = createLeaderboardDashboardMessage({
-    rows: buildLeaderboard(scoredPredictions, options.predictions),
+    rows,
+    displayNames,
     updatedAt: new Date(timestamp),
     timeZone: options.timeZone
   });
@@ -61,6 +65,21 @@ export async function updateLeaderboardDashboard(
       action: postAction
     }
   };
+}
+
+async function resolveLeaderboardDisplayNames(
+  options: Pick<UpdateLeaderboardDashboardOptions, "resolveUserDisplayNames">,
+  userIds: readonly string[]
+): Promise<ReadonlyMap<string, string>> {
+  if (!options.resolveUserDisplayNames || userIds.length === 0) {
+    return new Map();
+  }
+
+  try {
+    return await options.resolveUserDisplayNames(userIds);
+  } catch {
+    return new Map();
+  }
 }
 
 function matchingPost(
