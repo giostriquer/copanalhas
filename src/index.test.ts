@@ -51,13 +51,12 @@ describe("runCli", () => {
       startDiscord: async () => undefined
     });
 
-    expect(lines).toEqual([
-      [
-        "Copanalhas Leaderboard",
-        "1. u1 - 3 pts (1 exact, 0 closest, 1 match)",
-        "2. u2 - 1 pt (0 exact, 1 closest, 1 match)"
-      ].join("\n")
-    ]);
+    expect(lines).toHaveLength(1);
+    expect(lines[0]).toContain("Ranking Copanalhas");
+    expect(lines[0]).toContain("1. u1 - 3 pts (1 exato, 0 mais próximos, 1 partida)");
+    expect(lines[0]).toContain("2. u2 - 1 pt (0 exatos, 1 mais próximo, 1 partida)");
+    expect(lines[0]).toContain("Como funciona");
+    expect(lines[0]).toContain("Placar exato vale 3 pts.");
   });
 
   test("seeds reviewed World Cup matches", async () => {

@@ -4,7 +4,18 @@ import { createLeaderboardDashboardMessage, formatLeaderboard } from "./format.j
 
 describe("formatLeaderboard", () => {
   test("renders no-results output", () => {
-    expect(formatLeaderboard([])).toBe("No leaderboard results yet.");
+    expect(formatLeaderboard([])).toBe(
+      [
+        "Ranking Copanalhas",
+        "Ainda não há resultados pontuados.",
+        "",
+        "Como funciona",
+        "- Envie seu palpite pelo botão do jogo do dia; você pode editar até 30 min antes da partida.",
+        "- Placar exato vale 3 pts.",
+        "- O palpite mais próximo vale 1 pt pela menor soma de diferenças nos gols dos dois times.",
+        "- O ponto de mais próximo também vale quando alguém acerta o placar exato; empates recebem a mesma posição."
+      ].join("\n")
+    );
   });
 
   test("renders ranked leaderboard rows with display names", () => {
@@ -21,9 +32,15 @@ describe("formatLeaderboard", () => {
       )
     ).toBe(
       [
-        "Copanalhas Leaderboard",
-        "1. Alice - 4 pts (1 exact, 1 closest, 2 matches)",
-        "2. Bob - 1 pt (0 exact, 1 closest, 1 match)"
+        "Ranking Copanalhas",
+        "1. Alice - 4 pts (1 exato, 1 mais próximo, 2 partidas)",
+        "2. Bob - 1 pt (0 exatos, 1 mais próximo, 1 partida)",
+        "",
+        "Como funciona",
+        "- Envie seu palpite pelo botão do jogo do dia; você pode editar até 30 min antes da partida.",
+        "- Placar exato vale 3 pts.",
+        "- O palpite mais próximo vale 1 pt pela menor soma de diferenças nos gols dos dois times.",
+        "- O ponto de mais próximo também vale quando alguém acerta o placar exato; empates recebem a mesma posição."
       ].join("\n")
     );
   });
@@ -37,10 +54,16 @@ describe("formatLeaderboard", () => {
       ])
     ).toBe(
       [
-        "Copanalhas Leaderboard",
-        "1. u1 - 3 pts (1 exact, 0 closest, 1 match)",
-        "2. u2 - 1 pt (0 exact, 1 closest, 1 match)",
-        "2. u3 - 1 pt (0 exact, 1 closest, 1 match)"
+        "Ranking Copanalhas",
+        "1. u1 - 3 pts (1 exato, 0 mais próximos, 1 partida)",
+        "2. u2 - 1 pt (0 exatos, 1 mais próximo, 1 partida)",
+        "2. u3 - 1 pt (0 exatos, 1 mais próximo, 1 partida)",
+        "",
+        "Como funciona",
+        "- Envie seu palpite pelo botão do jogo do dia; você pode editar até 30 min antes da partida.",
+        "- Placar exato vale 3 pts.",
+        "- O palpite mais próximo vale 1 pt pela menor soma de diferenças nos gols dos dois times.",
+        "- O ponto de mais próximo também vale quando alguém acerta o placar exato; empates recebem a mesma posição."
       ].join("\n")
     );
   });
@@ -56,11 +79,17 @@ describe("createLeaderboardDashboardMessage", () => {
       })
     ).toEqual({
       content: [
-        "Copanalhas Leaderboard",
-        "Updated: 2026-06-11 23:30 UTC",
+        "Ranking Copanalhas",
+        "Atualizado: 2026-06-11 23:30 UTC",
         "```text",
-        "No scored matches yet.",
-        "```"
+        "Ainda não há partidas pontuadas.",
+        "```",
+        "",
+        "Como funciona",
+        "- Envie seu palpite pelo botão do jogo do dia; você pode editar até 30 min antes da partida.",
+        "- Placar exato vale 3 pts.",
+        "- O palpite mais próximo vale 1 pt pela menor soma de diferenças nos gols dos dois times.",
+        "- O ponto de mais próximo também vale quando alguém acerta o placar exato; empates recebem a mesma posição."
       ].join("\n"),
       embeds: []
     });
@@ -94,13 +123,19 @@ describe("createLeaderboardDashboardMessage", () => {
       }).content
     ).toBe(
       [
-        "Copanalhas Leaderboard",
-        "Updated: 2026-06-11 23:30 UTC",
+        "Ranking Copanalhas",
+        "Atualizado: 2026-06-11 23:30 UTC",
         "```text",
-        "#  Player               Pts Exact Close Matches",
-        "1  Giova                6     2     0       2",
-        "2  Ana                  1     0     1       2",
-        "```"
+        "#  Jogador              Pts Exato Perto Jogos",
+        "1  Giova                6     2     0     2",
+        "2  Ana                  1     0     1     2",
+        "```",
+        "",
+        "Como funciona",
+        "- Envie seu palpite pelo botão do jogo do dia; você pode editar até 30 min antes da partida.",
+        "- Placar exato vale 3 pts.",
+        "- O palpite mais próximo vale 1 pt pela menor soma de diferenças nos gols dos dois times.",
+        "- O ponto de mais próximo também vale quando alguém acerta o placar exato; empates recebem a mesma posição."
       ].join("\n")
     );
   });

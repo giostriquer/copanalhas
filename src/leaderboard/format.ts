@@ -12,15 +12,24 @@ export interface LeaderboardDashboardMessage {
   embeds: [];
 }
 
+const leaderboardTitle = "Ranking Copanalhas";
+const rulesLines = [
+  "Como funciona",
+  "- Envie seu palpite pelo botão do jogo do dia; você pode editar até 30 min antes da partida.",
+  "- Placar exato vale 3 pts.",
+  "- O palpite mais próximo vale 1 pt pela menor soma de diferenças nos gols dos dois times.",
+  "- O ponto de mais próximo também vale quando alguém acerta o placar exato; empates recebem a mesma posição."
+];
+
 export function formatLeaderboard(
   rows: LeaderboardRow[],
   displayNames: ReadonlyMap<string, string> = new Map()
 ): string {
   if (rows.length === 0) {
-    return "No leaderboard results yet.";
+    return [leaderboardTitle, "Ainda não há resultados pontuados.", "", ...rulesLines].join("\n");
   }
 
-  const lines = ["Copanalhas Leaderboard"];
+  const lines = [leaderboardTitle];
   let previousPoints: number | undefined;
   let previousRank = 0;
 
@@ -32,17 +41,17 @@ export function formatLeaderboard(
     lines.push(
       `${rank}. ${displayNames.get(row.userId) ?? row.userId} - ${points(row.points)} (${count(
         row.exactCount,
-        "exact",
-        "exact"
-      )}, ${count(row.closestCount, "closest", "closest")}, ${count(
+        "exato",
+        "exatos"
+      )}, ${count(row.closestCount, "mais próximo", "mais próximos")}, ${count(
         row.matchesScored,
-        "match",
-        "matches"
+        "partida",
+        "partidas"
       )})`
     );
   });
 
-  return lines.join("\n");
+  return [...lines, "", ...rulesLines].join("\n");
 }
 
 export function createLeaderboardDashboardMessage(
@@ -50,11 +59,13 @@ export function createLeaderboardDashboardMessage(
 ): LeaderboardDashboardMessage {
   return {
     content: [
-      "Copanalhas Leaderboard",
-      `Updated: ${formatDashboardTimestamp(options.updatedAt, options.timeZone)}`,
+      leaderboardTitle,
+      `Atualizado: ${formatDashboardTimestamp(options.updatedAt, options.timeZone)}`,
       "```text",
       ...formatDashboardRows(options.rows, options.displayNames ?? new Map()),
-      "```"
+      "```",
+      "",
+      ...rulesLines
     ].join("\n"),
     embeds: []
   };
@@ -65,11 +76,11 @@ function formatDashboardRows(
   displayNames: ReadonlyMap<string, string>
 ): string[] {
   if (rows.length === 0) {
-    return ["No scored matches yet."];
+    return ["Ainda não há partidas pontuadas."];
   }
 
   return [
-    "#  Player               Pts Exact Close Matches",
+    "#  Jogador              Pts Exato Perto Jogos",
     ...rows.map((row, index) =>
       [
         String(rankForRow(rows, index)).padEnd(2),
@@ -77,7 +88,7 @@ function formatDashboardRows(
         row.points.toString().padStart(3),
         row.exactCount.toString().padStart(5),
         row.closestCount.toString().padStart(5),
-        row.matchesScored.toString().padStart(7)
+        row.matchesScored.toString().padStart(5)
       ].join(" ")
     )
   ];

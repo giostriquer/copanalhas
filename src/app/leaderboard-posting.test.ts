@@ -32,7 +32,13 @@ describe("updateLeaderboardDashboard", () => {
     });
     expect(upsertLeaderboardMessage).toHaveBeenCalledWith(
       expect.objectContaining({
-        content: expect.stringContaining("Copanalhas Leaderboard")
+        content: expect.stringContaining("Ranking Copanalhas")
+      }),
+      null
+    );
+    expect(upsertLeaderboardMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        content: expect.stringContaining("Como funciona")
       }),
       null
     );

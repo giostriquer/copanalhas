@@ -196,26 +196,28 @@ describe("handleOperatorCommand", () => {
   });
 
   test("leaderboard returns formatted standings", async () => {
-    await expect(
-      handleOperatorCommand(
-        command("leaderboard"),
-        options({
-          listPredictions: () => [
-            storedPrediction("u1", 2, 1, "2026-06-10T12:00:00.000Z"),
-            storedPrediction("u2", 1, 1, "2026-06-10T12:00:00.000Z")
-          ],
-          listResults: () => [{ matchId: "wc2026-001", homeScore: 2, awayScore: 1 }]
-        })
-      )
-    ).resolves.toEqual({
+    const result = await handleOperatorCommand(
+      command("leaderboard"),
+      options({
+        listPredictions: () => [
+          storedPrediction("u1", 2, 1, "2026-06-10T12:00:00.000Z"),
+          storedPrediction("u2", 1, 1, "2026-06-10T12:00:00.000Z")
+        ],
+        listResults: () => [{ matchId: "wc2026-001", homeScore: 2, awayScore: 1 }]
+      })
+    );
+
+    expect(result).toEqual({
       action: "replied",
-      content: [
-        "Copanalhas Leaderboard",
-        "1. u1 - 3 pts (1 exact, 0 closest, 1 match)",
-        "2. u2 - 1 pt (0 exact, 1 closest, 1 match)"
-      ].join("\n"),
+      content: expect.any(String),
       ephemeral: true
     });
+    if (result.action !== "replied") {
+      throw new Error("expected leaderboard reply");
+    }
+    expect(result.content).toContain("Ranking Copanalhas");
+    expect(result.content).toContain("1. u1 - 3 pts (1 exato, 0 mais próximos, 1 partida)");
+    expect(result.content).toContain("Como funciona");
   });
 
   test("meus-palpites returns the caller's predictions for the current local date", async () => {
