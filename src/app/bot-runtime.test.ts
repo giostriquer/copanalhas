@@ -55,6 +55,13 @@ describe("startCopanalhasBotRuntime", () => {
     expect(store.recordStandingsPost).toHaveBeenCalledTimes(2);
     expect(upsertLeaderboardMessage).toHaveBeenCalledOnce();
     expect(store.recordLeaderboardPost).toHaveBeenCalledOnce();
+    expect(writeLine).toHaveBeenCalledWith(
+      "[dashboard] standings posts=2 posted=2 edited=0 replaced=0"
+    );
+    expect(writeLine).toHaveBeenCalledWith(
+      "[dashboard] leaderboard action=posted message=leaderboard-message-1"
+    );
+    expect(writeLine).toHaveBeenCalledWith("[auto-post] date=2026-06-11 posted=2 skipped=0");
 
     await runtime.stop();
   });
@@ -145,6 +152,7 @@ describe("startCopanalhasBotRuntime", () => {
     const startInterval = vi.fn(() => ({ stop: vi.fn() }));
     const upsertStandingsMessage = vi.fn(async (message) => `standings-${message.key}`);
     const upsertLeaderboardMessage = vi.fn(async () => "leaderboard-message-1");
+    const writeLine = vi.fn();
     const syncFinishedResults = vi.fn(async () => ({
       action: "synced" as const,
       storedResults: ["wc2026-001"],
@@ -162,7 +170,7 @@ describe("startCopanalhasBotRuntime", () => {
       upsertLeaderboardMessage,
       syncFinishedResults,
       now: () => new Date("2026-06-11T12:00:00.000Z"),
-      writeLine: vi.fn()
+      writeLine
     });
 
     expect(syncFinishedResults).toHaveBeenCalledOnce();
@@ -171,6 +179,15 @@ describe("startCopanalhasBotRuntime", () => {
         dateFrom: "2026-06-09",
         dateTo: "2026-06-11"
       })
+    );
+    expect(writeLine).toHaveBeenCalledWith(
+      "[result-sync] range=2026-06-09..2026-06-11 synced stored=1 skipped=0"
+    );
+    expect(writeLine).toHaveBeenCalledWith(
+      "[dashboard] standings posts=2 posted=2 edited=0 replaced=0"
+    );
+    expect(writeLine).toHaveBeenCalledWith(
+      "[dashboard] leaderboard action=posted message=leaderboard-message-1"
     );
     expect(upsertStandingsMessage).toHaveBeenCalledTimes(4);
     expect(upsertLeaderboardMessage).toHaveBeenCalledTimes(2);

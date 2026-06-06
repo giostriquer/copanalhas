@@ -69,6 +69,11 @@ export interface OperatorCommandOptions {
   updateStandingsDashboard(): Promise<UpdateStandingsDashboardResult>;
   listLeaderboardPosts(): StoredLeaderboardPost[];
   updateLeaderboardDashboard(): Promise<UpdateLeaderboardDashboardResult>;
+  logOperatorCommand?(input: OperatorCommandInput, result: OperatorCommandResult): void;
+  logOperatorAutocomplete?(
+    input: OperatorAutocompleteInput,
+    result: OperatorAutocompleteResult
+  ): void;
 }
 
 export type OperatorCommandResult =
@@ -371,16 +376,16 @@ export async function handleDiscordOperatorCommand(
     });
   }
 
-  const result = await handleOperatorCommand(
-    {
-      guildId: interaction.guildId,
-      channelId: interaction.channelId,
-      userId: interaction.user.id,
-      subcommand,
-      options: readCommandOptions(subcommand, interaction)
-    },
-    options
-  );
+  const commandInput: OperatorCommandInput = {
+    guildId: interaction.guildId,
+    channelId: interaction.channelId,
+    userId: interaction.user.id,
+    subcommand,
+    options: readCommandOptions(subcommand, interaction)
+  };
+  const result = await handleOperatorCommand(commandInput, options);
+
+  options.logOperatorCommand?.(commandInput, result);
 
   if (result.action === "replied") {
     if (shouldDeferPrivately) {
@@ -427,17 +432,17 @@ export async function handleDiscordOperatorAutocomplete(
   }
 
   const focused = interaction.options.getFocused(true);
-  const result = handleOperatorAutocomplete(
-    {
-      guildId: interaction.guildId,
-      channelId: interaction.channelId,
-      userId: interaction.user.id,
-      subcommand,
-      focusedOptionName: focused.name,
-      focusedValue: String(focused.value)
-    },
-    options
-  );
+  const autocompleteInput: OperatorAutocompleteInput = {
+    guildId: interaction.guildId,
+    channelId: interaction.channelId,
+    userId: interaction.user.id,
+    subcommand,
+    focusedOptionName: focused.name,
+    focusedValue: String(focused.value)
+  };
+  const result = handleOperatorAutocomplete(autocompleteInput, options);
+
+  options.logOperatorAutocomplete?.(autocompleteInput, result);
 
   if (result.action === "responded") {
     await interaction.respond(result.choices);

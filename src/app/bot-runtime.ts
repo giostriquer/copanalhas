@@ -1,5 +1,14 @@
 import { createPredictionPersistenceHandler } from "./collector.js";
 import { runAutoPostTick } from "./auto-posting.js";
+import {
+  formatAutoPostLog,
+  formatLeaderboardDashboardLog,
+  formatOperatorAutocompleteLog,
+  formatOperatorCommandLog,
+  formatPredictionInteractionLog,
+  formatResultSyncLog,
+  formatStandingsDashboardLog
+} from "./dev-log.js";
 import { updateLeaderboardDashboard } from "./leaderboard-posting.js";
 import { postDueMatchCards } from "./match-card-posting.js";
 import { updateStandingsDashboard } from "./standings-posting.js";
@@ -171,7 +180,9 @@ function createPredictionInteractionOptions(
     timeZone: options.config.timezone,
     now: options.now,
     listPredictions: () => options.store.listPredictions(),
-    upsertPrediction: (prediction) => options.store.upsertPrediction(prediction)
+    upsertPrediction: (prediction) => options.store.upsertPrediction(prediction),
+    logPredictionInteraction: (result) =>
+      options.writeLine(formatPredictionInteractionLog(result))
   };
 }
 
@@ -208,8 +219,8 @@ function createOperatorCommandOptions(
     listResults: () => options.store.listResults(),
     upsertResult: (result) => options.store.upsertResult(result),
     listStandingsPosts: () => options.store.listStandingsPosts(),
-    updateStandingsDashboard: () =>
-      updateStandingsDashboard({
+    updateStandingsDashboard: async () => {
+      const result = await updateStandingsDashboard({
         guildId: options.config.guildId,
         channelId: options.config.channelId,
         matches: options.matches,
@@ -219,10 +230,15 @@ function createOperatorCommandOptions(
         listStandingsPosts: () => options.store.listStandingsPosts(),
         recordStandingsPost: (post) => options.store.recordStandingsPost(post),
         upsertStandingsMessage: options.upsertStandingsMessage
-      }),
+      });
+
+      options.writeLine(formatStandingsDashboardLog(result));
+
+      return result;
+    },
     listLeaderboardPosts: () => options.store.listLeaderboardPosts(),
-    updateLeaderboardDashboard: () =>
-      updateLeaderboardDashboard({
+    updateLeaderboardDashboard: async () => {
+      const result = await updateLeaderboardDashboard({
         guildId: options.config.guildId,
         channelId: options.config.channelId,
         predictions: options.store.listPredictions(),
@@ -232,7 +248,16 @@ function createOperatorCommandOptions(
         listLeaderboardPosts: () => options.store.listLeaderboardPosts(),
         recordLeaderboardPost: (post) => options.store.recordLeaderboardPost(post),
         upsertLeaderboardMessage: options.upsertLeaderboardMessage
-      })
+      });
+
+      options.writeLine(formatLeaderboardDashboardLog(result));
+
+      return result;
+    },
+    logOperatorCommand: (input, result) =>
+      options.writeLine(formatOperatorCommandLog(input, result)),
+    logOperatorAutocomplete: (input, result) =>
+      options.writeLine(formatOperatorAutocompleteLog(input, result))
   };
 }
 
@@ -278,6 +303,7 @@ async function runAutoPost(
 
   if (result.action === "posted") {
     state.lastRunDate = result.localDate;
+    options.writeLine(formatAutoPostLog(result));
   }
 }
 
@@ -305,6 +331,7 @@ async function runResultSync(
     insertScoringRun: (run) => options.store.insertScoringRun(run)
   });
   state.lastResult = resultSyncStatus(syncResult, dateFrom, dateTo);
+  options.writeLine(formatResultSyncLog(state.lastResult));
 
   if (syncResult.action === "synced" && syncResult.storedResults.length > 0) {
     await operatorCommandOptions.updateStandingsDashboard();

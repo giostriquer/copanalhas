@@ -271,6 +271,29 @@ describe("handleDiscordPredictionInteraction", () => {
       flags: MessageFlags.Ephemeral
     });
   });
+
+  test("logs Discord prediction interaction outcomes", async () => {
+    const logPredictionInteraction = vi.fn();
+    const interaction = discordModalInteraction();
+
+    const result = await handleDiscordPredictionInteraction(
+      interaction as unknown as Interaction,
+      options({ logPredictionInteraction })
+    );
+
+    expect(result.action).toBe("accepted");
+    expect(logPredictionInteraction).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: "accepted",
+        prediction: expect.objectContaining({
+          userId: "user-1",
+          matchId: "wc2026-001",
+          homeScore: 2,
+          awayScore: 1
+        })
+      })
+    );
+  });
 });
 
 function options(overrides: Partial<Parameters<typeof handlePredictionInteraction>[1]> = {}) {

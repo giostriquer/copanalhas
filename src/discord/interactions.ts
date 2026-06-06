@@ -28,6 +28,7 @@ export interface PredictionInteractionOptions {
   now?(): Date;
   listPredictions(): StoredPrediction[];
   upsertPrediction(prediction: StoredPrediction): void | Promise<void>;
+  logPredictionInteraction?(result: PredictionInteractionResult): void;
 }
 
 export type PredictionInteraction = PredictionButtonInteraction | PredictionModalSubmitInteraction;
@@ -113,11 +114,11 @@ export async function handleDiscordPredictionInteraction(
   options: PredictionInteractionOptions
 ): Promise<PredictionInteractionResult> {
   if (!interaction.channelId) {
-    return { action: "ignored", reason: "wrong-channel" };
+    return logPredictionResult(options, { action: "ignored", reason: "wrong-channel" });
   }
 
   if (interaction.isButton()) {
-    return handlePredictionInteraction(
+    const result = await handlePredictionInteraction(
       {
         kind: "button",
         customId: interaction.customId,
@@ -137,10 +138,12 @@ export async function handleDiscordPredictionInteraction(
       },
       options
     );
+
+    return logPredictionResult(options, result);
   }
 
   if (interaction.isModalSubmit()) {
-    return handlePredictionInteraction(
+    const result = await handlePredictionInteraction(
       {
         kind: "modal-submit",
         customId: interaction.customId,
@@ -159,9 +162,23 @@ export async function handleDiscordPredictionInteraction(
       },
       options
     );
+
+    return logPredictionResult(options, result);
   }
 
-  return { action: "ignored", reason: "unsupported-interaction" };
+  return logPredictionResult(options, {
+    action: "ignored",
+    reason: "unsupported-interaction"
+  });
+}
+
+function logPredictionResult(
+  options: PredictionInteractionOptions,
+  result: PredictionInteractionResult
+): PredictionInteractionResult {
+  options.logPredictionInteraction?.(result);
+
+  return result;
 }
 
 async function handlePredictButton(

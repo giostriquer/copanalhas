@@ -2,6 +2,7 @@ import { describe, expect, test, vi } from "vitest";
 import { MessageFlags, type Interaction } from "discord.js";
 
 import {
+  handleDiscordOperatorAutocomplete,
   handleOperatorAutocomplete,
   handleDiscordOperatorCommand,
   handleOperatorCommand,
@@ -426,6 +427,33 @@ describe("handleOperatorAutocomplete", () => {
   });
 });
 
+describe("handleDiscordOperatorAutocomplete", () => {
+  test("logs mapped Discord autocomplete outcomes", async () => {
+    const logOperatorAutocomplete = vi.fn();
+    const interaction = discordAutocompleteInteraction();
+
+    const result = await handleDiscordOperatorAutocomplete(
+      interaction as unknown as Interaction,
+      options({ logOperatorAutocomplete })
+    );
+
+    expect(result.action).toBe("responded");
+    expect(logOperatorAutocomplete).toHaveBeenCalledWith(
+      {
+        guildId: "guild-1",
+        channelId: "channel-1",
+        userId: "operator-1",
+        subcommand: "predictions",
+        focusedOptionName: "match",
+        focusedValue: "mex"
+      },
+      expect.objectContaining({
+        action: "responded"
+      })
+    );
+  });
+});
+
 describe("handleDiscordOperatorCommand", () => {
   test("maps private Discord chat input commands to deferred ephemeral replies", async () => {
     const interaction = discordCommandInteraction("status");
@@ -444,6 +472,34 @@ describe("handleDiscordOperatorCommand", () => {
       allowedMentions: { parse: [] }
     });
     expect(interaction.reply).not.toHaveBeenCalled();
+  });
+
+  test("logs mapped Discord operator command outcomes", async () => {
+    const logOperatorCommand = vi.fn();
+    const interaction = discordCommandInteraction("result");
+
+    const result = await handleDiscordOperatorCommand(
+      interaction as unknown as Interaction,
+      options({ logOperatorCommand })
+    );
+
+    expect(result.action).toBe("replied");
+    expect(logOperatorCommand).toHaveBeenCalledWith(
+      {
+        guildId: "guild-1",
+        channelId: "channel-1",
+        userId: "operator-1",
+        subcommand: "result",
+        options: {
+          match: "wc2026-001",
+          score: "2-1"
+        }
+      },
+      expect.objectContaining({
+        action: "replied",
+        ephemeral: true
+      })
+    );
   });
 
   test("defers private operator commands before running slow work", async () => {
@@ -569,6 +625,26 @@ function discordCommandInteraction(
     reply: vi.fn(async () => {
       events.push("reply");
     })
+  };
+}
+
+function discordAutocompleteInteraction() {
+  return {
+    isAutocomplete: () => true,
+    commandName: "copanalhas",
+    guildId: "guild-1",
+    channelId: "channel-1",
+    user: {
+      id: "operator-1"
+    },
+    options: {
+      getSubcommand: vi.fn(() => "predictions"),
+      getFocused: vi.fn(() => ({
+        name: "match",
+        value: "mex"
+      }))
+    },
+    respond: vi.fn(async () => undefined)
   };
 }
 
