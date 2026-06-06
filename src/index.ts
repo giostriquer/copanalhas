@@ -212,7 +212,7 @@ function printLeaderboard(dependencies: CliDependencies): void {
     const results = store.listResults();
     const scoredPredictions = results.flatMap((result) => scoreMatch(result, predictions));
 
-    dependencies.writeLine(formatLeaderboard(buildLeaderboard(scoredPredictions)));
+    dependencies.writeLine(formatLeaderboard(buildLeaderboard(scoredPredictions, predictions)));
   } finally {
     store.close();
   }

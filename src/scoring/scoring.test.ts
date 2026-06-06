@@ -109,6 +109,25 @@ describe("buildLeaderboard", () => {
       { userId: "u3", points: 1, exactCount: 0, closestCount: 0, matchesScored: 1 }
     ]);
   });
+
+  test("includes zero-point participants from predictions that have not been scored yet", () => {
+    const leaderboard = buildLeaderboard(
+      [
+        { userId: "u2", matchId: "m1", points: 3, distance: 0, awards: ["exact"] }
+      ],
+      [
+        prediction("u3", "m2", 1, 1),
+        prediction("u1", "m3", 2, 0),
+        prediction("u3", "m4", 0, 0)
+      ]
+    );
+
+    expect(leaderboard).toEqual([
+      { userId: "u2", points: 3, exactCount: 1, closestCount: 0, matchesScored: 1 },
+      { userId: "u1", points: 0, exactCount: 0, closestCount: 0, matchesScored: 0 },
+      { userId: "u3", points: 0, exactCount: 0, closestCount: 0, matchesScored: 0 }
+    ]);
+  });
 });
 
 function prediction(

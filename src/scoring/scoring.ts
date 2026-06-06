@@ -72,17 +72,20 @@ export function scoreMatch(
   });
 }
 
-export function buildLeaderboard(scoredPredictions: ScoredPrediction[]): LeaderboardRow[] {
+export function buildLeaderboard(
+  scoredPredictions: ScoredPrediction[],
+  participantPredictions: readonly ScorePrediction[] = []
+): LeaderboardRow[] {
   const rowsByUser = new Map<string, LeaderboardRow>();
 
+  for (const prediction of participantPredictions) {
+    if (!rowsByUser.has(prediction.userId)) {
+      rowsByUser.set(prediction.userId, emptyLeaderboardRow(prediction.userId));
+    }
+  }
+
   for (const scored of scoredPredictions) {
-    const row = rowsByUser.get(scored.userId) ?? {
-      userId: scored.userId,
-      points: 0,
-      exactCount: 0,
-      closestCount: 0,
-      matchesScored: 0
-    };
+    const row = rowsByUser.get(scored.userId) ?? emptyLeaderboardRow(scored.userId);
 
     row.points += scored.points;
     row.matchesScored += 1;
@@ -101,6 +104,16 @@ export function buildLeaderboard(scoredPredictions: ScoredPrediction[]): Leaderb
   return [...rowsByUser.values()].sort(
     (left, right) => right.points - left.points || left.userId.localeCompare(right.userId)
   );
+}
+
+function emptyLeaderboardRow(userId: string): LeaderboardRow {
+  return {
+    userId,
+    points: 0,
+    exactCount: 0,
+    closestCount: 0,
+    matchesScored: 0
+  };
 }
 
 function minDistance(rows: Array<{ distance: number }>): number | undefined {

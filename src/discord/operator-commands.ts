@@ -226,11 +226,12 @@ export async function handleOperatorCommand(
   }
 
   if (command.subcommand === "leaderboard") {
+    const predictions = options.listPredictions();
     const scoredPredictions = options
       .listResults()
-      .flatMap((result) => scoreMatch(result, options.listPredictions()));
+      .flatMap((result) => scoreMatch(result, predictions));
 
-    return reply(formatLeaderboard(buildLeaderboard(scoredPredictions)));
+    return reply(formatLeaderboard(buildLeaderboard(scoredPredictions, predictions)));
   }
 
   if (command.subcommand === "meus-palpites") {

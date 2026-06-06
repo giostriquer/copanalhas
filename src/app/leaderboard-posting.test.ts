@@ -1,6 +1,7 @@
 import { describe, expect, test, vi } from "vitest";
 
 import { updateLeaderboardDashboard } from "./leaderboard-posting.js";
+import type { LeaderboardDashboardMessage } from "../leaderboard/format.js";
 import type { StoredLeaderboardPost, StoredPrediction, StoredResult } from "../storage/database.js";
 
 describe("updateLeaderboardDashboard", () => {
@@ -85,6 +86,34 @@ describe("updateLeaderboardDashboard", () => {
       createdAt: "2026-06-11T23:00:00.000Z",
       updatedAt: "2026-06-11T23:35:00.000Z"
     });
+  });
+
+  test("shows prediction participants before any match has a result", async () => {
+    let postedContent = "";
+    const upsertLeaderboardMessage = vi.fn(
+      async (message: LeaderboardDashboardMessage) => {
+        postedContent = message.content;
+        return "leaderboard-message-1";
+      }
+    );
+
+    await updateLeaderboardDashboard({
+      guildId: "guild-1",
+      channelId: "channel-1",
+      predictions: [
+        prediction("user-2", "wc2026-001", 1, 1),
+        prediction("user-1", "wc2026-002", 2, 0)
+      ],
+      results: [],
+      timeZone: "UTC",
+      now: () => new Date("2026-06-11T23:35:00.000Z"),
+      listLeaderboardPosts: () => [],
+      recordLeaderboardPost: vi.fn(),
+      upsertLeaderboardMessage
+    });
+
+    expect(postedContent).toContain("1  user-1               0     0     0     0");
+    expect(postedContent).toContain("1  user-2               0     0     0     0");
   });
 
   test("records a replacement when the adapter returns a new message id", async () => {

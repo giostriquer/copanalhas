@@ -39,7 +39,7 @@ export async function updateLeaderboardDashboard(
     scoreMatch(result, [...options.predictions])
   );
   const message = createLeaderboardDashboardMessage({
-    rows: buildLeaderboard(scoredPredictions),
+    rows: buildLeaderboard(scoredPredictions, options.predictions),
     updatedAt: new Date(timestamp),
     timeZone: options.timeZone
   });
