@@ -136,7 +136,7 @@ export function handleDiscordMessage(
 
 export function createDiscordClient(
   config: CopanalhasConfig,
-  onMessageResult: (result: DiscordIngestionResult) => void,
+  onMessageResult: (result: DiscordIngestionResult) => void | Promise<void>,
   predictionInteractionOptions?: PredictionInteractionOptions,
   readyOptions: DiscordClientReadyOptions = {}
 ): Client {
@@ -161,7 +161,9 @@ export function createDiscordClient(
       parsePrediction: parsePredictionMessage
     });
 
-    onMessageResult(result);
+    void Promise.resolve(onMessageResult(result)).catch((error: unknown) => {
+      console.error(error);
+    });
   });
 
   if (predictionInteractionOptions || readyOptions.operatorCommandOptions) {
@@ -203,7 +205,7 @@ export function createDiscordClient(
 
 export async function startDiscordClient(
   config: CopanalhasConfig,
-  onMessageResult: (result: DiscordIngestionResult) => void,
+  onMessageResult: (result: DiscordIngestionResult) => void | Promise<void>,
   predictionInteractionOptions?: PredictionInteractionOptions,
   readyOptions?: DiscordClientReadyOptions
 ): Promise<Client> {

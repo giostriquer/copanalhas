@@ -93,7 +93,7 @@ export interface StartCopanalhasBotRuntimeOptions {
   matches: WorldCupMatch[];
   startDiscord(
     config: CopanalhasConfig,
-    onMessageResult: (result: DiscordIngestionResult) => void,
+    onMessageResult: (result: DiscordIngestionResult) => void | Promise<void>,
     predictionInteractionOptions: PredictionInteractionOptions,
     readyOptions: DiscordClientReadyOptions
   ): Promise<unknown>;
@@ -121,7 +121,6 @@ export async function startCopanalhasBotRuntime(
   options.store.migrate();
   options.store.upsertMatches(options.matches);
 
-  const predictionInteractionOptions = createPredictionInteractionOptions(options);
   const autoPostState: AutoPostRuntimeState = {
     lastRunDate: null,
     lastResult: { action: "never" }
@@ -134,11 +133,18 @@ export async function startCopanalhasBotRuntime(
     autoPostState,
     resultSyncState
   );
+  const predictionInteractionOptions = createPredictionInteractionOptions(
+    options,
+    operatorCommandOptions
+  );
   const discordClient = await options.startDiscord(
     options.config,
     createPredictionPersistenceHandler({
       matches: options.matches,
       upsertPrediction: (prediction) => options.store.upsertPrediction(prediction),
+      refreshLeaderboardAfterPrediction: async () => {
+        await operatorCommandOptions.updateLeaderboardDashboard();
+      },
       writeLine: options.writeLine
     }),
     predictionInteractionOptions,
@@ -172,7 +178,8 @@ export async function startCopanalhasBotRuntime(
 }
 
 function createPredictionInteractionOptions(
-  options: StartCopanalhasBotRuntimeOptions
+  options: StartCopanalhasBotRuntimeOptions,
+  operatorCommandOptions: Pick<OperatorCommandOptions, "updateLeaderboardDashboard">
 ): PredictionInteractionOptions {
   return {
     guildId: options.config.guildId,
@@ -182,6 +189,9 @@ function createPredictionInteractionOptions(
     now: options.now,
     listPredictions: () => options.store.listPredictions(),
     upsertPrediction: (prediction) => options.store.upsertPrediction(prediction),
+    refreshLeaderboardAfterPrediction: async () => {
+      await operatorCommandOptions.updateLeaderboardDashboard();
+    },
     logPredictionInteraction: (result) =>
       options.writeLine(formatPredictionInteractionLog(result))
   };

@@ -38,7 +38,7 @@ export interface CliDependencies {
   env: Record<string, string | undefined>;
   startDiscord(
     config: CopanalhasConfig,
-    onMessageResult: (result: DiscordIngestionResult) => void,
+    onMessageResult: (result: DiscordIngestionResult) => void | Promise<void>,
     predictionInteractionOptions: Parameters<typeof startDiscordClient>[2],
     readyOptions: DiscordClientReadyOptions
   ): Promise<unknown>;

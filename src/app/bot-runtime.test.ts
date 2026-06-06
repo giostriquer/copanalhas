@@ -2,6 +2,8 @@ import { describe, expect, test, vi } from "vitest";
 
 import { startCopanalhasBotRuntime, type BotRuntimeStore } from "./bot-runtime.js";
 import type { CopanalhasConfig } from "../discord/config.js";
+import type { DiscordIngestionResult } from "../discord/ingestion.js";
+import type { PredictionInteractionOptions } from "../discord/interactions.js";
 import type { OperatorCommandOptions } from "../discord/operator-commands.js";
 import { WORLD_CUP_2026_SEED } from "../worldcup/seed.js";
 
@@ -104,6 +106,61 @@ describe("startCopanalhasBotRuntime", () => {
         postSource: "auto"
       })
     );
+  });
+
+  test("refreshes the leaderboard after accepted predictions reach runtime handlers", async () => {
+    const store = createStore();
+    let onMessageResult: ((result: DiscordIngestionResult) => void | Promise<void>) | undefined;
+    let predictionOptions: PredictionInteractionOptions | undefined;
+    const startDiscord = vi.fn(async (_config, onMessage, interactionOptions) => {
+      onMessageResult = onMessage;
+      predictionOptions = interactionOptions;
+      return { destroy: vi.fn(async () => undefined) };
+    });
+    const upsertLeaderboardMessage = vi.fn(async () => "leaderboard-message-1");
+
+    await startCopanalhasBotRuntime({
+      config: config(),
+      store,
+      matches: WORLD_CUP_2026_SEED.matches,
+      startDiscord,
+      startInterval: vi.fn(() => ({ stop: vi.fn() })),
+      sendMatchCard: vi.fn(async () => "discord-message-1"),
+      upsertStandingsMessage: vi.fn(async (message) => `standings-${message.key}`),
+      upsertLeaderboardMessage,
+      now: () => new Date("2026-06-11T12:00:00.000Z"),
+      writeLine: vi.fn()
+    });
+
+    upsertLeaderboardMessage.mockClear();
+    await predictionOptions?.refreshLeaderboardAfterPrediction?.();
+
+    expect(upsertLeaderboardMessage).toHaveBeenCalledOnce();
+
+    upsertLeaderboardMessage.mockClear();
+    await onMessageResult?.({
+      action: "accepted",
+      prediction: {
+        userId: "user-1",
+        messageId: "message-1",
+        matchNumber: 1,
+        homeTeamCode: "MEX",
+        awayTeamCode: "RSA",
+        homeScore: 2,
+        awayScore: 1,
+        submittedAt: "2026-06-10T12:00:00.000Z",
+        updatedAt: null,
+        parserVersion: "prediction-parser-v1"
+      }
+    });
+
+    expect(store.upsertPrediction).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: "user-1",
+        matchId: "wc2026-001"
+      })
+    );
+    expect(upsertLeaderboardMessage).toHaveBeenCalledOnce();
   });
 
   test("refreshes standings after result sync stores final scores", async () => {

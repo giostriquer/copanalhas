@@ -150,6 +150,34 @@ describe("handlePredictionInteraction", () => {
     expect(storedPredictions).toEqual([result.prediction]);
   });
 
+  test("refreshes the leaderboard after accepting a modal score prediction", async () => {
+    const events: string[] = [];
+    const refreshLeaderboardAfterPrediction = vi.fn(async () => {
+      events.push("refresh");
+    });
+    const interaction = modalInteraction({
+      customId: buildScoreModalCustomId("wc2026-001"),
+      homeScoreText: "2",
+      awayScoreText: "1",
+      reply: vi.fn(async () => {
+        events.push("reply");
+      })
+    });
+
+    await handlePredictionInteraction(
+      interaction,
+      options({
+        upsertPrediction: vi.fn(async () => {
+          events.push("store");
+        }),
+        refreshLeaderboardAfterPrediction
+      })
+    );
+
+    expect(events).toEqual(["store", "reply", "refresh"]);
+    expect(refreshLeaderboardAfterPrediction).toHaveBeenCalledOnce();
+  });
+
   test("rejects invalid modal score input without storing", async () => {
     const upsertPrediction = vi.fn();
     const interaction = modalInteraction({

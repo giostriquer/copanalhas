@@ -4,16 +4,17 @@ import type { WorldCupMatch } from "../worldcup/types.js";
 
 export interface PredictionPersistenceHandlerOptions {
   matches: WorldCupMatch[];
-  upsertPrediction(prediction: StoredPrediction): void;
+  upsertPrediction(prediction: StoredPrediction): void | Promise<void>;
+  refreshLeaderboardAfterPrediction?(): void | Promise<void>;
   writeLine(line: string): void;
 }
 
 export function createPredictionPersistenceHandler(
   options: PredictionPersistenceHandlerOptions
-): (result: DiscordIngestionResult) => void {
+): (result: DiscordIngestionResult) => Promise<void> {
   const matchesByNumber = new Map(options.matches.map((match) => [match.matchNumber, match]));
 
-  return (result) => {
+  return async (result) => {
     if (result.action !== "accepted") {
       return;
     }
@@ -34,7 +35,7 @@ export function createPredictionPersistenceHandler(
       return;
     }
 
-    options.upsertPrediction({
+    await options.upsertPrediction({
       userId: prediction.userId,
       matchId: match.id,
       messageId: prediction.messageId,
@@ -44,5 +45,6 @@ export function createPredictionPersistenceHandler(
       updatedAt: prediction.updatedAt,
       parserVersion: prediction.parserVersion
     });
+    await options.refreshLeaderboardAfterPrediction?.();
   };
 }
