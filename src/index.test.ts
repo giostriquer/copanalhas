@@ -345,9 +345,14 @@ function createStoreShape(): CliStore {
     listResults: vi.fn(() => [] as ReturnType<CliStore["listResults"]>),
     listPostedMatchCards: vi.fn(() => [] as ReturnType<CliStore["listPostedMatchCards"]>),
     recordPostedMatchCard: vi.fn(),
+    listPredictionRevealPosts: vi.fn(
+      () => [] as ReturnType<CliStore["listPredictionRevealPosts"]>
+    ),
+    recordPredictionRevealPost: vi.fn(),
     clearPostedMatchCardsForDate: vi.fn(() => 0),
     clearPredictionsForMatches: vi.fn(() => 0),
     clearResultsForMatches: vi.fn(() => 0),
+    clearPredictionRevealPostsForMatches: vi.fn(() => 0),
     listStandingsPosts: vi.fn(() => [] as ReturnType<CliStore["listStandingsPosts"]>),
     recordStandingsPost: vi.fn(),
     listLeaderboardPosts: vi.fn(() => [] as ReturnType<CliStore["listLeaderboardPosts"]>),

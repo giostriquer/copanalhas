@@ -243,6 +243,7 @@ function operatorOptions(): OperatorCommandOptions {
     clearPostedMatchCards: vi.fn(() => 0),
     clearPredictionsForMatches: vi.fn(() => 0),
     clearResultsForMatches: vi.fn(() => 0),
+    clearPredictionRevealPostsForMatches: vi.fn(() => 0),
     listPredictions: vi.fn(() => []),
     listResults: vi.fn(() => []),
     upsertResult: vi.fn(),

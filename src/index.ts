@@ -15,6 +15,10 @@ import {
   type DiscordIngestionResult
 } from "./discord/ingestion.js";
 import { postDiscordMatchCards } from "./discord/posting.js";
+import {
+  postDiscordPredictionReveal,
+  type PredictionRevealThreadMessage
+} from "./discord/prediction-reveal-posting.js";
 import { upsertDiscordStandingsMessage } from "./discord/standings-posting.js";
 import { formatLeaderboard } from "./leaderboard/format.js";
 import { buildLeaderboard, scoreMatch } from "./scoring/scoring.js";
@@ -45,6 +49,10 @@ export interface CliDependencies {
   ): Promise<unknown>;
   startInterval?(callback: () => void | Promise<void>, intervalMs: number): RuntimeInterval;
   sendMatchCard?(message: MatchCardMessage): Promise<string>;
+  sendPredictionReveal?(message: PredictionRevealThreadMessage): Promise<{
+    threadId: string;
+    messageId: string;
+  }>;
   upsertStandingsMessage?(
     message: StandingsDashboardMessage,
     existingMessageId: string | null
@@ -260,6 +268,9 @@ async function startBot(dependencies: CliDependencies): Promise<void> {
     sendMatchCard:
       dependencies.sendMatchCard ??
       ((message) => sendDiscordMatchCard(configResult.config, message)),
+    sendPredictionReveal:
+      dependencies.sendPredictionReveal ??
+      ((message) => postDiscordPredictionReveal(configResult.config, message)),
     upsertStandingsMessage:
       dependencies.upsertStandingsMessage ??
       ((message, existingMessageId) =>

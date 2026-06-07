@@ -89,6 +89,7 @@ describe("handleOperatorCommand", () => {
     const clearPostedMatchCards = vi.fn(() => 2);
     const clearPredictionsForMatches = vi.fn(() => 3);
     const clearResultsForMatches = vi.fn(() => 1);
+    const clearPredictionRevealPostsForMatches = vi.fn(() => 4);
     const updateStandingsDashboard = vi.fn(async () => ({ action: "updated" as const, posts: [] }));
     const updateLeaderboardDashboard = vi.fn(async () => ({
       action: "updated" as const,
@@ -101,6 +102,7 @@ describe("handleOperatorCommand", () => {
         clearPostedMatchCards,
         clearPredictionsForMatches,
         clearResultsForMatches,
+        clearPredictionRevealPostsForMatches,
         updateStandingsDashboard,
         updateLeaderboardDashboard
       })
@@ -113,6 +115,7 @@ describe("handleOperatorCommand", () => {
         "Posted card records: 2",
         "Predictions: 3",
         "Results: 1",
+        "Prediction reveals: 4",
         "Standings refreshed.",
         "Leaderboard refreshed."
       ].join("\n"),
@@ -121,6 +124,10 @@ describe("handleOperatorCommand", () => {
     expect(clearPostedMatchCards).toHaveBeenCalledWith("2026-06-11");
     expect(clearPredictionsForMatches).toHaveBeenCalledWith(["wc2026-001", "wc2026-002"]);
     expect(clearResultsForMatches).toHaveBeenCalledWith(["wc2026-001", "wc2026-002"]);
+    expect(clearPredictionRevealPostsForMatches).toHaveBeenCalledWith([
+      "wc2026-001",
+      "wc2026-002"
+    ]);
     expect(updateStandingsDashboard).toHaveBeenCalledOnce();
     expect(updateLeaderboardDashboard).toHaveBeenCalledOnce();
   });
@@ -608,6 +615,7 @@ function options(overrides: Partial<OperatorCommandOptions> = {}): OperatorComma
     clearPostedMatchCards: vi.fn(() => 0),
     clearPredictionsForMatches: vi.fn(() => 0),
     clearResultsForMatches: vi.fn(() => 0),
+    clearPredictionRevealPostsForMatches: vi.fn(() => 0),
     listPredictions: vi.fn(() => []),
     listResults: vi.fn(() => []),
     upsertResult: vi.fn(),

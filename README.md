@@ -50,6 +50,8 @@ auto-post time has already passed, refreshes standings, and runs result sync wit
 a small lookback window when result sync is enabled. The main public dashboard is
 three persistent posts: group standings A-F, group standings G-L, and the
 Copanalhas player leaderboard.
+When a prediction window closes, the bot posts one compact reveal message in the
+matchday card thread, grouping matches that locked at the same time.
 Terminal commands remain useful for setup and manual recovery, but Discord slash
 commands are the preferred operator controls during the game.
 
@@ -60,7 +62,8 @@ Useful operator commands while the bot is running:
 - `/copanalhas clear-posted-date date:2026-06-11`: clear posted-card dedupe
   records for a date so it can be reposted during testing.
 - `/copanalhas reset-test-date date:2026-06-11`: clear posted cards,
-  predictions, and results for one test date, then refresh standings.
+  predictions, reveal records, and results for one test date, then refresh
+  standings.
 - `/copanalhas status`: privately show the active matchday, posted/unposted
   cards, prediction-window counts, last auto-post action, result-sync state, and
   dashboard post health.

@@ -11,6 +11,11 @@ import {
 } from "./dev-log.js";
 import { updateLeaderboardDashboard } from "./leaderboard-posting.js";
 import { postDueMatchCards } from "./match-card-posting.js";
+import {
+  postDuePredictionReveals,
+  type PredictionRevealSendResult,
+  type PredictionRevealThreadMessage
+} from "./prediction-reveal-posting.js";
 import { updateStandingsDashboard } from "./standings-posting.js";
 import type { MatchCardMessage } from "../discord/components.js";
 import type { CopanalhasConfig } from "../discord/config.js";
@@ -34,6 +39,7 @@ import type {
   StoredLeaderboardPost,
   StoredPostedMatchCard,
   StoredPrediction,
+  StoredPredictionRevealPost,
   StoredResult,
   StoredStandingsPost
 } from "../storage/database.js";
@@ -49,6 +55,7 @@ import {
 } from "../results/sync.js";
 
 const autoPostIntervalMs = 60 * 1000;
+const predictionRevealIntervalMs = 60 * 1000;
 const resultSyncIntervalMs = 15 * 60 * 1000;
 const resultSyncLookbackDays = 2;
 
@@ -61,9 +68,12 @@ export interface BotRuntimeStore {
   listResults(): StoredResult[];
   listPostedMatchCards(): StoredPostedMatchCard[];
   recordPostedMatchCard(card: StoredPostedMatchCard): void;
+  listPredictionRevealPosts(): StoredPredictionRevealPost[];
+  recordPredictionRevealPost(post: StoredPredictionRevealPost): void;
   clearPostedMatchCardsForDate(channelId: string, postedForDate: string): number;
   clearPredictionsForMatches(matchIds: readonly string[]): number;
   clearResultsForMatches(matchIds: readonly string[]): number;
+  clearPredictionRevealPostsForMatches(matchIds: readonly string[]): number;
   listStandingsPosts(): StoredStandingsPost[];
   recordStandingsPost(post: StoredStandingsPost): void;
   listLeaderboardPosts(): StoredLeaderboardPost[];
@@ -100,6 +110,7 @@ export interface StartCopanalhasBotRuntimeOptions {
   ): Promise<unknown>;
   startInterval(callback: () => void | Promise<void>, intervalMs: number): RuntimeInterval;
   sendMatchCard(message: MatchCardMessage): Promise<string>;
+  sendPredictionReveal(message: PredictionRevealThreadMessage): Promise<PredictionRevealSendResult>;
   upsertStandingsMessage(
     message: StandingsDashboardMessage,
     existingMessageId: string | null
@@ -157,6 +168,7 @@ export async function startCopanalhasBotRuntime(
   await operatorCommandOptions.updateStandingsDashboard();
   await operatorCommandOptions.updateLeaderboardDashboard();
   await runAutoPost(options, operatorCommandOptions, autoPostState);
+  await runPredictionReveals(options);
   await runResultSync(options, operatorCommandOptions, resultSyncState);
   const intervals = startRuntimeIntervals(
     options,
@@ -230,6 +242,8 @@ function createOperatorCommandOptions(
       options.store.clearPostedMatchCardsForDate(options.config.channelId, date),
     clearPredictionsForMatches: (matchIds) => options.store.clearPredictionsForMatches(matchIds),
     clearResultsForMatches: (matchIds) => options.store.clearResultsForMatches(matchIds),
+    clearPredictionRevealPostsForMatches: (matchIds) =>
+      options.store.clearPredictionRevealPostsForMatches(matchIds),
     listPredictions: () => options.store.listPredictions(),
     listResults: () => options.store.listResults(),
     upsertResult: (result) => options.store.upsertResult(result),
@@ -296,6 +310,12 @@ function startRuntimeIntervals(
     }, autoPostIntervalMs)
   );
 
+  intervals.push(
+    options.startInterval(async () => {
+      await runPredictionReveals(options);
+    }, predictionRevealIntervalMs)
+  );
+
   if (options.config.resultSyncEnabled && options.config.footballDataToken) {
     intervals.push(
       options.startInterval(async () => {
@@ -326,6 +346,27 @@ async function runAutoPost(
   if (result.action === "posted") {
     state.lastRunDate = result.localDate;
     options.writeLine(formatAutoPostLog(result));
+  }
+}
+
+async function runPredictionReveals(options: StartCopanalhasBotRuntimeOptions): Promise<void> {
+  const result = await postDuePredictionReveals({
+    channelId: options.config.channelId,
+    matches: options.matches,
+    predictions: options.store.listPredictions(),
+    now: options.now,
+    listPostedMatchCards: () => options.store.listPostedMatchCards(),
+    listPredictionRevealPosts: () => options.store.listPredictionRevealPosts(),
+    sendPredictionReveal: options.sendPredictionReveal,
+    recordPredictionRevealPost: (post) => options.store.recordPredictionRevealPost(post)
+  });
+
+  if (result.posted.length > 0) {
+    options.writeLine(
+      `[prediction-reveal] batches=${result.posted.length} matches=${result.posted
+        .flatMap((post) => post.matchIds)
+        .join(",")}`
+    );
   }
 }
 

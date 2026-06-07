@@ -13,6 +13,10 @@ describe("startCopanalhasBotRuntime", () => {
     const startDiscord = vi.fn(async () => ({ destroy: vi.fn(async () => undefined) }));
     const startInterval = vi.fn(() => ({ stop: vi.fn() }));
     const sendMatchCard = vi.fn(async () => "discord-message-1");
+    const sendPredictionReveal = vi.fn(async () => ({
+      threadId: "thread-1",
+      messageId: "reveal-message-1"
+    }));
     const upsertStandingsMessage = vi.fn(async (message) => `standings-${message.key}`);
     const upsertLeaderboardMessage = vi.fn(async () => "leaderboard-message-1");
     const writeLine = vi.fn();
@@ -24,6 +28,7 @@ describe("startCopanalhasBotRuntime", () => {
       startDiscord,
       startInterval,
       sendMatchCard,
+      sendPredictionReveal,
       upsertStandingsMessage,
       upsertLeaderboardMessage,
       now: () => new Date("2026-06-11T12:00:00.000Z"),
@@ -81,6 +86,10 @@ describe("startCopanalhasBotRuntime", () => {
       startDiscord,
       startInterval,
       sendMatchCard,
+      sendPredictionReveal: vi.fn(async () => ({
+        threadId: "thread-1",
+        messageId: "reveal-message-1"
+      })),
       upsertStandingsMessage: vi.fn(async (message) => `standings-${message.key}`),
       upsertLeaderboardMessage: vi.fn(async () => "leaderboard-message-1"),
       now: () => new Date("2026-06-11T12:00:00.000Z"),
@@ -108,6 +117,67 @@ describe("startCopanalhasBotRuntime", () => {
     );
   });
 
+  test("posts due prediction reveals during startup catch-up", async () => {
+    const store = {
+      ...createStore(),
+      listPostedMatchCards: vi.fn(() => [
+        {
+          matchId: "wc2026-001",
+          channelId: "channel-1",
+          messageId: "matchday-message-1",
+          postedForDate: "2026-06-11",
+          postedAt: "2026-06-11T12:00:00.000Z",
+          postSource: "auto" as const
+        }
+      ]),
+      listPredictions: vi.fn(() => [
+        {
+          userId: "user-1",
+          matchId: "wc2026-001",
+          messageId: "prediction-message-1",
+          homeScore: 2,
+          awayScore: 1,
+          submittedAt: "2026-06-10T12:00:00.000Z",
+          updatedAt: null,
+          parserVersion: "prediction-modal-v1"
+        }
+      ])
+    };
+    const sendPredictionReveal = vi.fn(async () => ({
+      threadId: "thread-1",
+      messageId: "reveal-message-1"
+    }));
+
+    await startCopanalhasBotRuntime({
+      config: config(),
+      store,
+      matches: WORLD_CUP_2026_SEED.matches,
+      startDiscord: vi.fn(async () => ({ destroy: vi.fn(async () => undefined) })),
+      startInterval: vi.fn(() => ({ stop: vi.fn() })),
+      sendMatchCard: vi.fn(async () => "discord-message-1"),
+      sendPredictionReveal,
+      upsertStandingsMessage: vi.fn(async (message) => `standings-${message.key}`),
+      upsertLeaderboardMessage: vi.fn(async () => "leaderboard-message-1"),
+      now: () => new Date("2026-06-11T18:30:00.000Z"),
+      writeLine: vi.fn()
+    });
+
+    expect(sendPredictionReveal).toHaveBeenCalledWith(
+      expect.objectContaining({
+        parentMessageId: "matchday-message-1",
+        content: expect.stringContaining("#1 México x África do Sul")
+      })
+    );
+    expect(store.recordPredictionRevealPost).toHaveBeenCalledWith(
+      expect.objectContaining({
+        matchId: "wc2026-001",
+        channelId: "channel-1",
+        threadId: "thread-1",
+        messageId: "reveal-message-1"
+      })
+    );
+  });
+
   test("refreshes the leaderboard after accepted predictions reach runtime handlers", async () => {
     const store = createStore();
     let onMessageResult: ((result: DiscordIngestionResult) => void | Promise<void>) | undefined;
@@ -126,6 +196,10 @@ describe("startCopanalhasBotRuntime", () => {
       startDiscord,
       startInterval: vi.fn(() => ({ stop: vi.fn() })),
       sendMatchCard: vi.fn(async () => "discord-message-1"),
+      sendPredictionReveal: vi.fn(async () => ({
+        threadId: "thread-1",
+        messageId: "reveal-message-1"
+      })),
       upsertStandingsMessage: vi.fn(async (message) => `standings-${message.key}`),
       upsertLeaderboardMessage,
       now: () => new Date("2026-06-11T12:00:00.000Z"),
@@ -186,6 +260,10 @@ describe("startCopanalhasBotRuntime", () => {
       startDiscord,
       startInterval,
       sendMatchCard: vi.fn(async () => "discord-message-1"),
+      sendPredictionReveal: vi.fn(async () => ({
+        threadId: "thread-1",
+        messageId: "reveal-message-1"
+      })),
       upsertStandingsMessage,
       upsertLeaderboardMessage,
       syncFinishedResults,
@@ -196,7 +274,7 @@ describe("startCopanalhasBotRuntime", () => {
     upsertLeaderboardMessage.mockClear();
     syncFinishedResults.mockClear();
 
-    await intervalCallbacks[1]?.();
+    await intervalCallbacks[2]?.();
 
     expect(syncFinishedResults).toHaveBeenCalledOnce();
     expect(upsertStandingsMessage).toHaveBeenCalledTimes(2);
@@ -223,6 +301,10 @@ describe("startCopanalhasBotRuntime", () => {
       startDiscord,
       startInterval,
       sendMatchCard: vi.fn(async () => "discord-message-1"),
+      sendPredictionReveal: vi.fn(async () => ({
+        threadId: "thread-1",
+        messageId: "reveal-message-1"
+      })),
       upsertStandingsMessage,
       upsertLeaderboardMessage,
       syncFinishedResults,
@@ -272,6 +354,10 @@ describe("startCopanalhasBotRuntime", () => {
       startDiscord,
       startInterval: vi.fn(() => ({ stop: vi.fn() })),
       sendMatchCard: vi.fn(async () => "discord-message-1"),
+      sendPredictionReveal: vi.fn(async () => ({
+        threadId: "thread-1",
+        messageId: "reveal-message-1"
+      })),
       upsertStandingsMessage: vi.fn(async (message) => `standings-${message.key}`),
       upsertLeaderboardMessage: vi.fn(async () => "leaderboard-message-1"),
       now: () => new Date("2026-06-11T12:00:00.000Z"),
@@ -333,6 +419,10 @@ describe("startCopanalhasBotRuntime", () => {
       startDiscord,
       startInterval: vi.fn(() => ({ stop: vi.fn() })),
       sendMatchCard: vi.fn(async () => "discord-message-1"),
+      sendPredictionReveal: vi.fn(async () => ({
+        threadId: "thread-1",
+        messageId: "reveal-message-1"
+      })),
       upsertStandingsMessage: vi.fn(async (message) => `standings-${message.key}`),
       upsertLeaderboardMessage: vi.fn(async () => "leaderboard-message-1"),
       now: () => new Date("2026-06-14T03:15:00.000Z"),
@@ -378,9 +468,12 @@ function createStore(): BotRuntimeStore {
     listResults: vi.fn(() => []),
     listPostedMatchCards: vi.fn(() => []),
     recordPostedMatchCard: vi.fn(),
+    listPredictionRevealPosts: vi.fn(() => []),
+    recordPredictionRevealPost: vi.fn(),
     clearPostedMatchCardsForDate: vi.fn(() => 0),
     clearPredictionsForMatches: vi.fn(() => 0),
     clearResultsForMatches: vi.fn(() => 0),
+    clearPredictionRevealPostsForMatches: vi.fn(() => 0),
     listStandingsPosts: vi.fn(() => []),
     recordStandingsPost: vi.fn(),
     listLeaderboardPosts: vi.fn(() => []),

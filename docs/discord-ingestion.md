@@ -98,9 +98,10 @@ raw content can be removed.
   matchday card to be posted again without deleting predictions or results.
 - `npm run dev -- bot`: starts the long-running bot. It listens for the card
   button and modal interactions, saves predictions, registers operator slash
-  commands, runs auto-posting, and runs optional result sync. Startup also
-  catches up the active matchday card if auto-post time already passed and
-  runs result sync with a two-day lookback window when result sync is enabled.
+  commands, runs auto-posting, posts locked prediction reveals into matchday
+  threads, and runs optional result sync. Startup also catches up the active
+  matchday card if auto-post time already passed and runs result sync with a
+  two-day lookback window when result sync is enabled.
 
 While `bot` is running, use `/copanalhas` for normal operator work:
 
@@ -140,9 +141,16 @@ repairs missing dashboard messages. Automatic result sync, manual result entry,
 and `reset-test-date` refresh the affected dashboards so the channel does not
 fill with new scoreboard messages.
 
+Prediction reveal posts are automatic. Every minute, the bot checks for matches
+whose prediction cutoff has passed, groups matches that share the same cutoff
+and matchday card, and posts one compact message in the matchday card thread.
+The bot records one reveal row per match, so restarts do not duplicate the
+thread post. Member mentions are rendered for readability with pings disabled.
+
 `reset-test-date` is the broader smoke-test reset. It clears posted-card dedupe
-records, predictions, and results for matches on the selected date, then refreshes
-standings so temporary manual results do not keep affecting group tables.
+records, predictions, prediction reveal records, and results for matches on the
+selected date, then refreshes standings so temporary manual results do not keep
+affecting group tables.
 
 `meus-palpites` is member-facing and private. It defaults to the active
 operational matchday and shows only that matchday's predictions for the caller.
@@ -163,3 +171,5 @@ name, original team name, or date instead of typing internal match IDs.
 The Discord application should stay scoped to the owned guild/channel. Any change
 that broadens intents, guild scope, channel scope, stored data, or posting
 permissions must update this document and `docs/security-privacy.md`.
+The bot needs permission to create public threads from matchday card messages and
+send messages in those threads.

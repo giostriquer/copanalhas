@@ -67,6 +67,7 @@ export interface OperatorCommandOptions {
   clearPostedMatchCards(date: string): number;
   clearPredictionsForMatches(matchIds: readonly string[]): number;
   clearResultsForMatches(matchIds: readonly string[]): number;
+  clearPredictionRevealPostsForMatches(matchIds: readonly string[]): number;
   listPredictions(): StoredPrediction[];
   listResults(): MatchResult[];
   upsertResult(result: StoredResult): void | Promise<void>;
@@ -193,6 +194,7 @@ export async function handleOperatorCommand(
     const postedCards = options.clearPostedMatchCards(date);
     const predictions = options.clearPredictionsForMatches(matchIds);
     const results = options.clearResultsForMatches(matchIds);
+    const predictionReveals = options.clearPredictionRevealPostsForMatches(matchIds);
     await options.updateStandingsDashboard();
     await options.updateLeaderboardDashboard();
 
@@ -202,6 +204,7 @@ export async function handleOperatorCommand(
         `Posted card records: ${postedCards}`,
         `Predictions: ${predictions}`,
         `Results: ${results}`,
+        `Prediction reveals: ${predictionReveals}`,
         "Standings refreshed.",
         "Leaderboard refreshed."
       ].join("\n")

@@ -244,6 +244,66 @@ describe("CopanalhasDatabase", () => {
     store.close();
   });
 
+  test("records prediction reveal posts by match and channel", () => {
+    const store = openCopanalhasDatabase(":memory:");
+    store.migrate();
+
+    store.recordPredictionRevealPost({
+      matchId: "wc2026-001",
+      channelId: "channel-1",
+      threadId: "thread-1",
+      messageId: "reveal-message-1",
+      revealedAt: "2026-06-11T18:30:00.000Z",
+      closeAtUtc: "2026-06-11T18:30:00.000Z"
+    });
+    store.recordPredictionRevealPost({
+      matchId: "wc2026-001",
+      channelId: "channel-1",
+      threadId: "thread-2",
+      messageId: "reveal-message-2",
+      revealedAt: "2026-06-11T18:35:00.000Z",
+      closeAtUtc: "2026-06-11T18:30:00.000Z"
+    });
+
+    expect(store.listPredictionRevealPosts()).toEqual([
+      {
+        matchId: "wc2026-001",
+        channelId: "channel-1",
+        threadId: "thread-2",
+        messageId: "reveal-message-2",
+        revealedAt: "2026-06-11T18:35:00.000Z",
+        closeAtUtc: "2026-06-11T18:30:00.000Z"
+      }
+    ]);
+    store.close();
+  });
+
+  test("clears prediction reveal posts for selected matches only", () => {
+    const store = openCopanalhasDatabase(":memory:");
+    store.migrate();
+
+    store.recordPredictionRevealPost({
+      matchId: "wc2026-001",
+      channelId: "channel-1",
+      threadId: "thread-1",
+      messageId: "reveal-message-1",
+      revealedAt: "2026-06-11T18:30:00.000Z",
+      closeAtUtc: "2026-06-11T18:30:00.000Z"
+    });
+    store.recordPredictionRevealPost({
+      matchId: "wc2026-002",
+      channelId: "channel-1",
+      threadId: "thread-1",
+      messageId: "reveal-message-1",
+      revealedAt: "2026-06-12T02:30:00.000Z",
+      closeAtUtc: "2026-06-12T01:30:00.000Z"
+    });
+
+    expect(store.clearPredictionRevealPostsForMatches(["wc2026-001"])).toBe(1);
+    expect(store.listPredictionRevealPosts().map((post) => post.matchId)).toEqual(["wc2026-002"]);
+    store.close();
+  });
+
   test("records standings dashboard posts by key, guild, and channel", () => {
     const store = openCopanalhasDatabase(":memory:");
     store.migrate();

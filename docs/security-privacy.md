@@ -38,4 +38,5 @@ store raw provider responses.
 - Log failures without exposing tokens or raw private message bodies.
 - Keep admin/operator commands explicit and restricted.
 - Use `/copanalhas` commands only in the configured guild/channel.
+- Use thread posting only for matchday prediction reveal messages.
 - Document permission changes before applying them to the Discord app.

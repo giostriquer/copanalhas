@@ -54,6 +54,15 @@ export interface StoredLeaderboardPost {
   updatedAt: string;
 }
 
+export interface StoredPredictionRevealPost {
+  matchId: string;
+  channelId: string;
+  threadId: string;
+  messageId: string;
+  revealedAt: string;
+  closeAtUtc: string;
+}
+
 export interface NewScoringRun {
   createdAt: string;
   matchId: string | null;
@@ -135,6 +144,16 @@ export class CopanalhasDatabase {
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL,
         PRIMARY KEY (guild_id, channel_id)
+      ) STRICT;
+
+      CREATE TABLE IF NOT EXISTS prediction_reveal_posts (
+        match_id TEXT NOT NULL,
+        channel_id TEXT NOT NULL,
+        thread_id TEXT NOT NULL,
+        message_id TEXT NOT NULL,
+        revealed_at TEXT NOT NULL,
+        close_at_utc TEXT NOT NULL,
+        PRIMARY KEY (match_id, channel_id)
       ) STRICT;
 
       CREATE TABLE IF NOT EXISTS scoring_runs (
@@ -392,6 +411,53 @@ export class CopanalhasDatabase {
     return this.clearRowsForMatches("results", matchIds);
   }
 
+  recordPredictionRevealPost(post: StoredPredictionRevealPost): void {
+    this.database
+      .prepare(`
+        INSERT INTO prediction_reveal_posts (
+          match_id,
+          channel_id,
+          thread_id,
+          message_id,
+          revealed_at,
+          close_at_utc
+        )
+        VALUES (?, ?, ?, ?, ?, ?)
+        ON CONFLICT(match_id, channel_id) DO UPDATE SET
+          thread_id = excluded.thread_id,
+          message_id = excluded.message_id,
+          revealed_at = excluded.revealed_at,
+          close_at_utc = excluded.close_at_utc
+      `)
+      .run(
+        post.matchId,
+        post.channelId,
+        post.threadId,
+        post.messageId,
+        post.revealedAt,
+        post.closeAtUtc
+      );
+  }
+
+  listPredictionRevealPosts(): StoredPredictionRevealPost[] {
+    const rows = this.database
+      .prepare("SELECT * FROM prediction_reveal_posts ORDER BY channel_id, match_id")
+      .all() as unknown as PredictionRevealPostRow[];
+
+    return rows.map((row) => ({
+      matchId: row.match_id,
+      channelId: row.channel_id,
+      threadId: row.thread_id,
+      messageId: row.message_id,
+      revealedAt: row.revealed_at,
+      closeAtUtc: row.close_at_utc
+    }));
+  }
+
+  clearPredictionRevealPostsForMatches(matchIds: readonly string[]): number {
+    return this.clearRowsForMatches("prediction_reveal_posts", matchIds);
+  }
+
   recordStandingsPost(post: StoredStandingsPost): void {
     this.database
       .prepare(`
@@ -505,7 +571,10 @@ export class CopanalhasDatabase {
     }
   }
 
-  private clearRowsForMatches(tableName: "predictions" | "results", matchIds: readonly string[]): number {
+  private clearRowsForMatches(
+    tableName: "predictions" | "results" | "prediction_reveal_posts",
+    matchIds: readonly string[]
+  ): number {
     if (matchIds.length === 0) {
       return 0;
     }
@@ -592,6 +661,15 @@ interface LeaderboardPostRow {
   message_id: string;
   created_at: string;
   updated_at: string;
+}
+
+interface PredictionRevealPostRow {
+  match_id: string;
+  channel_id: string;
+  thread_id: string;
+  message_id: string;
+  revealed_at: string;
+  close_at_utc: string;
 }
 
 interface ScoringRunRow {
