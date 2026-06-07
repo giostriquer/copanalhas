@@ -37,6 +37,17 @@ Useful commands:
 - `npm run dev -- record-result wc2026-001 2 1`
 - `npm run dev -- leaderboard`
 
+Windows launchers:
+
+- `scripts\windows\start-copanalhas-bot.cmd`: double-clickable bot launcher.
+- `powershell -ExecutionPolicy Bypass -File scripts\windows\install-start-menu-shortcut.ps1`:
+  creates a Start Menu shortcut named `Copanalhas Bot` that can be pinned to
+  Start.
+- `powershell -ExecutionPolicy Bypass -File scripts\windows\install-startup-shortcut.ps1`:
+  starts the bot automatically when you log into Windows.
+- `powershell -ExecutionPolicy Bypass -File scripts\windows\remove-startup-shortcut.ps1`:
+  removes the automatic startup shortcut.
+
 Run `npm run dev -- bot` for the normal Discord experience. While the bot is
 running it registers `/copanalhas` operator commands, posts daily matchday cards
 with one prediction button per match at the configured local time, listens for
