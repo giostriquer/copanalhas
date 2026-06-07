@@ -15,6 +15,7 @@ describe("postDueMatchCards", () => {
       date: "2026-06-11",
       postSource: "command",
       timeZone: "UTC",
+      matchdayRolloverTime: "06:00",
       now: () => new Date("2026-06-11T12:00:00.000Z"),
       listPostedMatchCards: () => [],
       sendMatchCard: async (message) => {
@@ -54,6 +55,7 @@ describe("postDueMatchCards", () => {
       date: "2026-06-11",
       postSource: "auto",
       timeZone: "UTC",
+      matchdayRolloverTime: "06:00",
       now: () => new Date("2026-06-11T12:00:00.000Z"),
       listPostedMatchCards: () =>
         recorded.map((matchId) => ({
@@ -90,6 +92,37 @@ describe("postDueMatchCards", () => {
       "Home 2 x Away 2"
     );
     expect(recorded).toEqual(["wc2026-001", "wc2026-002"]);
+  });
+
+  test("posts after-midnight local matches on the previous matchday", async () => {
+    const sent: MatchCardMessage[] = [];
+
+    const result = await postDueMatchCards({
+      matches: [
+        {
+          ...match("wc2026-008", 8, "2026-06-14"),
+          kickoffAtUtc: "2026-06-14T04:00:00.000Z"
+        }
+      ],
+      channelId: "channel-1",
+      date: "2026-06-13",
+      postSource: "auto",
+      timeZone: "America/Sao_Paulo",
+      matchdayRolloverTime: "06:00",
+      now: () => new Date("2026-06-13T12:00:00.000Z"),
+      listPostedMatchCards: () => [],
+      sendMatchCard: async (message) => {
+        sent.push(message);
+        return "daily-message-3";
+      },
+      recordPostedMatchCard: () => undefined
+    });
+
+    expect(result).toEqual({
+      posted: ["wc2026-008"],
+      skipped: []
+    });
+    expect(sent).toHaveLength(1);
   });
 });
 

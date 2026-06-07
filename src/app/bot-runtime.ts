@@ -40,6 +40,7 @@ import type {
 import type { WorldCupMatch } from "../worldcup/types.js";
 import { getLocalDateTimeParts } from "./scheduler.js";
 import { canSubmitPredictionAt } from "../worldcup/cutoff.js";
+import { getMatchdayDateTimeParts, isMatchOnMatchday } from "../worldcup/matchday.js";
 import { formatTeamName } from "../worldcup/team-display.js";
 import {
   syncFinishedResults as syncFinishedResultsDefault,
@@ -186,6 +187,7 @@ function createPredictionInteractionOptions(
     channelId: options.config.channelId,
     matches: options.matches,
     timeZone: options.config.timezone,
+    matchdayRolloverTime: options.config.matchdayRolloverTime,
     now: options.now,
     listPredictions: () => options.store.listPredictions(),
     upsertPrediction: (prediction) => options.store.upsertPrediction(prediction),
@@ -207,6 +209,7 @@ function createOperatorCommandOptions(
     channelId: options.config.channelId,
     matches: options.matches,
     timeZone: options.config.timezone,
+    matchdayRolloverTime: options.config.matchdayRolloverTime,
     resultSyncEnabled: options.config.resultSyncEnabled,
     now: options.now,
     getRuntimeStatus: () => createRuntimeStatus(options, autoPostState, resultSyncState),
@@ -217,6 +220,7 @@ function createOperatorCommandOptions(
         date,
         postSource,
         timeZone: options.config.timezone,
+        matchdayRolloverTime: options.config.matchdayRolloverTime,
         now: options.now,
         listPostedMatchCards: () => options.store.listPostedMatchCards(),
         sendMatchCard: options.sendMatchCard,
@@ -312,6 +316,7 @@ async function runAutoPost(
     enabled: options.config.autoPostEnabled,
     targetTime: options.config.autoPostTime,
     timeZone: options.config.timezone,
+    matchdayRolloverTime: options.config.matchdayRolloverTime,
     lastRunDate: state.lastRunDate,
     now: options.now,
     postDueMatchCards: (date) => operatorCommandOptions.postDueMatchCards(date, "auto")
@@ -393,26 +398,37 @@ function createRuntimeStatus(
   autoPostState: AutoPostRuntimeState,
   resultSyncState: ResultSyncRuntimeState
 ): RuntimeStatusSnapshot {
-  const localDateTime = getLocalDateTimeParts(options.now(), options.config.timezone);
+  const localDateTime = getMatchdayDateTimeParts(
+    options.now(),
+    options.config.timezone,
+    options.config.matchdayRolloverTime
+  );
   const postedMatchIds = new Set(
     options.store
       .listPostedMatchCards()
       .filter(
         (card) =>
           card.channelId === options.config.channelId &&
-          card.postedForDate === localDateTime.localDate
+          card.postedForDate === localDateTime.matchdayDate
       )
       .map((card) => card.matchId)
   );
 
   return {
-    localDate: localDateTime.localDate,
+    localDate: localDateTime.matchdayDate,
     localTime: localDateTime.localTime,
     timeZone: options.config.timezone,
     autoPostEnabled: options.config.autoPostEnabled,
     autoPostTime: options.config.autoPostTime,
     todayMatches: options.matches
-      .filter((match) => match.localDate === localDateTime.localDate)
+      .filter((match) =>
+        isMatchOnMatchday(
+          match,
+          localDateTime.matchdayDate,
+          options.config.timezone,
+          options.config.matchdayRolloverTime
+        )
+      )
       .toSorted((left, right) => left.matchNumber - right.matchNumber)
       .map((match) => ({
         matchId: match.id,

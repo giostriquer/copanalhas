@@ -224,6 +224,7 @@ function config(): CopanalhasConfig {
     autoPostEnabled: true,
     autoPostTime: "09:00",
     timezone: "America/Sao_Paulo",
+    matchdayRolloverTime: "06:00",
     footballDataToken: null,
     resultSyncEnabled: false
   };
@@ -235,6 +236,7 @@ function operatorOptions(): OperatorCommandOptions {
     channelId: "channel-1",
     matches: [],
     timeZone: "UTC",
+    matchdayRolloverTime: "06:00",
     resultSyncEnabled: false,
     now: () => new Date("2026-06-11T23:00:00.000Z"),
     postDueMatchCards: vi.fn(async () => ({ posted: [], skipped: [] })),

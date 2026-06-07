@@ -11,6 +11,7 @@ describe("runAutoPostTick", () => {
         enabled: false,
         targetTime: "09:00",
         timeZone: "UTC",
+        matchdayRolloverTime: "06:00",
         lastRunDate: null,
         now: () => new Date("2026-06-11T09:00:00.000Z"),
         postDueMatchCards
@@ -27,6 +28,7 @@ describe("runAutoPostTick", () => {
         enabled: true,
         targetTime: "09:00",
         timeZone: "UTC",
+        matchdayRolloverTime: "06:00",
         lastRunDate: null,
         now: () => new Date("2026-06-11T08:59:00.000Z"),
         postDueMatchCards
@@ -50,6 +52,7 @@ describe("runAutoPostTick", () => {
         enabled: true,
         targetTime: "09:00",
         timeZone: "UTC",
+        matchdayRolloverTime: "06:00",
         lastRunDate: null,
         now: () => new Date("2026-06-11T09:00:00.000Z"),
         postDueMatchCards
@@ -61,5 +64,30 @@ describe("runAutoPostTick", () => {
       skipped: ["wc2026-002"]
     });
     expect(postDueMatchCards).toHaveBeenCalledWith("2026-06-11");
+  });
+
+  test("uses the previous matchday before the local rollover time", async () => {
+    const postDueMatchCards = vi.fn(async () => ({
+      posted: ["wc2026-008"],
+      skipped: []
+    }));
+
+    await expect(
+      runAutoPostTick({
+        enabled: true,
+        targetTime: "09:00",
+        timeZone: "America/Sao_Paulo",
+        matchdayRolloverTime: "06:00",
+        lastRunDate: null,
+        now: () => new Date("2026-06-14T03:15:00.000Z"),
+        postDueMatchCards
+      })
+    ).resolves.toEqual({
+      action: "posted",
+      localDate: "2026-06-13",
+      posted: ["wc2026-008"],
+      skipped: []
+    });
+    expect(postDueMatchCards).toHaveBeenCalledWith("2026-06-13");
   });
 });

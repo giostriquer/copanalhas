@@ -14,6 +14,10 @@ import {
   formatPredictionWindow,
   type PredictionSubmissionWindow
 } from "../worldcup/cutoff.js";
+import {
+  defaultMatchdayRolloverTime,
+  getMatchdayDateForMatch
+} from "../worldcup/matchday.js";
 import { formatTeamName } from "../worldcup/team-display.js";
 import type { WorldCupMatch } from "../worldcup/types.js";
 
@@ -25,6 +29,7 @@ export interface PredictionInteractionOptions {
   channelId: string;
   matches: WorldCupMatch[];
   timeZone?: string;
+  matchdayRolloverTime?: string;
   now?(): Date;
   listPredictions(): StoredPrediction[];
   upsertPrediction(prediction: StoredPrediction): void | Promise<void>;
@@ -292,9 +297,15 @@ async function handleScoreModal(
       "",
       formatUserPredictionSummary({
         userId: interaction.userId,
-        date: match.localDate,
+        date: getMatchdayDateForMatch(
+          match,
+          options.timeZone ?? defaultTimeZone,
+          options.matchdayRolloverTime ?? defaultMatchdayRolloverTime
+        ),
         matches: options.matches,
-        predictions: withAcceptedPrediction(options.listPredictions(), prediction)
+        predictions: withAcceptedPrediction(options.listPredictions(), prediction),
+        timeZone: options.timeZone ?? defaultTimeZone,
+        matchdayRolloverTime: options.matchdayRolloverTime ?? defaultMatchdayRolloverTime
       })
     ].join("\n"),
     ephemeral: true

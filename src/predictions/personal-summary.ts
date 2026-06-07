@@ -1,4 +1,5 @@
 import type { StoredPrediction } from "../storage/database.js";
+import { isMatchOnMatchday, defaultMatchdayRolloverTime } from "../worldcup/matchday.js";
 import { formatTeamName } from "../worldcup/team-display.js";
 import type { WorldCupMatch } from "../worldcup/types.js";
 
@@ -7,13 +8,26 @@ export interface FormatUserPredictionSummaryOptions {
   date: string;
   matches: readonly WorldCupMatch[];
   predictions: readonly StoredPrediction[];
+  timeZone?: string;
+  matchdayRolloverTime?: string;
 }
 
 export function formatUserPredictionSummary(
   options: FormatUserPredictionSummaryOptions
 ): string {
   const matchesForDate = options.matches
-    .filter((match) => match.localDate === options.date)
+    .filter((match) => {
+      if (!options.timeZone) {
+        return match.localDate === options.date;
+      }
+
+      return isMatchOnMatchday(
+        match,
+        options.date,
+        options.timeZone,
+        options.matchdayRolloverTime ?? defaultMatchdayRolloverTime
+      );
+    })
     .toSorted((left, right) => left.matchNumber - right.matchNumber);
 
   if (matchesForDate.length === 0) {

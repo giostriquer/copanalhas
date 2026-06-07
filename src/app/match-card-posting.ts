@@ -3,6 +3,7 @@ import type {
   PostedMatchCardSource,
   StoredPostedMatchCard
 } from "../storage/database.js";
+import { isMatchOnMatchday } from "../worldcup/matchday.js";
 import type { WorldCupMatch } from "../worldcup/types.js";
 
 export interface PostDueMatchCardsOptions {
@@ -11,6 +12,7 @@ export interface PostDueMatchCardsOptions {
   date: string;
   postSource: PostedMatchCardSource;
   timeZone: string;
+  matchdayRolloverTime: string;
   now(): Date;
   listPostedMatchCards(): StoredPostedMatchCard[];
   sendMatchCard(message: MatchCardMessage): Promise<string>;
@@ -35,7 +37,9 @@ export async function postDueMatchCards(
   const skipped: string[] = [];
   const dueMatches: WorldCupMatch[] = [];
 
-  for (const match of options.matches.filter((candidate) => candidate.localDate === options.date)) {
+  for (const match of options.matches.filter((candidate) =>
+    isMatchOnMatchday(candidate, options.date, options.timeZone, options.matchdayRolloverTime)
+  )) {
     if (alreadyPosted.has(match.id)) {
       skipped.push(match.id);
       continue;

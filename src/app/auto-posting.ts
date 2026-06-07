@@ -1,10 +1,12 @@
 import type { PostDueMatchCardsResult } from "./match-card-posting.js";
-import { getLocalDateTimeParts, shouldRunDailyJob } from "./scheduler.js";
+import { shouldRunDailyJob } from "./scheduler.js";
+import { getMatchdayDateTimeParts } from "../worldcup/matchday.js";
 
 export interface AutoPostTickOptions {
   enabled: boolean;
   targetTime: string;
   timeZone: string;
+  matchdayRolloverTime: string;
   lastRunDate: string | null;
   now(): Date;
   postDueMatchCards(date: string): Promise<PostDueMatchCardsResult>;
@@ -22,11 +24,15 @@ export async function runAutoPostTick(
     return { action: "disabled" };
   }
 
-  const localDateTime = getLocalDateTimeParts(options.now(), options.timeZone);
+  const localDateTime = getMatchdayDateTimeParts(
+    options.now(),
+    options.timeZone,
+    options.matchdayRolloverTime
+  );
   const decision = shouldRunDailyJob({
     enabled: options.enabled,
-    localDate: localDateTime.localDate,
-    localTime: localDateTime.localTime,
+    localDate: localDateTime.matchdayDate,
+    localTime: localDateTime.dailyJobTime,
     targetTime: options.targetTime,
     lastRunDate: options.lastRunDate
   });
@@ -34,7 +40,7 @@ export async function runAutoPostTick(
   if (!decision.shouldRun) {
     return {
       action: "not-due",
-      localDate: localDateTime.localDate,
+      localDate: localDateTime.matchdayDate,
       localTime: localDateTime.localTime
     };
   }

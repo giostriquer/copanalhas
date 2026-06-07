@@ -26,6 +26,7 @@ import { computeGroupStandings, type StandingsResult } from "./standings/standin
 import { upsertDiscordLeaderboardMessage } from "./discord/leaderboard-posting.js";
 import type { LeaderboardDashboardMessage } from "./leaderboard/format.js";
 import { openCopanalhasDatabase } from "./storage/database.js";
+import { getMatchdayDateForInstant, isMatchOnMatchday } from "./worldcup/matchday.js";
 import { WORLD_CUP_2026_SEED } from "./worldcup/seed.js";
 
 export interface CliStore extends BotRuntimeStore {
@@ -117,9 +118,9 @@ function seedMatches(dependencies: CliDependencies): void {
 }
 
 async function postMatchesToday(argv: string[], dependencies: CliDependencies): Promise<void> {
-  const date = dateFromOptionalArg(argv[1]);
+  const dateArg = argv[1]?.trim();
 
-  if (!date) {
+  if (dateArg && !isDateString(dateArg)) {
     dependencies.writeLine(usage());
     return;
   }
@@ -133,7 +134,21 @@ async function postMatchesToday(argv: string[], dependencies: CliDependencies): 
     return;
   }
 
-  const matches = WORLD_CUP_2026_SEED.matches.filter((match) => match.localDate === date);
+  const date =
+    dateArg ||
+    getMatchdayDateForInstant(
+      dependencies.now?.() ?? new Date(),
+      configResult.config.timezone,
+      configResult.config.matchdayRolloverTime
+    );
+  const matches = WORLD_CUP_2026_SEED.matches.filter((match) =>
+    isMatchOnMatchday(
+      match,
+      date,
+      configResult.config.timezone,
+      configResult.config.matchdayRolloverTime
+    )
+  );
 
   if (matches.length === 0) {
     dependencies.writeLine(`No reviewed World Cup matches found for ${date}.`);
@@ -368,11 +383,19 @@ function parseScore(value: string | undefined): number | undefined {
 function dateFromOptionalArg(value: string | undefined): string | undefined {
   const date = value?.trim() || new Date().toISOString().slice(0, 10);
 
-  if (!/^\d{4}-\d{2}-\d{2}$/u.test(date)) {
+  if (!isDateString(date)) {
     return undefined;
   }
 
   return date;
+}
+
+function isDateString(date: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/u.test(date)) {
+    return false;
+  }
+
+  return true;
 }
 
 function usage(): string {

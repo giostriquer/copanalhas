@@ -68,6 +68,7 @@ function config(): CopanalhasConfig {
     autoPostEnabled: true,
     autoPostTime: "09:00",
     timezone: "America/Sao_Paulo",
+    matchdayRolloverTime: "06:00",
     footballDataToken: null,
     resultSyncEnabled: false
   };

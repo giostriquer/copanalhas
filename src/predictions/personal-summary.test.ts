@@ -42,6 +42,25 @@ describe("formatUserPredictionSummary", () => {
       })
     ).toBe("Nenhum jogo encontrado para 2026-06-30.");
   });
+
+  test("includes after-midnight local matches on the previous matchday", () => {
+    expect(
+      formatUserPredictionSummary({
+        userId: "user-1",
+        date: "2026-06-13",
+        matches: [
+          {
+            ...match("wc2026-008", 8, "2026-06-14", "AUS", "Australia", "TUR", "Turkiye"),
+            kickoffTimeLocal: "21:00",
+            kickoffAtUtc: "2026-06-14T04:00:00.000Z"
+          }
+        ],
+        predictions: [],
+        timeZone: "America/Sao_Paulo",
+        matchdayRolloverTime: "06:00"
+      })
+    ).toBe(["Meus palpites - 2026-06-13", "#8 Austrália x Turquia: sem palpite"].join("\n"));
+  });
 });
 
 function prediction(

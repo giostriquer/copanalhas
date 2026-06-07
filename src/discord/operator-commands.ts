@@ -1,7 +1,6 @@
 import { MessageFlags, type ChatInputCommandInteraction, type Interaction } from "discord.js";
 
 import type { PostDueMatchCardsResult } from "../app/match-card-posting.js";
-import { getLocalDateTimeParts } from "../app/scheduler.js";
 import { formatLeaderboard } from "../leaderboard/format.js";
 import { formatUserPredictionSummary } from "../predictions/personal-summary.js";
 import { parseScoreInput } from "../predictions/score-parser.js";
@@ -15,6 +14,11 @@ import type {
   StoredStandingsPost
 } from "../storage/database.js";
 import type { WorldCupMatch } from "../worldcup/types.js";
+import {
+  getMatchdayDateForInstant,
+  getMatchdayDateForMatch,
+  isMatchOnMatchday
+} from "../worldcup/matchday.js";
 import { formatTeamName } from "../worldcup/team-display.js";
 import type { UpdateStandingsDashboardResult } from "../app/standings-posting.js";
 import type { UpdateLeaderboardDashboardResult } from "../app/leaderboard-posting.js";
@@ -55,6 +59,7 @@ export interface OperatorCommandOptions {
   channelId: string;
   matches: WorldCupMatch[];
   timeZone: string;
+  matchdayRolloverTime: string;
   resultSyncEnabled: boolean;
   now(): Date;
   getRuntimeStatus?(): RuntimeStatusSnapshot;
@@ -132,8 +137,12 @@ export async function handleOperatorCommand(
   }
 
   if (command.subcommand === "post-today") {
-    const { localDate } = getLocalDateTimeParts(options.now(), options.timeZone);
-    return postForDate(localDate, options);
+    const matchdayDate = getMatchdayDateForInstant(
+      options.now(),
+      options.timeZone,
+      options.matchdayRolloverTime
+    );
+    return postForDate(matchdayDate, options);
   }
 
   if (command.subcommand === "post-date") {
@@ -175,7 +184,9 @@ export async function handleOperatorCommand(
     }
 
     const matchIds = options.matches
-      .filter((match) => match.localDate === date)
+      .filter((match) =>
+        isMatchOnMatchday(match, date, options.timeZone, options.matchdayRolloverTime)
+      )
       .toSorted((left, right) => left.matchNumber - right.matchNumber)
       .map((match) => match.id);
 
@@ -241,7 +252,9 @@ export async function handleOperatorCommand(
   }
 
   if (command.subcommand === "meus-palpites") {
-    const date = command.options.date || getLocalDateTimeParts(options.now(), options.timeZone).localDate;
+    const date =
+      command.options.date ||
+      getMatchdayDateForInstant(options.now(), options.timeZone, options.matchdayRolloverTime);
 
     if (!isDateString(date)) {
       return reply("Use a date like 2026-06-11.");
@@ -252,7 +265,9 @@ export async function handleOperatorCommand(
         userId: command.userId,
         date,
         matches: options.matches,
-        predictions: options.listPredictions()
+        predictions: options.listPredictions(),
+        timeZone: options.timeZone,
+        matchdayRolloverTime: options.matchdayRolloverTime
       })
     );
   }
@@ -342,11 +357,11 @@ export function handleOperatorAutocomplete(
 
   const query = normalizeSearchText(interaction.focusedValue);
   const choices = options.matches
-    .filter((match) => query === "" || normalizeSearchText(matchChoiceSearchText(match)).includes(query))
+    .filter((match) => query === "" || normalizeSearchText(matchChoiceSearchText(match, options)).includes(query))
     .toSorted((left, right) => left.matchNumber - right.matchNumber)
     .slice(0, 25)
     .map((match) => ({
-      name: matchChoiceName(match),
+      name: matchChoiceName(match, options),
       value: match.id
     }));
 
@@ -534,13 +549,21 @@ function parseOperatorSubcommand(value: string): OperatorSubcommand | undefined 
   return undefined;
 }
 
-function matchChoiceName(match: WorldCupMatch): string {
+function matchChoiceName(
+  match: WorldCupMatch,
+  options: Pick<OperatorCommandOptions, "timeZone" | "matchdayRolloverTime">
+): string {
   return `#${match.matchNumber} · ${formatTeamName(match.homeTeam)} x ${formatTeamName(
     match.awayTeam
-  )} · ${match.localDate} ${match.kickoffTimeLocal ?? "horário indefinido"}`;
+  )} · ${getMatchdayDateForMatch(match, options.timeZone, options.matchdayRolloverTime)} ${
+    match.kickoffTimeLocal ?? "horário indefinido"
+  }`;
 }
 
-function matchChoiceSearchText(match: WorldCupMatch): string {
+function matchChoiceSearchText(
+  match: WorldCupMatch,
+  options: Pick<OperatorCommandOptions, "timeZone" | "matchdayRolloverTime">
+): string {
   return [
     match.id,
     match.matchNumber.toString(),
@@ -550,7 +573,8 @@ function matchChoiceSearchText(match: WorldCupMatch): string {
     match.awayTeam.code,
     match.awayTeam.name,
     formatTeamName(match.awayTeam),
-    match.localDate
+    match.localDate,
+    getMatchdayDateForMatch(match, options.timeZone, options.matchdayRolloverTime)
   ].join(" ");
 }
 
@@ -649,13 +673,14 @@ function formatRuntimeStatus(status: RuntimeStatusSnapshot | undefined): string[
   ).length;
 
   return [
-    `Today: ${status.localDate} ${status.localTime} ${status.timeZone}`,
+    `Matchday: ${status.localDate}`,
+    `Local time: ${status.localTime} ${status.timeZone}`,
     `Auto-post: ${status.autoPostEnabled ? `on at ${status.autoPostTime}` : "off"} ${
       status.timeZone
     }`,
-    `Today matches: ${status.todayMatches.length}`,
-    `Posted today: ${postedToday}/${status.todayMatches.length}`,
-    `Unposted today: ${formatUnpostedMatches(unpostedToday)}`,
+    `Matchday matches: ${status.todayMatches.length}`,
+    `Posted matchday: ${postedToday}/${status.todayMatches.length}`,
+    `Unposted matchday: ${formatUnpostedMatches(unpostedToday)}`,
     `Prediction windows: ${openWindows} open, ${closedWindows} closed, ${missingKickoffWindows} missing kickoff`,
     `Last auto-post: ${formatLastAutoPost(status.lastAutoPost)}`
   ];

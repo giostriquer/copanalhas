@@ -21,6 +21,7 @@ describe("parseCopanalhasConfig", () => {
         autoPostEnabled: true,
         autoPostTime: "09:00",
         timezone: "America/Sao_Paulo",
+        matchdayRolloverTime: "06:00",
         footballDataToken: null,
         resultSyncEnabled: false
       }
@@ -44,6 +45,7 @@ describe("parseCopanalhasConfig", () => {
         autoPostEnabled: true,
         autoPostTime: "09:00",
         timezone: "America/Sao_Paulo",
+        matchdayRolloverTime: "06:00",
         footballDataToken: null,
         resultSyncEnabled: false
       }
@@ -59,6 +61,7 @@ describe("parseCopanalhasConfig", () => {
         COPANALHAS_AUTO_POST_ENABLED: "false",
         COPANALHAS_AUTO_POST_TIME: "10:30",
         COPANALHAS_TIMEZONE: "UTC",
+        COPANALHAS_MATCHDAY_ROLLOVER_TIME: "05:30",
         FOOTBALL_DATA_TOKEN: "football-data-token",
         COPANALHAS_RESULT_SYNC_ENABLED: "true"
       })
@@ -68,6 +71,7 @@ describe("parseCopanalhasConfig", () => {
         autoPostEnabled: false,
         autoPostTime: "10:30",
         timezone: "UTC",
+        matchdayRolloverTime: "05:30",
         footballDataToken: "football-data-token",
         resultSyncEnabled: true
       })
@@ -85,6 +89,20 @@ describe("parseCopanalhasConfig", () => {
     ).toEqual({
       ok: false,
       errors: ["COPANALHAS_AUTO_POST_TIME must use HH:mm"]
+    });
+  });
+
+  test("rejects invalid matchday rollover time", () => {
+    expect(
+      parseCopanalhasConfig({
+        DISCORD_BOT_TOKEN: "token-value",
+        DISCORD_GUILD_ID: "guild-1",
+        DISCORD_CHANNEL_ID: "channel-1",
+        COPANALHAS_MATCHDAY_ROLLOVER_TIME: "6"
+      })
+    ).toEqual({
+      ok: false,
+      errors: ["COPANALHAS_MATCHDAY_ROLLOVER_TIME must use HH:mm"]
     });
   });
 

@@ -29,6 +29,27 @@ describe("handleOperatorCommand", () => {
     expect(postDueMatchCards).toHaveBeenCalledWith("2026-06-11", "command");
   });
 
+  test("post-today uses the previous matchday before the local rollover time", async () => {
+    const postDueMatchCards = vi.fn(async () => ({ posted: ["wc2026-008"], skipped: [] }));
+
+    const result = await handleOperatorCommand(
+      command("post-today"),
+      options({
+        postDueMatchCards,
+        timeZone: "America/Sao_Paulo",
+        matchdayRolloverTime: "06:00",
+        now: () => new Date("2026-06-14T03:15:00.000Z")
+      })
+    );
+
+    expect(result).toEqual({
+      action: "replied",
+      content: "Posted 1 matchday card for 1 match on 2026-06-13. Skipped 0 already posted.",
+      ephemeral: true
+    });
+    expect(postDueMatchCards).toHaveBeenCalledWith("2026-06-13", "command");
+  });
+
   test("post-date posts cards for the requested date", async () => {
     const postDueMatchCards = vi.fn(async () => ({ posted: [], skipped: ["wc2026-003"] }));
 
@@ -153,11 +174,12 @@ describe("handleOperatorCommand", () => {
       action: "replied",
       content: [
         "Copanalhas Status",
-        "Today: 2026-06-11 20:00 UTC",
+        "Matchday: 2026-06-11",
+        "Local time: 20:00 UTC",
         "Auto-post: on at 09:00 UTC",
-        "Today matches: 2",
-        "Posted today: 1/2",
-        "Unposted today: #2 Coreia do Sul x Tchéquia",
+        "Matchday matches: 2",
+        "Posted matchday: 1/2",
+        "Unposted matchday: #2 Coreia do Sul x Tchéquia",
         "Prediction windows: 1 open, 1 closed, 0 missing kickoff",
         "Last auto-post: posted 1, skipped 1 on 2026-06-11",
         "Matches loaded: 72",
@@ -579,6 +601,7 @@ function options(overrides: Partial<OperatorCommandOptions> = {}): OperatorComma
     channelId: "channel-1",
     matches: WORLD_CUP_2026_SEED.matches,
     timeZone: "UTC",
+    matchdayRolloverTime: "06:00",
     resultSyncEnabled: false,
     now: () => new Date("2026-06-11T23:00:00.000Z"),
     postDueMatchCards: vi.fn(async () => ({ posted: [], skipped: [] })),

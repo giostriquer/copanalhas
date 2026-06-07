@@ -310,6 +310,47 @@ describe("startCopanalhasBotRuntime", () => {
       lastResultSync: { action: "never" }
     });
   });
+
+  test("keeps after-midnight matches on the previous operational matchday status", async () => {
+    const postedCards: ReturnType<BotRuntimeStore["listPostedMatchCards"]> = [];
+    const store = {
+      ...createStore(),
+      listPostedMatchCards: vi.fn(() => postedCards),
+      recordPostedMatchCard: vi.fn((card) => {
+        postedCards.push(card);
+      })
+    };
+    let operatorOptions: OperatorCommandOptions | undefined;
+    const startDiscord = vi.fn(async (_config, _onMessage, _predictionOptions, readyOptions) => {
+      operatorOptions = readyOptions.operatorCommandOptions;
+      return { destroy: vi.fn(async () => undefined) };
+    });
+
+    await startCopanalhasBotRuntime({
+      config: config(),
+      store,
+      matches: WORLD_CUP_2026_SEED.matches,
+      startDiscord,
+      startInterval: vi.fn(() => ({ stop: vi.fn() })),
+      sendMatchCard: vi.fn(async () => "discord-message-1"),
+      upsertStandingsMessage: vi.fn(async (message) => `standings-${message.key}`),
+      upsertLeaderboardMessage: vi.fn(async () => "leaderboard-message-1"),
+      now: () => new Date("2026-06-14T03:15:00.000Z"),
+      writeLine: vi.fn()
+    });
+
+    const status = operatorOptions?.getRuntimeStatus?.();
+
+    expect(status).toMatchObject({
+      localDate: "2026-06-13",
+      localTime: "00:15",
+      lastAutoPost: {
+        action: "posted",
+        localDate: "2026-06-13"
+      }
+    });
+    expect(status?.todayMatches.map((match) => match.matchId)).toContain("wc2026-008");
+  });
 });
 
 function config(): CopanalhasConfig {
@@ -321,6 +362,7 @@ function config(): CopanalhasConfig {
     autoPostEnabled: true,
     autoPostTime: "09:00",
     timezone: "America/Sao_Paulo",
+    matchdayRolloverTime: "06:00",
     footballDataToken: null,
     resultSyncEnabled: false
   };

@@ -60,6 +60,18 @@ Predictions close 30 minutes before `kickoffAtUtc`.
 - Members may update a prediction by submitting the modal again before the
   cutoff; storage upserts by `(userId, matchId)`.
 
+## Matchday Rollover
+
+Posting, `/copanalhas post-today`, `/copanalhas status`, `/copanalhas
+meus-palpites`, posted-card dedupe, and test resets use an operational matchday
+instead of the raw local calendar date. `COPANALHAS_MATCHDAY_ROLLOVER_TIME`
+defaults to `06:00`, using `COPANALHAS_TIMEZONE`.
+
+With the default Brazil timezone, a match that starts at `01:00` belongs to the
+previous matchday card. The actual kickoff and prediction close timestamps still
+come from `kickoffAtUtc`, so cutoff enforcement and Discord-rendered times stay
+precise.
+
 ## Storage Policy
 
 Prefer storing parsed prediction records:
@@ -79,15 +91,15 @@ raw content can be removed.
 ## Commands
 
 - `npm run dev -- post-matches-today [YYYY-MM-DD]`: posts one matchday card for
-  reviewed matches on the selected date. If the date is omitted, the command uses
-  the current ISO date.
+  reviewed matches on the selected operational matchday. If the date is omitted,
+  the command uses the current operational matchday.
 - `npm run dev -- clear-posted-date [YYYY-MM-DD]`: clears only posted-card
   dedupe records for the configured channel and selected date, allowing a test
   matchday card to be posted again without deleting predictions or results.
 - `npm run dev -- bot`: starts the long-running bot. It listens for the card
   button and modal interactions, saves predictions, registers operator slash
   commands, runs auto-posting, and runs optional result sync. Startup also
-  catches up today's missing matchday card if auto-post time already passed and
+  catches up the active matchday card if auto-post time already passed and
   runs result sync with a two-day lookback window when result sync is enabled.
 
 While `bot` is running, use `/copanalhas` for normal operator work:
@@ -109,8 +121,8 @@ re-running an operator post command does not repost matches already recorded in
 SQLite. During smoke tests, `clear-posted-date` removes only those dedupe rows
 for the configured channel and selected date.
 
-`status` is the operator health check. It reports the current local date/time,
-auto-post setting, today's reviewed matches, posted/unposted card state,
+`status` is the operator health check. It reports the active matchday, current
+local time, auto-post setting, reviewed matches, posted/unposted card state,
 prediction-window counts, the last auto-post action, result-sync state, the last
 result-sync action, standings post health, and leaderboard post health. Use it
 after starting the bot to confirm that catch-up ran and the process is ready for
@@ -132,9 +144,9 @@ fill with new scoreboard messages.
 records, predictions, and results for matches on the selected date, then refreshes
 standings so temporary manual results do not keep affecting group tables.
 
-`meus-palpites` is member-facing and private. It defaults to the current local
-date in the configured timezone and shows only that matchday's predictions for
-the caller. The optional `date` argument exists for test runs and catch-up days.
+`meus-palpites` is member-facing and private. It defaults to the active
+operational matchday and shows only that matchday's predictions for the caller.
+The optional `date` argument exists for test runs and catch-up days.
 
 `predictions` is an operator-only private audit view. It can show submitted
 picks before the prediction window closes, which helps with smoke tests and
