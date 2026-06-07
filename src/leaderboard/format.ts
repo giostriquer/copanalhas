@@ -80,16 +80,15 @@ function formatDashboardRows(
   }
 
   return [
-    "#  Jogador              Pts Exato Perto Jogos",
+    "#  Pts Exato Perto Jogos  Jogador",
     ...rows.map((row, index) =>
       [
         String(rankForRow(rows, index)).padEnd(2),
-        playerName(row, displayNames).padEnd(18),
         row.points.toString().padStart(3),
         row.exactCount.toString().padStart(5),
         row.closestCount.toString().padStart(5),
         row.matchesScored.toString().padStart(5)
-      ].join(" ")
+      ].join(" ") + `  ${playerName(row, displayNames)}`
     )
   ];
 }
@@ -103,9 +102,7 @@ function rankForRow(rows: LeaderboardRow[], index: number): number {
 }
 
 function playerName(row: LeaderboardRow, displayNames: ReadonlyMap<string, string>): string {
-  const name = displayNameForRow(row, displayNames);
-
-  return name.length > 18 ? `${name.slice(0, 17)}.` : name;
+  return displayNameForRow(row, displayNames);
 }
 
 function displayNameForRow(

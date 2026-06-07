@@ -136,9 +136,9 @@ describe("createLeaderboardDashboardMessage", () => {
         "Ranking Copanalhas",
         "Atualizado: 2026-06-11 23:30 UTC",
         "```text",
-        "#  Jogador              Pts Exato Perto Jogos",
-        "1  Giova                6     2     0     2",
-        "2  Ana                  1     0     1     2",
+        "#  Pts Exato Perto Jogos  Jogador",
+        "1    6     2     0     2  Giova",
+        "2    1     0     1     2  Ana",
         "```",
         "",
         "Como funciona",
@@ -158,7 +158,27 @@ describe("createLeaderboardDashboardMessage", () => {
       timeZone: "UTC"
     }).content;
 
-    expect(content).toContain("1  Ana Maria            0     0     0     0");
+    expect(content).toContain("1    0     0     0     0  Ana Maria");
     expect(content).not.toContain("Ana\nMaria");
+  });
+
+  test("keeps numeric columns aligned before long display names", () => {
+    const content = createLeaderboardDashboardMessage({
+      rows: [
+        { userId: "user-1", points: 0, exactCount: 0, closestCount: 0, matchesScored: 0 },
+        { userId: "user-2", points: 0, exactCount: 0, closestCount: 0, matchesScored: 0 }
+      ],
+      displayNames: new Map([
+        ["user-1", "Anguishx"],
+        ["user-2", "QUINZE DIASFIPS"]
+      ]),
+      updatedAt: new Date("2026-06-11T23:30:00.000Z"),
+      timeZone: "UTC"
+    }).content;
+
+    expect(content).toContain(
+      ["#  Pts Exato Perto Jogos  Jogador", "1    0     0     0     0  Anguishx"].join("\n")
+    );
+    expect(content).toContain("1    0     0     0     0  QUINZE DIASFIPS");
   });
 });
