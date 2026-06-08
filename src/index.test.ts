@@ -286,6 +286,12 @@ describe("runCli", () => {
       "[dashboard] leaderboard action=posted message=leaderboard-message-1",
       "[auto-post] date=2026-06-11 posted=2 skipped=0",
       "[result-sync] disabled reason=disabled",
+      "[health] discord=online guild=guild-1 channel=channel-1",
+      "[health] local=2026-06-11 09:00 timezone=America/Sao_Paulo autoPost=on@09:00",
+      "[health] nextMatchday=2026-06-11 matches=2 posted=2/2",
+      "[health] predictions open=2 closed=0 missingKickoff=0 pendingReveals=0",
+      "[health] footballData=missing-token resultSync=off nextResultCheck=disabled reason=disabled pendingResults=0",
+      "[health] dashboards standings=2/2 leaderboard=present lastLeaderboard=2026-06-11T12:00:00.000Z",
       "Autonomous operator enabled. Auto-post: on at 09:00 America/Sao_Paulo."
     ]);
   });
@@ -337,6 +343,11 @@ function createStore(overrides: Partial<CliStore> = {}): CliStore {
 }
 
 function createStoreShape(): CliStore {
+  const postedMatchCards: ReturnType<CliStore["listPostedMatchCards"]> = [];
+  const predictionRevealPosts: ReturnType<CliStore["listPredictionRevealPosts"]> = [];
+  const standingsPosts: ReturnType<CliStore["listStandingsPosts"]> = [];
+  const leaderboardPosts: ReturnType<CliStore["listLeaderboardPosts"]> = [];
+
   return {
     migrate: vi.fn(),
     upsertMatches: vi.fn(),
@@ -344,21 +355,63 @@ function createStoreShape(): CliStore {
     upsertResult: vi.fn(),
     listPredictions: vi.fn(() => [] as ReturnType<CliStore["listPredictions"]>),
     listResults: vi.fn(() => [] as ReturnType<CliStore["listResults"]>),
-    listPostedMatchCards: vi.fn(() => [] as ReturnType<CliStore["listPostedMatchCards"]>),
-    recordPostedMatchCard: vi.fn(),
-    listPredictionRevealPosts: vi.fn(
-      () => [] as ReturnType<CliStore["listPredictionRevealPosts"]>
-    ),
-    recordPredictionRevealPost: vi.fn(),
+    listPostedMatchCards: vi.fn(() => postedMatchCards),
+    recordPostedMatchCard: vi.fn((card) => {
+      upsertBy(
+        postedMatchCards,
+        card,
+        (stored) => `${stored.matchId}|${stored.channelId}`,
+        (next) => `${next.matchId}|${next.channelId}`
+      );
+    }),
+    listPredictionRevealPosts: vi.fn(() => predictionRevealPosts),
+    recordPredictionRevealPost: vi.fn((post) => {
+      upsertBy(
+        predictionRevealPosts,
+        post,
+        (stored) => `${stored.matchId}|${stored.channelId}`,
+        (next) => `${next.matchId}|${next.channelId}`
+      );
+    }),
     clearPostedMatchCardsForDate: vi.fn(() => 0),
     clearPredictionsForMatches: vi.fn(() => 0),
     clearResultsForMatches: vi.fn(() => 0),
     clearPredictionRevealPostsForMatches: vi.fn(() => 0),
-    listStandingsPosts: vi.fn(() => [] as ReturnType<CliStore["listStandingsPosts"]>),
-    recordStandingsPost: vi.fn(),
-    listLeaderboardPosts: vi.fn(() => [] as ReturnType<CliStore["listLeaderboardPosts"]>),
-    recordLeaderboardPost: vi.fn(),
+    listStandingsPosts: vi.fn(() => standingsPosts),
+    recordStandingsPost: vi.fn((post) => {
+      upsertBy(
+        standingsPosts,
+        post,
+        (stored) => `${stored.postKey}|${stored.guildId}|${stored.channelId}`,
+        (next) => `${next.postKey}|${next.guildId}|${next.channelId}`
+      );
+    }),
+    listLeaderboardPosts: vi.fn(() => leaderboardPosts),
+    recordLeaderboardPost: vi.fn((post) => {
+      upsertBy(
+        leaderboardPosts,
+        post,
+        (stored) => `${stored.guildId}|${stored.channelId}`,
+        (next) => `${next.guildId}|${next.channelId}`
+      );
+    }),
     insertScoringRun: vi.fn(),
     close: vi.fn()
   };
+}
+
+function upsertBy<T>(
+  rows: T[],
+  next: T,
+  storedKey: (row: T) => string,
+  nextKey: (row: T) => string
+): void {
+  const key = nextKey(next);
+  const index = rows.findIndex((row) => storedKey(row) === key);
+
+  if (index === -1) {
+    rows.push(next);
+  } else {
+    rows.splice(index, 1, next);
+  }
 }

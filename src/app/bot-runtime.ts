@@ -9,6 +9,11 @@ import {
   formatResultSyncLog,
   formatStandingsDashboardLog
 } from "./dev-log.js";
+import {
+  formatOperatorHealthLogLines,
+  type OperatorHealthResultSyncStatus,
+  type OperatorHealthSnapshot
+} from "./operator-health.js";
 import { updateLeaderboardDashboard } from "./leaderboard-posting.js";
 import { postDueMatchCards } from "./match-card-posting.js";
 import {
@@ -49,7 +54,11 @@ import type {
 } from "../storage/database.js";
 import type { WorldCupMatch } from "../worldcup/types.js";
 import { canSubmitPredictionAt } from "../worldcup/cutoff.js";
-import { getMatchdayDateTimeParts, isMatchOnMatchday } from "../worldcup/matchday.js";
+import {
+  getMatchdayDateForMatch,
+  getMatchdayDateTimeParts,
+  isMatchOnMatchday
+} from "../worldcup/matchday.js";
 import { formatTeamName } from "../worldcup/team-display.js";
 import {
   syncFinishedResults as syncFinishedResultsDefault,
@@ -177,6 +186,11 @@ export async function startCopanalhasBotRuntime(
   await runPredictionReveals(options);
   await runResultSync(options, operatorCommandOptions, resultSyncState);
   await runPredictionResultReveals(options);
+  const startupHealth = createOperatorHealthSnapshot(options, autoPostState, resultSyncState);
+
+  for (const line of formatOperatorHealthLogLines(startupHealth)) {
+    options.writeLine(line);
+  }
   const intervals = startRuntimeIntervals(
     options,
     operatorCommandOptions,
@@ -231,6 +245,7 @@ function createOperatorCommandOptions(
     matchdayRolloverTime: options.config.matchdayRolloverTime,
     resultSyncEnabled: options.config.resultSyncEnabled,
     now: options.now,
+    getOperatorHealth: () => createOperatorHealthSnapshot(options, autoPostState, resultSyncState),
     getRuntimeStatus: () => createRuntimeStatus(options, autoPostState, resultSyncState),
     postDueMatchCards: (date, postSource) =>
       postDueMatchCards({
@@ -536,6 +551,164 @@ function predictionStateForMatch(match: WorldCupMatch, now: Date): RuntimePredic
   }
 
   return submissionWindow.reason === "closed" ? "closed" : "missing-kickoff";
+}
+
+function createOperatorHealthSnapshot(
+  options: StartCopanalhasBotRuntimeOptions,
+  autoPostState: AutoPostRuntimeState,
+  resultSyncState: ResultSyncRuntimeState
+): OperatorHealthSnapshot {
+  const runtimeStatus = createRuntimeStatus(options, autoPostState, resultSyncState);
+  const postedCards = options.store
+    .listPostedMatchCards()
+    .filter((card) => card.channelId === options.config.channelId);
+  const revealedMatchIds = new Set(
+    options.store
+      .listPredictionRevealPosts()
+      .filter((post) => post.channelId === options.config.channelId)
+      .map((post) => post.matchId)
+  );
+  const postedMatchIds = new Set(postedCards.map((card) => card.matchId));
+  const standingsPosts = options.store
+    .listStandingsPosts()
+    .filter(
+      (post) =>
+        post.guildId === options.config.guildId && post.channelId === options.config.channelId
+    );
+  const leaderboardPost = options.store
+    .listLeaderboardPosts()
+    .find(
+      (post) =>
+        post.guildId === options.config.guildId && post.channelId === options.config.channelId
+    );
+
+  return {
+    discord: {
+      online: true,
+      guildId: options.config.guildId,
+      channelId: options.config.channelId
+    },
+    localDate: runtimeStatus.localDate,
+    localTime: runtimeStatus.localTime,
+    timeZone: runtimeStatus.timeZone,
+    autoPostEnabled: runtimeStatus.autoPostEnabled,
+    autoPostTime: runtimeStatus.autoPostTime,
+    nextMatchday: nextMatchdayStatus(options, runtimeStatus.localDate, postedCards),
+    predictionWindows: predictionWindowCounts(runtimeStatus.todayMatches),
+    pendingPredictionReveals: options.matches
+      .filter((match) => {
+        if (!postedMatchIds.has(match.id) || revealedMatchIds.has(match.id)) {
+          return false;
+        }
+
+        const submissionWindow = canSubmitPredictionAt(match, options.now());
+
+        return !submissionWindow.ok && submissionWindow.reason === "closed";
+      })
+      .toSorted((left, right) => left.matchNumber - right.matchNumber)
+      .map((match) => ({
+        matchId: match.id,
+        matchNumber: match.matchNumber,
+        label: `${formatTeamName(match.homeTeam)} x ${formatTeamName(match.awayTeam)}`
+      })),
+    footballDataConfigured: options.config.footballDataToken !== null,
+    resultSyncEnabled: options.config.resultSyncEnabled,
+    resultSyncPlan: resultSyncPlanStatus(options, resultSyncState),
+    lastAutoPost: runtimeStatus.lastAutoPost,
+    lastResultSync: runtimeStatus.lastResultSync,
+    standingsPosts: {
+      present: standingsPosts.length,
+      expected: 2,
+      lastUpdatedAt: latestTimestamp(standingsPosts.map((post) => post.updatedAt))
+    },
+    leaderboardPost: {
+      present: leaderboardPost !== undefined,
+      lastUpdatedAt: leaderboardPost?.updatedAt ?? null
+    },
+    data: {
+      matchesLoaded: options.matches.length,
+      missingKickoffTimes: options.matches.filter((match) => !match.kickoffAtUtc).length
+    }
+  };
+}
+
+function nextMatchdayStatus(
+  options: StartCopanalhasBotRuntimeOptions,
+  currentMatchdayDate: string,
+  postedCards: readonly StoredPostedMatchCard[]
+): OperatorHealthSnapshot["nextMatchday"] {
+  const matchesByDate = new Map<string, WorldCupMatch[]>();
+
+  for (const match of options.matches) {
+    const matchdayDate = getMatchdayDateForMatch(
+      match,
+      options.config.timezone,
+      options.config.matchdayRolloverTime
+    );
+
+    if (matchdayDate < currentMatchdayDate) {
+      continue;
+    }
+
+    const matches = matchesByDate.get(matchdayDate) ?? [];
+    matches.push(match);
+    matchesByDate.set(matchdayDate, matches);
+  }
+
+  const nextDate = [...matchesByDate.keys()].sort().at(0);
+
+  if (!nextDate) {
+    return null;
+  }
+
+  const matches = matchesByDate.get(nextDate) ?? [];
+  const postedMatchIds = new Set(
+    postedCards.filter((card) => card.postedForDate === nextDate).map((card) => card.matchId)
+  );
+
+  return {
+    date: nextDate,
+    matchCount: matches.length,
+    postedCount: matches.filter((match) => postedMatchIds.has(match.id)).length
+  };
+}
+
+function predictionWindowCounts(matches: readonly { predictionState: RuntimePredictionState }[]): {
+  open: number;
+  closed: number;
+  missingKickoff: number;
+} {
+  return {
+    open: matches.filter((match) => match.predictionState === "open").length,
+    closed: matches.filter((match) => match.predictionState === "closed").length,
+    missingKickoff: matches.filter((match) => match.predictionState === "missing-kickoff").length
+  };
+}
+
+function resultSyncPlanStatus(
+  options: StartCopanalhasBotRuntimeOptions,
+  state: ResultSyncRuntimeState
+): OperatorHealthResultSyncStatus {
+  if (!options.config.resultSyncEnabled) {
+    return { action: "disabled", reason: "disabled" };
+  }
+
+  if (!options.config.footballDataToken) {
+    return { action: "disabled", reason: "missing-token" };
+  }
+
+  return planResultSyncAttempt({
+    matches: options.matches,
+    results: options.store.listResults(),
+    now: options.now(),
+    firstCheckDelayMinutes: options.config.resultSyncFirstCheckMinutes,
+    retryIntervalMinutes: options.config.resultSyncRetryMinutes,
+    lastAttemptAtUtc: state.lastAttemptAtUtc
+  });
+}
+
+function latestTimestamp(timestamps: readonly string[]): string | null {
+  return timestamps.toSorted().at(-1) ?? null;
 }
 
 function hasDestroy(value: unknown): value is { destroy(): void | Promise<void> } {

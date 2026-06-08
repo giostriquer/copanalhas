@@ -9,6 +9,7 @@ import {
   type OperatorCommandInput,
   type OperatorCommandOptions
 } from "./operator-commands.js";
+import type { OperatorHealthSnapshot } from "../app/operator-health.js";
 import type { StoredPrediction } from "../storage/database.js";
 import { WORLD_CUP_2026_SEED } from "../worldcup/seed.js";
 
@@ -137,66 +138,27 @@ describe("handleOperatorCommand", () => {
       handleOperatorCommand(
         command("status"),
         options({
-          resultSyncEnabled: true,
-          getRuntimeStatus: () => ({
-            localDate: "2026-06-11",
-            localTime: "20:00",
-            timeZone: "UTC",
-            autoPostEnabled: true,
-            autoPostTime: "09:00",
-            todayMatches: [
-              {
-                matchId: "wc2026-001",
-                matchNumber: 1,
-                label: "México x África do Sul",
-                posted: true,
-                predictionState: "closed"
-              },
-              {
-                matchId: "wc2026-002",
-                matchNumber: 2,
-                label: "Coreia do Sul x Tchéquia",
-                posted: false,
-                predictionState: "open"
-              }
-            ],
-            lastAutoPost: {
-              action: "posted",
-              localDate: "2026-06-11",
-              posted: ["wc2026-001"],
-              skipped: ["wc2026-002"]
-            },
-            resultSyncEnabled: true,
-            lastResultSync: {
-              action: "synced",
-              dateFrom: "2026-06-09",
-              dateTo: "2026-06-11",
-              storedResults: ["wc2026-001"],
-              skipped: []
-            }
-          })
+          getOperatorHealth: () => operatorHealthSnapshot()
         })
       )
     ).resolves.toEqual({
       action: "replied",
       content: [
-        "Copanalhas Status",
-        "Matchday: 2026-06-11",
-        "Local time: 20:00 UTC",
-        "Auto-post: on at 09:00 UTC",
-        "Matchday matches: 2",
-        "Posted matchday: 1/2",
-        "Unposted matchday: #2 Coreia do Sul x Tchéquia",
+        "Copanalhas Health",
+        "Discord: online",
+        "Route: guild guild-1, channel channel-1",
+        "Local time: 2026-06-11 18:00 America/Sao_Paulo",
+        "Auto-post: on at 09:00 America/Sao_Paulo",
+        "Next matchday post: 2026-06-11 (2 matches, 1/2 posted)",
         "Prediction windows: 1 open, 1 closed, 0 missing kickoff",
+        "Pending locked reveals: 1 (#2 Coreia do Sul x Tchéquia)",
+        "Football Data: configured, result sync on",
+        "Next result-sync check: 2026-06-11T22:15:00.000Z (2 pending)",
         "Last auto-post: posted 1, skipped 1 on 2026-06-11",
-        "Matches loaded: 72",
-        "Missing kickoff times: 0",
-        "Result sync: on",
-        "Last result sync: synced 1, skipped 0 (2026-06-09 to 2026-06-11)",
-        "Standings posts: 0/2",
-        "Standings last updated: never",
-        "Leaderboard post: missing",
-        "Leaderboard last updated: never"
+        "Last result sync: waiting for 2 pending matches; next check 2026-06-11T22:15:00.000Z",
+        "Dashboards: standings 1/2, leaderboard present",
+        "Last leaderboard update: 2026-06-11T18:00:00.000Z",
+        "Data: 72 matches loaded, 0 missing kickoff times"
       ].join("\n"),
       ephemeral: true
     });
@@ -713,5 +675,68 @@ function storedPrediction(
     submittedAt,
     updatedAt: null,
     parserVersion: "prediction-modal-v1"
+  };
+}
+
+function operatorHealthSnapshot(): OperatorHealthSnapshot {
+  return {
+    discord: {
+      online: true,
+      guildId: "guild-1",
+      channelId: "channel-1"
+    },
+    localDate: "2026-06-11",
+    localTime: "18:00",
+    timeZone: "America/Sao_Paulo",
+    autoPostEnabled: true,
+    autoPostTime: "09:00",
+    nextMatchday: {
+      date: "2026-06-11",
+      matchCount: 2,
+      postedCount: 1
+    },
+    predictionWindows: {
+      open: 1,
+      closed: 1,
+      missingKickoff: 0
+    },
+    pendingPredictionReveals: [
+      {
+        matchId: "wc2026-002",
+        matchNumber: 2,
+        label: "Coreia do Sul x Tchéquia"
+      }
+    ],
+    footballDataConfigured: true,
+    resultSyncEnabled: true,
+    resultSyncPlan: {
+      action: "not-due",
+      nextCheckAtUtc: "2026-06-11T22:15:00.000Z",
+      pendingMatchIds: ["wc2026-001", "wc2026-002"]
+    },
+    lastAutoPost: {
+      action: "posted",
+      localDate: "2026-06-11",
+      posted: ["wc2026-001"],
+      skipped: ["wc2026-002"]
+    },
+    lastResultSync: {
+      action: "not-due",
+      nextCheckAtUtc: "2026-06-11T22:15:00.000Z",
+      pendingMatchIds: ["wc2026-001", "wc2026-002"]
+    },
+    standingsPosts: {
+      present: 1,
+      expected: 2,
+      lastUpdatedAt: "2026-06-11T18:00:00.000Z"
+    },
+    leaderboardPost: {
+      present: true,
+      lastUpdatedAt: "2026-06-11T18:00:00.000Z"
+    },
+    data: {
+      matchesLoaded: 72,
+      missingKickoffTimes: 0
+    }
   };
 }

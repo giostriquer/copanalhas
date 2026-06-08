@@ -70,6 +70,15 @@ describe("startCopanalhasBotRuntime", () => {
       "[dashboard] leaderboard action=posted message=leaderboard-message-1"
     );
     expect(writeLine).toHaveBeenCalledWith("[auto-post] date=2026-06-11 posted=2 skipped=0");
+    expect(writeLine).toHaveBeenCalledWith(
+      "[health] discord=online guild=guild-1 channel=channel-1"
+    );
+    expect(writeLine).toHaveBeenCalledWith(
+      "[health] nextMatchday=2026-06-11 matches=2 posted=2/2"
+    );
+    expect(writeLine).toHaveBeenCalledWith(
+      "[health] dashboards standings=2/2 leaderboard=present lastLeaderboard=2026-06-11T21:15:00.000Z"
+    );
 
     await runtime.stop();
   });
@@ -496,6 +505,31 @@ describe("startCopanalhasBotRuntime", () => {
       resultSyncEnabled: false,
       lastResultSync: { action: "disabled" }
     });
+    expect(operatorOptions?.getOperatorHealth?.()).toMatchObject({
+      discord: {
+        online: true,
+        guildId: "guild-1",
+        channelId: "channel-1"
+      },
+      nextMatchday: {
+        date: "2026-06-11",
+        matchCount: 2,
+        postedCount: 2
+      },
+      pendingPredictionReveals: [],
+      footballDataConfigured: false,
+      resultSyncPlan: {
+        action: "disabled",
+        reason: "disabled"
+      },
+      standingsPosts: {
+        present: 2,
+        expected: 2
+      },
+      leaderboardPost: {
+        present: true
+      }
+    });
   });
 
   test("keeps after-midnight matches on the previous operational matchday status", async () => {
@@ -562,6 +596,11 @@ function config(): CopanalhasConfig {
 }
 
 function createStore(): BotRuntimeStore {
+  const postedMatchCards: ReturnType<BotRuntimeStore["listPostedMatchCards"]> = [];
+  const predictionRevealPosts: ReturnType<BotRuntimeStore["listPredictionRevealPosts"]> = [];
+  const standingsPosts: ReturnType<BotRuntimeStore["listStandingsPosts"]> = [];
+  const leaderboardPosts: ReturnType<BotRuntimeStore["listLeaderboardPosts"]> = [];
+
   return {
     migrate: vi.fn(),
     upsertMatches: vi.fn(),
@@ -569,18 +608,62 @@ function createStore(): BotRuntimeStore {
     upsertResult: vi.fn(),
     listPredictions: vi.fn(() => []),
     listResults: vi.fn(() => []),
-    listPostedMatchCards: vi.fn(() => []),
-    recordPostedMatchCard: vi.fn(),
-    listPredictionRevealPosts: vi.fn(() => []),
-    recordPredictionRevealPost: vi.fn(),
+    listPostedMatchCards: vi.fn(() => postedMatchCards),
+    recordPostedMatchCard: vi.fn((card) => {
+      upsertBy(
+        postedMatchCards,
+        card,
+        (stored) => `${stored.matchId}|${stored.channelId}`,
+        (next) => `${next.matchId}|${next.channelId}`
+      );
+    }),
+    listPredictionRevealPosts: vi.fn(() => predictionRevealPosts),
+    recordPredictionRevealPost: vi.fn((post) => {
+      upsertBy(
+        predictionRevealPosts,
+        post,
+        (stored) => `${stored.matchId}|${stored.channelId}`,
+        (next) => `${next.matchId}|${next.channelId}`
+      );
+    }),
     clearPostedMatchCardsForDate: vi.fn(() => 0),
     clearPredictionsForMatches: vi.fn(() => 0),
     clearResultsForMatches: vi.fn(() => 0),
     clearPredictionRevealPostsForMatches: vi.fn(() => 0),
-    listStandingsPosts: vi.fn(() => []),
-    recordStandingsPost: vi.fn(),
-    listLeaderboardPosts: vi.fn(() => []),
-    recordLeaderboardPost: vi.fn(),
+    listStandingsPosts: vi.fn(() => standingsPosts),
+    recordStandingsPost: vi.fn((post) => {
+      upsertBy(
+        standingsPosts,
+        post,
+        (stored) => `${stored.postKey}|${stored.guildId}|${stored.channelId}`,
+        (next) => `${next.postKey}|${next.guildId}|${next.channelId}`
+      );
+    }),
+    listLeaderboardPosts: vi.fn(() => leaderboardPosts),
+    recordLeaderboardPost: vi.fn((post) => {
+      upsertBy(
+        leaderboardPosts,
+        post,
+        (stored) => `${stored.guildId}|${stored.channelId}`,
+        (next) => `${next.guildId}|${next.channelId}`
+      );
+    }),
     insertScoringRun: vi.fn()
   };
+}
+
+function upsertBy<T>(
+  rows: T[],
+  next: T,
+  storedKey: (row: T) => string,
+  nextKey: (row: T) => string
+): void {
+  const key = nextKey(next);
+  const index = rows.findIndex((row) => storedKey(row) === key);
+
+  if (index === -1) {
+    rows.push(next);
+  } else {
+    rows.splice(index, 1, next);
+  }
 }

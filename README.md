@@ -77,9 +77,11 @@ Useful operator commands while the bot is running:
 - `/copanalhas reset-test-date date:2026-06-11`: clear posted cards,
   predictions, reveal records, and results for one test date, then refresh
   standings.
-- `/copanalhas status`: privately show the active matchday, posted/unposted
-  cards, prediction-window counts, last auto-post action, result-sync state, and
-  dashboard post health.
+- `/copanalhas status`: privately show a morning health checklist with Discord
+  route, local matchday time, next matchday post, prediction windows, pending
+  locked reveal posts, Football Data/result-sync timing, and dashboard post
+  health. The bot also prints the same compact checklist to the console after
+  startup catch-up work.
 - `/copanalhas meus-palpites`: privately show your predictions for the active
   matches. Add `date:2026-06-11` to inspect another matchday.
 - `/copanalhas predictions match:wc2026-001`: privately inspect submitted picks

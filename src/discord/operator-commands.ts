@@ -1,6 +1,7 @@
 import { MessageFlags, type ChatInputCommandInteraction, type Interaction } from "discord.js";
 
 import type { PostDueMatchCardsResult } from "../app/match-card-posting.js";
+import { formatOperatorHealthReport, type OperatorHealthSnapshot } from "../app/operator-health.js";
 import { formatLeaderboard } from "../leaderboard/format.js";
 import { formatUserPredictionSummary } from "../predictions/personal-summary.js";
 import { parseScoreInput } from "../predictions/score-parser.js";
@@ -62,6 +63,7 @@ export interface OperatorCommandOptions {
   matchdayRolloverTime: string;
   resultSyncEnabled: boolean;
   now(): Date;
+  getOperatorHealth?(): OperatorHealthSnapshot;
   getRuntimeStatus?(): RuntimeStatusSnapshot;
   postDueMatchCards(date: string, postSource: PostedMatchCardSource): Promise<PostDueMatchCardsResult>;
   clearPostedMatchCards(date: string): number;
@@ -214,6 +216,12 @@ export async function handleOperatorCommand(
   }
 
   if (command.subcommand === "status") {
+    const operatorHealth = options.getOperatorHealth?.();
+
+    if (operatorHealth) {
+      return reply(formatOperatorHealthReport(operatorHealth).join("\n"));
+    }
+
     const runtimeStatus = options.getRuntimeStatus?.();
 
     return reply(
