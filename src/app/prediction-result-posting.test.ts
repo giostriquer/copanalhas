@@ -87,6 +87,52 @@ describe("postDuePredictionResultReveals", () => {
     expect(result).toEqual({ edited: [], skipped: ["wc2026-001", "wc2026-002"] });
     expect(editPredictionReveal).not.toHaveBeenCalled();
   });
+
+  test("does not edit reveal messages that were already finalized", async () => {
+    const editPredictionReveal = vi.fn(async () => undefined);
+
+    const result = await postDuePredictionResultReveals({
+      channelId: "channel-1",
+      matches: [match("wc2026-001", 1, "MEX", "Mexico", "RSA", "South Africa")],
+      predictions: [prediction("user-1", "wc2026-001", 1, 0)],
+      results: [matchResult("wc2026-001", 1, 0)],
+      now: () => new Date("2026-06-12T04:30:00.000Z"),
+      listPredictionRevealPosts: () => [
+        {
+          ...revealPost("wc2026-001", "thread-1", "message-1"),
+          resultRevealedAt: "2026-06-12T04:00:00.000Z"
+        }
+      ],
+      editPredictionReveal,
+      recordPredictionRevealPost: vi.fn()
+    });
+
+    expect(result).toEqual({ edited: [], skipped: ["wc2026-001"] });
+    expect(editPredictionReveal).not.toHaveBeenCalled();
+  });
+
+  test("ignores reveal posts from other channels", async () => {
+    const editPredictionReveal = vi.fn(async () => undefined);
+
+    const result = await postDuePredictionResultReveals({
+      channelId: "channel-1",
+      matches: [match("wc2026-001", 1, "MEX", "Mexico", "RSA", "South Africa")],
+      predictions: [prediction("user-1", "wc2026-001", 1, 0)],
+      results: [matchResult("wc2026-001", 1, 0)],
+      now: () => new Date("2026-06-12T04:30:00.000Z"),
+      listPredictionRevealPosts: () => [
+        {
+          ...revealPost("wc2026-001", "thread-1", "message-1"),
+          channelId: "other-channel"
+        }
+      ],
+      editPredictionReveal,
+      recordPredictionRevealPost: vi.fn()
+    });
+
+    expect(result).toEqual({ edited: [], skipped: [] });
+    expect(editPredictionReveal).not.toHaveBeenCalled();
+  });
 });
 
 function revealPost(

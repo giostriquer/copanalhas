@@ -5,6 +5,7 @@ import type { CopanalhasConfig } from "../discord/config.js";
 import type { DiscordIngestionResult } from "../discord/ingestion.js";
 import type { PredictionInteractionOptions } from "../discord/interactions.js";
 import type { OperatorCommandOptions } from "../discord/operator-commands.js";
+import type { StoredPredictionRevealPost, StoredResult } from "../storage/database.js";
 import { WORLD_CUP_2026_SEED } from "../worldcup/seed.js";
 
 describe("startCopanalhasBotRuntime", () => {
@@ -332,6 +333,104 @@ describe("startCopanalhasBotRuntime", () => {
     );
     expect(upsertStandingsMessage).toHaveBeenCalledTimes(4);
     expect(upsertLeaderboardMessage).toHaveBeenCalledTimes(2);
+  });
+
+  test("edits prediction reveal messages after result sync stores final scores", async () => {
+    const results: StoredResult[] = [];
+    const revealPosts: StoredPredictionRevealPost[] = [
+      {
+        matchId: "wc2026-001",
+        channelId: "channel-1",
+        threadId: "thread-1",
+        messageId: "reveal-message-1",
+        revealedAt: "2026-06-11T18:30:00.000Z",
+        closeAtUtc: "2026-06-11T18:30:00.000Z",
+        resultRevealedAt: null
+      }
+    ];
+    const store = {
+      ...createStore(),
+      listPredictions: vi.fn(() => [
+        {
+          userId: "user-1",
+          matchId: "wc2026-001",
+          messageId: "prediction-message-1",
+          homeScore: 1,
+          awayScore: 0,
+          submittedAt: "2026-06-10T12:00:00.000Z",
+          updatedAt: null,
+          parserVersion: "prediction-modal-v1"
+        }
+      ]),
+      listResults: vi.fn(() => results),
+      upsertResult: vi.fn((result: StoredResult) => {
+        const index = results.findIndex((stored) => stored.matchId === result.matchId);
+        if (index === -1) {
+          results.push(result);
+        } else {
+          results.splice(index, 1, result);
+        }
+      }),
+      listPredictionRevealPosts: vi.fn(() => revealPosts),
+      recordPredictionRevealPost: vi.fn((post: StoredPredictionRevealPost) => {
+        const index = revealPosts.findIndex(
+          (stored) => stored.matchId === post.matchId && stored.channelId === post.channelId
+        );
+        revealPosts.splice(index, 1, post);
+      })
+    };
+    const editPredictionReveal = vi.fn(async () => undefined);
+    const syncFinishedResults = vi.fn(async (options) => {
+      await options.upsertResult({
+        matchId: "wc2026-001",
+        homeScore: 1,
+        awayScore: 0,
+        recordedAt: "2026-06-11T21:15:00.000Z",
+        resultSource: "football-data",
+        externalMatchId: "537327",
+        fetchedAt: "2026-06-11T21:15:00.000Z"
+      });
+
+      return {
+        action: "synced" as const,
+        storedResults: ["wc2026-001"],
+        skipped: []
+      };
+    });
+
+    await startCopanalhasBotRuntime({
+      config: { ...config(), footballDataToken: "token-value", resultSyncEnabled: true },
+      store,
+      matches: WORLD_CUP_2026_SEED.matches,
+      startDiscord: vi.fn(async () => ({ destroy: vi.fn(async () => undefined) })),
+      startInterval: vi.fn(() => ({ stop: vi.fn() })),
+      sendMatchCard: vi.fn(async () => "discord-message-1"),
+      sendPredictionReveal: vi.fn(async () => ({
+        threadId: "thread-1",
+        messageId: "reveal-message-1"
+      })),
+      editPredictionReveal,
+      upsertStandingsMessage: vi.fn(async (message) => `standings-${message.key}`),
+      upsertLeaderboardMessage: vi.fn(async () => "leaderboard-message-1"),
+      syncFinishedResults,
+      now: () => new Date("2026-06-11T21:15:00.000Z"),
+      writeLine: vi.fn()
+    });
+
+    expect(editPredictionReveal).toHaveBeenCalledOnce();
+    expect(editPredictionReveal).toHaveBeenCalledWith(
+      expect.objectContaining({
+        threadId: "thread-1",
+        messageId: "reveal-message-1",
+        content: expect.stringContaining("Resultado")
+      })
+    );
+    expect(editPredictionReveal).toHaveBeenCalledWith(
+      expect.objectContaining({
+        content: expect.stringContaining("#1 México (1) x (0) África do Sul")
+      })
+    );
+    expect(revealPosts[0]?.resultRevealedAt).toBe("2026-06-11T21:15:00.000Z");
   });
 
   test("exposes runtime status from startup catch-up state", async () => {

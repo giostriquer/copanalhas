@@ -400,14 +400,20 @@ describe("handleOperatorCommand", () => {
       action: "updated" as const,
       post: { messageId: "leaderboard-message-1", action: "edited" as const }
     }));
+    const updatePredictionResultReveals = vi.fn(async () => undefined);
 
     await handleOperatorCommand(
       command("result", { match: "wc2026-001", score: "2-1" }),
-      options({ updateStandingsDashboard, updateLeaderboardDashboard })
+      options({
+        updateStandingsDashboard,
+        updateLeaderboardDashboard,
+        updatePredictionResultReveals
+      })
     );
 
     expect(updateStandingsDashboard).toHaveBeenCalledOnce();
     expect(updateLeaderboardDashboard).toHaveBeenCalledOnce();
+    expect(updatePredictionResultReveals).toHaveBeenCalledOnce();
   });
 
   test("ignores commands outside the configured guild", async () => {

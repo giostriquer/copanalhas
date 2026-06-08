@@ -92,6 +92,83 @@ describe("syncFinishedResults", () => {
     expect(upsertResult).not.toHaveBeenCalled();
   });
 
+  test.each(["LIVE", "IN_PLAY", "PAUSED", "SUSPENDED"])(
+    "does not store %s provider scores as final results",
+    async (status) => {
+      const upsertResult = vi.fn();
+      const insertScoringRun = vi.fn();
+
+      await expect(
+        syncFinishedResults({
+          enabled: true,
+          token: "football-data-token",
+          matches: [{ ...match("wc2026-001"), externalIds: { footballData: 12345 } }],
+          dateFrom: "2026-06-11",
+          dateTo: "2026-06-12",
+          now: () => new Date("2026-06-11T23:01:00.000Z"),
+          fetchMatches: async () => ({
+            ok: true,
+            matches: [
+              {
+                externalMatchId: "12345",
+                kickoffAtUtc: "2026-06-11T19:00:00.000Z",
+                status,
+                fullTime: { homeScore: 2, awayScore: 1 }
+              }
+            ]
+          }),
+          listResults: () => [],
+          listPredictions: () => [],
+          upsertResult,
+          insertScoringRun
+        })
+      ).resolves.toEqual({
+        action: "synced",
+        storedResults: [],
+        skipped: ["wc2026-001"]
+      });
+      expect(upsertResult).not.toHaveBeenCalled();
+      expect(insertScoringRun).not.toHaveBeenCalled();
+    }
+  );
+
+  test("does not store a finished provider match without a full-time score", async () => {
+    const upsertResult = vi.fn();
+    const insertScoringRun = vi.fn();
+
+    await expect(
+      syncFinishedResults({
+        enabled: true,
+        token: "football-data-token",
+        matches: [{ ...match("wc2026-001"), externalIds: { footballData: 12345 } }],
+        dateFrom: "2026-06-11",
+        dateTo: "2026-06-12",
+        now: () => new Date("2026-06-11T23:01:00.000Z"),
+        fetchMatches: async () => ({
+          ok: true,
+          matches: [
+            {
+              externalMatchId: "12345",
+              kickoffAtUtc: "2026-06-11T19:00:00.000Z",
+              status: "FINISHED",
+              fullTime: null
+            }
+          ]
+        }),
+        listResults: () => [],
+        listPredictions: () => [],
+        upsertResult,
+        insertScoringRun
+      })
+    ).resolves.toEqual({
+      action: "synced",
+      storedResults: [],
+      skipped: ["wc2026-001"]
+    });
+    expect(upsertResult).not.toHaveBeenCalled();
+    expect(insertScoringRun).not.toHaveBeenCalled();
+  });
+
   test("returns provider failures without storing results", async () => {
     const upsertResult = vi.fn();
 
