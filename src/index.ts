@@ -5,6 +5,7 @@ import {
   type BotRuntimeStore,
   type RuntimeInterval
 } from "./app/bot-runtime.js";
+import { formatRuntimeLogLine } from "./app/dev-log.js";
 import { loadLocalEnvFile } from "./config/env.js";
 import { createMatchDayMessage, type MatchCardMessage } from "./discord/components.js";
 import { parseCopanalhasConfig, type CopanalhasConfig } from "./discord/config.js";
@@ -260,7 +261,10 @@ async function startBot(dependencies: CliDependencies): Promise<void> {
   }
 
   const store = dependencies.openDatabase(configResult.config.databasePath);
-  dependencies.writeLine("Starting Discord collector for configured channel.");
+  const now = dependencies.now ?? (() => new Date());
+  const writeBotLine = (line: string) => dependencies.writeLine(formatRuntimeLogLine(now(), line));
+
+  writeBotLine("Starting Discord collector for configured channel.");
 
   await startCopanalhasBotRuntime({
     config: configResult.config,
@@ -290,10 +294,10 @@ async function startBot(dependencies: CliDependencies): Promise<void> {
         configResult.config,
         userIds
       ),
-    now: dependencies.now ?? (() => new Date()),
+    now,
     writeLine: dependencies.writeLine
   });
-  dependencies.writeLine(
+  writeBotLine(
     `Autonomous operator enabled. Auto-post: ${
       configResult.config.autoPostEnabled
         ? `on at ${configResult.config.autoPostTime} ${configResult.config.timezone}`

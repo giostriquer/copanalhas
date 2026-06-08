@@ -6,6 +6,7 @@ import {
   formatOperatorAutocompleteLog,
   formatOperatorCommandLog,
   formatPredictionInteractionLog,
+  formatRuntimeLogLine,
   formatResultSyncLog,
   formatStandingsDashboardLog
 } from "./dev-log.js";
@@ -172,7 +173,7 @@ export async function startCopanalhasBotRuntime(
       refreshLeaderboardAfterPrediction: async () => {
         await operatorCommandOptions.updateLeaderboardDashboard();
       },
-      writeLine: options.writeLine
+      writeLine: (line) => writeRuntimeLine(options, line)
     }),
     predictionInteractionOptions,
     {
@@ -189,7 +190,7 @@ export async function startCopanalhasBotRuntime(
   const startupHealth = createOperatorHealthSnapshot(options, autoPostState, resultSyncState);
 
   for (const line of formatOperatorHealthLogLines(startupHealth)) {
-    options.writeLine(line);
+    writeRuntimeLine(options, line);
   }
   const intervals = startRuntimeIntervals(
     options,
@@ -211,6 +212,10 @@ export async function startCopanalhasBotRuntime(
   };
 }
 
+function writeRuntimeLine(options: StartCopanalhasBotRuntimeOptions, line: string): void {
+  options.writeLine(formatRuntimeLogLine(options.now(), line));
+}
+
 function createPredictionInteractionOptions(
   options: StartCopanalhasBotRuntimeOptions,
   operatorCommandOptions: Pick<OperatorCommandOptions, "updateLeaderboardDashboard">
@@ -228,7 +233,7 @@ function createPredictionInteractionOptions(
       await operatorCommandOptions.updateLeaderboardDashboard();
     },
     logPredictionInteraction: (result) =>
-      options.writeLine(formatPredictionInteractionLog(result))
+      writeRuntimeLine(options, formatPredictionInteractionLog(result))
   };
 }
 
@@ -283,7 +288,7 @@ function createOperatorCommandOptions(
         upsertStandingsMessage: options.upsertStandingsMessage
       });
 
-      options.writeLine(formatStandingsDashboardLog(result));
+      writeRuntimeLine(options, formatStandingsDashboardLog(result));
 
       return result;
     },
@@ -304,15 +309,15 @@ function createOperatorCommandOptions(
         upsertLeaderboardMessage: options.upsertLeaderboardMessage
       });
 
-      options.writeLine(formatLeaderboardDashboardLog(result));
+      writeRuntimeLine(options, formatLeaderboardDashboardLog(result));
 
       return result;
     },
     updatePredictionResultReveals: async () => runPredictionResultReveals(options),
     logOperatorCommand: (input, result) =>
-      options.writeLine(formatOperatorCommandLog(input, result)),
+      writeRuntimeLine(options, formatOperatorCommandLog(input, result)),
     logOperatorAutocomplete: (input, result) =>
-      options.writeLine(formatOperatorAutocompleteLog(input, result)),
+      writeRuntimeLine(options, formatOperatorAutocompleteLog(input, result)),
     ...(options.resolveUserDisplayNames
       ? { resolveUserDisplayNames: options.resolveUserDisplayNames }
       : {})
@@ -369,7 +374,7 @@ async function runAutoPost(
 
   if (result.action === "posted") {
     state.lastRunDate = result.localDate;
-    options.writeLine(formatAutoPostLog(result));
+    writeRuntimeLine(options, formatAutoPostLog(result));
   }
 }
 
@@ -386,7 +391,8 @@ async function runPredictionReveals(options: StartCopanalhasBotRuntimeOptions): 
   });
 
   if (result.posted.length > 0) {
-    options.writeLine(
+    writeRuntimeLine(
+      options,
       `[prediction-reveal] batches=${result.posted.length} matches=${result.posted
         .flatMap((post) => post.matchIds)
         .join(",")}`
@@ -413,7 +419,8 @@ async function runPredictionResultReveals(
   });
 
   if (result.edited.length > 0) {
-    options.writeLine(
+    writeRuntimeLine(
+      options,
       `[prediction-result] batches=${result.edited.length} matches=${result.edited
         .flatMap((post) => post.matchIds)
         .join(",")}`
@@ -428,13 +435,13 @@ async function runResultSync(
 ): Promise<void> {
   if (!options.config.resultSyncEnabled) {
     state.lastResult = { action: "disabled", reason: "disabled" };
-    options.writeLine(formatResultSyncLog(state.lastResult));
+    writeRuntimeLine(options, formatResultSyncLog(state.lastResult));
     return;
   }
 
   if (!options.config.footballDataToken) {
     state.lastResult = { action: "disabled", reason: "missing-token" };
-    options.writeLine(formatResultSyncLog(state.lastResult));
+    writeRuntimeLine(options, formatResultSyncLog(state.lastResult));
     return;
   }
 
@@ -450,7 +457,7 @@ async function runResultSync(
 
   if (syncPlan.action === "not-due") {
     state.lastResult = syncPlan;
-    options.writeLine(formatResultSyncLog(state.lastResult));
+    writeRuntimeLine(options, formatResultSyncLog(state.lastResult));
     return;
   }
 
@@ -468,7 +475,7 @@ async function runResultSync(
     insertScoringRun: (run) => options.store.insertScoringRun(run)
   });
   state.lastResult = resultSyncStatus(syncResult, syncPlan.dateFrom, syncPlan.dateTo);
-  options.writeLine(formatResultSyncLog(state.lastResult));
+  writeRuntimeLine(options, formatResultSyncLog(state.lastResult));
 
   if (syncResult.action === "synced" && syncResult.storedResults.length > 0) {
     await operatorCommandOptions.updateStandingsDashboard();

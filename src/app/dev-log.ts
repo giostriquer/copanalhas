@@ -10,6 +10,18 @@ import type {
 } from "../discord/operator-commands.js";
 import type { PredictionInteractionResult } from "../discord/interactions.js";
 
+export function formatRuntimeLogLine(timestamp: Date, line: string): string {
+  const match = /^\[([^\]\r\n]+)\]\s*(.*)$/u.exec(line);
+
+  if (!match) {
+    return `[${timestamp.toISOString()}][bot] ${line.trim()}`;
+  }
+
+  const [, category, rest] = match;
+
+  return `[${timestamp.toISOString()}][${category}]${rest ? ` ${rest}` : ""}`;
+}
+
 export function formatOperatorCommandLog(
   input: OperatorCommandInput,
   result: OperatorCommandResult

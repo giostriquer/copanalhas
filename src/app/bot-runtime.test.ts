@@ -64,20 +64,22 @@ describe("startCopanalhasBotRuntime", () => {
     expect(upsertLeaderboardMessage).toHaveBeenCalledOnce();
     expect(store.recordLeaderboardPost).toHaveBeenCalledOnce();
     expect(writeLine).toHaveBeenCalledWith(
-      "[dashboard] standings posts=2 posted=2 edited=0 replaced=0"
+      "[2026-06-11T21:15:00.000Z][dashboard] standings posts=2 posted=2 edited=0 replaced=0"
     );
     expect(writeLine).toHaveBeenCalledWith(
-      "[dashboard] leaderboard action=posted message=leaderboard-message-1"
-    );
-    expect(writeLine).toHaveBeenCalledWith("[auto-post] date=2026-06-11 posted=2 skipped=0");
-    expect(writeLine).toHaveBeenCalledWith(
-      "[health] discord=online guild=guild-1 channel=channel-1"
+      "[2026-06-11T21:15:00.000Z][dashboard] leaderboard action=posted message=leaderboard-message-1"
     );
     expect(writeLine).toHaveBeenCalledWith(
-      "[health] nextMatchday=2026-06-11 matches=2 posted=2/2"
+      "[2026-06-11T21:15:00.000Z][auto-post] date=2026-06-11 posted=2 skipped=0"
     );
     expect(writeLine).toHaveBeenCalledWith(
-      "[health] dashboards standings=2/2 leaderboard=present lastLeaderboard=2026-06-11T21:15:00.000Z"
+      "[2026-06-11T21:15:00.000Z][health] discord=online guild=guild-1 channel=channel-1"
+    );
+    expect(writeLine).toHaveBeenCalledWith(
+      "[2026-06-11T21:15:00.000Z][health] nextMatchday=2026-06-11 matches=2 posted=2/2"
+    );
+    expect(writeLine).toHaveBeenCalledWith(
+      "[2026-06-11T21:15:00.000Z][health] dashboards standings=2/2 leaderboard=present lastLeaderboard=2026-06-11T21:15:00.000Z"
     );
 
     await runtime.stop();
@@ -332,13 +334,13 @@ describe("startCopanalhasBotRuntime", () => {
       })
     );
     expect(writeLine).toHaveBeenCalledWith(
-      "[result-sync] range=2026-06-11..2026-06-11 synced stored=1 skipped=0"
+      "[2026-06-11T21:15:00.000Z][result-sync] range=2026-06-11..2026-06-11 synced stored=1 skipped=0"
     );
     expect(writeLine).toHaveBeenCalledWith(
-      "[dashboard] standings posts=2 posted=2 edited=0 replaced=0"
+      "[2026-06-11T21:15:00.000Z][dashboard] standings posts=2 posted=2 edited=0 replaced=0"
     );
     expect(writeLine).toHaveBeenCalledWith(
-      "[dashboard] leaderboard action=posted message=leaderboard-message-1"
+      "[2026-06-11T21:15:00.000Z][dashboard] leaderboard action=posted message=leaderboard-message-1"
     );
     expect(upsertStandingsMessage).toHaveBeenCalledTimes(4);
     expect(upsertLeaderboardMessage).toHaveBeenCalledTimes(2);

@@ -6,11 +6,21 @@ import {
   formatOperatorAutocompleteLog,
   formatOperatorCommandLog,
   formatPredictionInteractionLog,
+  formatRuntimeLogLine,
   formatResultSyncLog,
   formatStandingsDashboardLog
 } from "./dev-log.js";
 
 describe("dev log formatting", () => {
+  test("prefixes runtime logs with the current timestamp and category", () => {
+    expect(
+      formatRuntimeLogLine(
+        new Date("2026-06-11T12:34:56.789Z"),
+        "[health] discord=online guild=guild-1 channel=channel-1"
+      )
+    ).toBe("[2026-06-11T12:34:56.789Z][health] discord=online guild=guild-1 channel=channel-1");
+  });
+
   test("formats operator command outcomes with routing and options", () => {
     expect(
       formatOperatorCommandLog(

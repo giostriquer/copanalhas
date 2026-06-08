@@ -281,18 +281,18 @@ describe("runCli", () => {
     );
     expect(startInterval).toHaveBeenCalled();
     expect(lines).toEqual([
-      "Starting Discord collector for configured channel.",
-      "[dashboard] standings posts=2 posted=2 edited=0 replaced=0",
-      "[dashboard] leaderboard action=posted message=leaderboard-message-1",
-      "[auto-post] date=2026-06-11 posted=2 skipped=0",
-      "[result-sync] disabled reason=disabled",
-      "[health] discord=online guild=guild-1 channel=channel-1",
-      "[health] local=2026-06-11 09:00 timezone=America/Sao_Paulo autoPost=on@09:00",
-      "[health] nextMatchday=2026-06-11 matches=2 posted=2/2",
-      "[health] predictions open=2 closed=0 missingKickoff=0 pendingReveals=0",
-      "[health] footballData=missing-token resultSync=off nextResultCheck=disabled reason=disabled pendingResults=0",
-      "[health] dashboards standings=2/2 leaderboard=present lastLeaderboard=2026-06-11T12:00:00.000Z",
-      "Autonomous operator enabled. Auto-post: on at 09:00 America/Sao_Paulo."
+      "[2026-06-11T12:00:00.000Z][bot] Starting Discord collector for configured channel.",
+      "[2026-06-11T12:00:00.000Z][dashboard] standings posts=2 posted=2 edited=0 replaced=0",
+      "[2026-06-11T12:00:00.000Z][dashboard] leaderboard action=posted message=leaderboard-message-1",
+      "[2026-06-11T12:00:00.000Z][auto-post] date=2026-06-11 posted=2 skipped=0",
+      "[2026-06-11T12:00:00.000Z][result-sync] disabled reason=disabled",
+      "[2026-06-11T12:00:00.000Z][health] discord=online guild=guild-1 channel=channel-1",
+      "[2026-06-11T12:00:00.000Z][health] local=2026-06-11 09:00 timezone=America/Sao_Paulo autoPost=on@09:00",
+      "[2026-06-11T12:00:00.000Z][health] nextMatchday=2026-06-11 matches=2 posted=2/2",
+      "[2026-06-11T12:00:00.000Z][health] predictions open=2 closed=0 missingKickoff=0 pendingReveals=0",
+      "[2026-06-11T12:00:00.000Z][health] footballData=missing-token resultSync=off nextResultCheck=disabled reason=disabled pendingResults=0",
+      "[2026-06-11T12:00:00.000Z][health] dashboards standings=2/2 leaderboard=present lastLeaderboard=2026-06-11T12:00:00.000Z",
+      "[2026-06-11T12:00:00.000Z][bot] Autonomous operator enabled. Auto-post: on at 09:00 America/Sao_Paulo."
     ]);
   });
 
