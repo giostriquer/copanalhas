@@ -254,7 +254,8 @@ describe("CopanalhasDatabase", () => {
       threadId: "thread-1",
       messageId: "reveal-message-1",
       revealedAt: "2026-06-11T18:30:00.000Z",
-      closeAtUtc: "2026-06-11T18:30:00.000Z"
+      closeAtUtc: "2026-06-11T18:30:00.000Z",
+      resultRevealedAt: null
     });
     store.recordPredictionRevealPost({
       matchId: "wc2026-001",
@@ -262,7 +263,8 @@ describe("CopanalhasDatabase", () => {
       threadId: "thread-2",
       messageId: "reveal-message-2",
       revealedAt: "2026-06-11T18:35:00.000Z",
-      closeAtUtc: "2026-06-11T18:30:00.000Z"
+      closeAtUtc: "2026-06-11T18:30:00.000Z",
+      resultRevealedAt: "2026-06-11T22:30:00.000Z"
     });
 
     expect(store.listPredictionRevealPosts()).toEqual([
@@ -272,7 +274,8 @@ describe("CopanalhasDatabase", () => {
         threadId: "thread-2",
         messageId: "reveal-message-2",
         revealedAt: "2026-06-11T18:35:00.000Z",
-        closeAtUtc: "2026-06-11T18:30:00.000Z"
+        closeAtUtc: "2026-06-11T18:30:00.000Z",
+        resultRevealedAt: "2026-06-11T22:30:00.000Z"
       }
     ]);
     store.close();
@@ -288,7 +291,8 @@ describe("CopanalhasDatabase", () => {
       threadId: "thread-1",
       messageId: "reveal-message-1",
       revealedAt: "2026-06-11T18:30:00.000Z",
-      closeAtUtc: "2026-06-11T18:30:00.000Z"
+      closeAtUtc: "2026-06-11T18:30:00.000Z",
+      resultRevealedAt: null
     });
     store.recordPredictionRevealPost({
       matchId: "wc2026-002",
@@ -296,7 +300,8 @@ describe("CopanalhasDatabase", () => {
       threadId: "thread-1",
       messageId: "reveal-message-1",
       revealedAt: "2026-06-12T02:30:00.000Z",
-      closeAtUtc: "2026-06-12T01:30:00.000Z"
+      closeAtUtc: "2026-06-12T01:30:00.000Z",
+      resultRevealedAt: null
     });
 
     expect(store.clearPredictionRevealPostsForMatches(["wc2026-001"])).toBe(1);

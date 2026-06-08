@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 
-import { formatLockedPredictionRevealBatch } from "./locked-reveal.js";
+import { formatLockedPredictionRevealBatch, formatPredictionResultRevealBatch } from "./locked-reveal.js";
 import type { StoredPrediction } from "../storage/database.js";
 import type { WorldCupMatch } from "../worldcup/types.js";
 
@@ -41,6 +41,32 @@ describe("formatLockedPredictionRevealBatch", () => {
         predictions: []
       })
     ).toContain("Nenhum palpite enviado.");
+  });
+});
+
+describe("formatPredictionResultRevealBatch", () => {
+  test("formats the final result and points gained for each prediction", () => {
+    expect(
+      formatPredictionResultRevealBatch({
+        matches: [match("wc2026-001", 1, "MEX", "Mexico", "RSA", "South Africa")],
+        predictions: [
+          prediction("user-1", "wc2026-001", 2, 1, "2026-06-11T10:05:00.000Z"),
+          prediction("user-2", "wc2026-001", 1, 0, "2026-06-11T10:00:00.000Z"),
+          prediction("user-3", "wc2026-001", 0, 0, "2026-06-11T10:10:00.000Z")
+        ],
+        results: [{ matchId: "wc2026-001", homeScore: 1, awayScore: 0 }]
+      })
+    ).toBe(
+      [
+        "Resultado",
+        "",
+        "#1 México (1) x (0) África do Sul",
+        "3 palpites",
+        "<@user-2>  1x0 - 3 pts",
+        "<@user-1>  2x1 - 0 pts",
+        "<@user-3>  0x0 - 1 pt"
+      ].join("\n")
+    );
   });
 });
 

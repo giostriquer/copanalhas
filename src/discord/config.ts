@@ -9,6 +9,8 @@ export interface CopanalhasConfig {
   matchdayRolloverTime: string;
   footballDataToken: string | null;
   resultSyncEnabled: boolean;
+  resultSyncFirstCheckMinutes: number;
+  resultSyncRetryMinutes: number;
 }
 
 export type CopanalhasConfigResult =
@@ -31,6 +33,12 @@ export function parseCopanalhasConfig(
   const resultSyncSetting = clean(env.COPANALHAS_RESULT_SYNC_ENABLED)?.toLowerCase();
   const resultSyncEnabled =
     footballDataToken !== null && (resultSyncSetting === undefined || resultSyncSetting === "true");
+  const resultSyncFirstCheckMinutes = parsePositiveInteger(
+    clean(env.COPANALHAS_RESULT_SYNC_FIRST_CHECK_MINUTES) ?? "135"
+  );
+  const resultSyncRetryMinutes = parsePositiveInteger(
+    clean(env.COPANALHAS_RESULT_SYNC_RETRY_MINUTES) ?? "30"
+  );
 
   if (!discordToken) {
     errors.push("DISCORD_BOT_TOKEN is required");
@@ -52,7 +60,22 @@ export function parseCopanalhasConfig(
     errors.push("COPANALHAS_MATCHDAY_ROLLOVER_TIME must use HH:mm");
   }
 
-  if (errors.length > 0 || !discordToken || !guildId || !channelId) {
+  if (resultSyncFirstCheckMinutes === undefined) {
+    errors.push("COPANALHAS_RESULT_SYNC_FIRST_CHECK_MINUTES must be a positive integer");
+  }
+
+  if (resultSyncRetryMinutes === undefined) {
+    errors.push("COPANALHAS_RESULT_SYNC_RETRY_MINUTES must be a positive integer");
+  }
+
+  if (
+    errors.length > 0 ||
+    !discordToken ||
+    !guildId ||
+    !channelId ||
+    resultSyncFirstCheckMinutes === undefined ||
+    resultSyncRetryMinutes === undefined
+  ) {
     return { ok: false, errors };
   }
 
@@ -68,7 +91,9 @@ export function parseCopanalhasConfig(
       timezone,
       matchdayRolloverTime,
       footballDataToken,
-      resultSyncEnabled
+      resultSyncEnabled,
+      resultSyncFirstCheckMinutes,
+      resultSyncRetryMinutes
     }
   };
 }
@@ -80,4 +105,14 @@ function clean(value: string | undefined): string | undefined {
 
 function isValidTime(value: string): boolean {
   return /^(?:[01]\d|2[0-3]):[0-5]\d$/u.test(value);
+}
+
+function parsePositiveInteger(value: string): number | undefined {
+  if (!/^\d+$/u.test(value)) {
+    return undefined;
+  }
+
+  const parsed = Number.parseInt(value, 10);
+
+  return parsed > 0 ? parsed : undefined;
 }

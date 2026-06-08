@@ -142,6 +142,8 @@ function config(): CopanalhasConfig {
     timezone: "America/Sao_Paulo",
     matchdayRolloverTime: "06:00",
     footballDataToken: null,
-    resultSyncEnabled: false
+    resultSyncEnabled: false,
+    resultSyncFirstCheckMinutes: 135,
+    resultSyncRetryMinutes: 30
   };
 }

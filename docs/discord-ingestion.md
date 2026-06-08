@@ -146,6 +146,9 @@ whose prediction cutoff has passed, groups matches that share the same cutoff
 and matchday card, and posts one compact message in the matchday card thread.
 The bot records one reveal row per match, so restarts do not duplicate the
 thread post. Member mentions are rendered for readability with pings disabled.
+When all matches represented by a reveal message have stored results, the bot
+edits that same thread message from `Palpites encerrados` to `Resultado`,
+showing the final score and points gained by each participant.
 
 `reset-test-date` is the broader smoke-test reset. It clears posted-card dedupe
 records, predictions, prediction reveal records, and results for matches on the

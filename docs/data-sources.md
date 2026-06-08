@@ -66,9 +66,14 @@ Manual results use source `"manual"` and can overwrite provider results. Provide
 sync must not overwrite existing manual results.
 
 The bot checks provider results only while `npm run dev -- bot` is running and a
-token is configured. Keep polling conservative; the free football-data.org client
-limit is small, and failures such as rate limiting should not break prediction
-collection.
+token is configured. It does not poll just because the process is alive. It waits
+until at least one mapped, unresolved match is past
+`COPANALHAS_RESULT_SYNC_FIRST_CHECK_MINUTES` after kickoff, then sends one
+batched date-range request for due matches. If the provider has not marked a due
+match final yet, retries wait `COPANALHAS_RESULT_SYNC_RETRY_MINUTES`.
+
+Keep polling conservative; the free football-data.org client limit is small, and
+failures such as rate limiting should not break prediction collection.
 
 ## Safety Bar For APIs
 

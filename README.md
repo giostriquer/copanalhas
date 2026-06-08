@@ -62,7 +62,9 @@ a small lookback window when result sync is enabled. The main public dashboard i
 three persistent posts: group standings A-F, group standings G-L, and the
 Copanalhas player leaderboard.
 When a prediction window closes, the bot posts one compact reveal message in the
-matchday card thread, grouping matches that locked at the same time.
+matchday card thread, grouping matches that locked at the same time. After a
+result is stored, that same thread message is edited into a result receipt with
+the official score and points gained by each participant.
 Terminal commands remain useful for setup and manual recovery, but Discord slash
 commands are the preferred operator controls during the game.
 
@@ -89,6 +91,16 @@ Useful operator commands while the bot is running:
 - `/copanalhas leaderboard`: privately preview the current leaderboard. The
   public leaderboard dashboard post is updated automatically after result
   changes.
+
+Result sync settings:
+
+- `FOOTBALL_DATA_TOKEN`: enables the provider client when present.
+- `COPANALHAS_RESULT_SYNC_ENABLED`: set to `false` to disable provider result
+  sync even with a token.
+- `COPANALHAS_RESULT_SYNC_FIRST_CHECK_MINUTES`: first provider check after
+  kickoff, default `135`.
+- `COPANALHAS_RESULT_SYNC_RETRY_MINUTES`: retry delay when a due match is still
+  not final, default `30`.
 
 ## Documentation
 

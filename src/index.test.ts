@@ -285,6 +285,7 @@ describe("runCli", () => {
       "[dashboard] standings posts=2 posted=2 edited=0 replaced=0",
       "[dashboard] leaderboard action=posted message=leaderboard-message-1",
       "[auto-post] date=2026-06-11 posted=2 skipped=0",
+      "[result-sync] disabled reason=disabled",
       "Autonomous operator enabled. Auto-post: on at 09:00 America/Sao_Paulo."
     ]);
   });

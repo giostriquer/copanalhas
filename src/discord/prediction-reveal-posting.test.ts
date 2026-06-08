@@ -2,6 +2,7 @@ import { describe, expect, test, vi } from "vitest";
 import { ThreadAutoArchiveDuration } from "discord.js";
 
 import {
+  editPredictionRevealWithClient,
   postPredictionRevealWithClient,
   type DiscordPredictionRevealClient
 } from "./prediction-reveal-posting.js";
@@ -58,6 +59,42 @@ describe("postPredictionRevealWithClient", () => {
   });
 });
 
+describe("editPredictionRevealWithClient", () => {
+  test("edits a stored reveal message in its thread and disables mentions", async () => {
+    const edit = vi.fn(async () => undefined);
+    const client: DiscordPredictionRevealClient = {
+      login: vi.fn(async () => undefined),
+      channels: {
+        fetch: vi.fn(async () => ({
+          id: "thread-1",
+          isTextBased: () => true,
+          send: vi.fn(async () => ({ id: "unused" })),
+          messages: {
+            fetch: vi.fn(async () => ({ edit }))
+          }
+        }))
+      },
+      destroy: vi.fn(async () => undefined)
+    };
+
+    await editPredictionRevealWithClient(
+      config(),
+      {
+        threadId: "thread-1",
+        messageId: "reveal-message-1",
+        content: "Resultado"
+      },
+      client
+    );
+
+    expect(edit).toHaveBeenCalledWith({
+      content: "Resultado",
+      allowedMentions: { parse: [] }
+    });
+    expect(client.destroy).toHaveBeenCalledOnce();
+  });
+});
+
 function clientWithParentMessage(parentMessage: {
   thread?: {
     id: string;
@@ -99,7 +136,9 @@ function config(): CopanalhasConfig {
     timezone: "America/Sao_Paulo",
     matchdayRolloverTime: "06:00",
     footballDataToken: null,
-    resultSyncEnabled: false
+    resultSyncEnabled: false,
+    resultSyncFirstCheckMinutes: 135,
+    resultSyncRetryMinutes: 30
   };
 }
 

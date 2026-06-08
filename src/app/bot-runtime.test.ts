@@ -31,7 +31,7 @@ describe("startCopanalhasBotRuntime", () => {
       sendPredictionReveal,
       upsertStandingsMessage,
       upsertLeaderboardMessage,
-      now: () => new Date("2026-06-11T12:00:00.000Z"),
+      now: () => new Date("2026-06-11T21:15:00.000Z"),
       writeLine
     });
 
@@ -92,7 +92,7 @@ describe("startCopanalhasBotRuntime", () => {
       })),
       upsertStandingsMessage: vi.fn(async (message) => `standings-${message.key}`),
       upsertLeaderboardMessage: vi.fn(async () => "leaderboard-message-1"),
-      now: () => new Date("2026-06-11T12:00:00.000Z"),
+      now: () => new Date("2026-06-11T21:15:00.000Z"),
       writeLine: vi.fn()
     });
 
@@ -247,6 +247,7 @@ describe("startCopanalhasBotRuntime", () => {
     });
     const upsertStandingsMessage = vi.fn(async (message) => `standings-${message.key}`);
     const upsertLeaderboardMessage = vi.fn(async () => "leaderboard-message-1");
+    let now = new Date("2026-06-11T21:00:00.000Z");
     const syncFinishedResults = vi.fn(async () => ({
       action: "synced" as const,
       storedResults: ["wc2026-001"],
@@ -267,13 +268,14 @@ describe("startCopanalhasBotRuntime", () => {
       upsertStandingsMessage,
       upsertLeaderboardMessage,
       syncFinishedResults,
-      now: () => new Date("2026-06-11T12:00:00.000Z"),
+      now: () => now,
       writeLine: vi.fn()
     });
     upsertStandingsMessage.mockClear();
     upsertLeaderboardMessage.mockClear();
     syncFinishedResults.mockClear();
 
+    now = new Date("2026-06-11T21:15:00.000Z");
     await intervalCallbacks[2]?.();
 
     expect(syncFinishedResults).toHaveBeenCalledOnce();
@@ -308,19 +310,19 @@ describe("startCopanalhasBotRuntime", () => {
       upsertStandingsMessage,
       upsertLeaderboardMessage,
       syncFinishedResults,
-      now: () => new Date("2026-06-11T12:00:00.000Z"),
+      now: () => new Date("2026-06-11T21:15:00.000Z"),
       writeLine
     });
 
     expect(syncFinishedResults).toHaveBeenCalledOnce();
     expect(syncFinishedResults).toHaveBeenCalledWith(
       expect.objectContaining({
-        dateFrom: "2026-06-09",
+        dateFrom: "2026-06-11",
         dateTo: "2026-06-11"
       })
     );
     expect(writeLine).toHaveBeenCalledWith(
-      "[result-sync] range=2026-06-09..2026-06-11 synced stored=1 skipped=0"
+      "[result-sync] range=2026-06-11..2026-06-11 synced stored=1 skipped=0"
     );
     expect(writeLine).toHaveBeenCalledWith(
       "[dashboard] standings posts=2 posted=2 edited=0 replaced=0"
@@ -393,7 +395,7 @@ describe("startCopanalhasBotRuntime", () => {
         skipped: []
       },
       resultSyncEnabled: false,
-      lastResultSync: { action: "never" }
+      lastResultSync: { action: "disabled" }
     });
   });
 
@@ -454,7 +456,9 @@ function config(): CopanalhasConfig {
     timezone: "America/Sao_Paulo",
     matchdayRolloverTime: "06:00",
     footballDataToken: null,
-    resultSyncEnabled: false
+    resultSyncEnabled: false,
+    resultSyncFirstCheckMinutes: 135,
+    resultSyncRetryMinutes: 30
   };
 }
 

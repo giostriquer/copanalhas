@@ -75,6 +75,7 @@ export interface OperatorCommandOptions {
   updateStandingsDashboard(): Promise<UpdateStandingsDashboardResult>;
   listLeaderboardPosts(): StoredLeaderboardPost[];
   updateLeaderboardDashboard(): Promise<UpdateLeaderboardDashboardResult>;
+  updatePredictionResultReveals?(): Promise<unknown>;
   resolveUserDisplayNames?(userIds: readonly string[]): Promise<ReadonlyMap<string, string>>;
   logOperatorCommand?(input: OperatorCommandInput, result: OperatorCommandResult): void;
   logOperatorAutocomplete?(
@@ -110,6 +111,7 @@ export type RuntimeAutoPostStatus =
 export type RuntimeResultSyncStatus =
   | { action: "never" }
   | { action: "disabled"; reason: "disabled" | "missing-token" }
+  | { action: "not-due"; nextCheckAtUtc: string | null; pendingMatchIds: string[] }
   | { action: "failed"; dateFrom: string; dateTo: string; reason: "rate-limited" | "unavailable" }
   | { action: "synced"; dateFrom: string; dateTo: string; storedResults: string[]; skipped: string[] };
 
@@ -332,6 +334,7 @@ export async function handleOperatorCommand(
     });
     await options.updateStandingsDashboard();
     await options.updateLeaderboardDashboard();
+    await options.updatePredictionResultReveals?.();
 
     return reply(`Recorded result ${match.id} ${parsedScore.score.normalizedText}.`);
   }
@@ -724,6 +727,14 @@ function formatLastResultSync(status: RuntimeResultSyncStatus | undefined): stri
 
   if (status.action === "disabled") {
     return [`Last result sync: disabled (${status.reason})`];
+  }
+
+  if (status.action === "not-due") {
+    return [
+      `Last result sync: waiting for ${status.pendingMatchIds.length} pending match${
+        status.pendingMatchIds.length === 1 ? "" : "es"
+      }${status.nextCheckAtUtc ? `; next check ${status.nextCheckAtUtc}` : ""}`
+    ];
   }
 
   if (status.action === "failed") {

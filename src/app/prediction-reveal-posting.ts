@@ -107,7 +107,8 @@ export async function postDuePredictionReveals(
         threadId: sendResult.threadId,
         messageId: sendResult.messageId,
         revealedAt: now.toISOString(),
-        closeAtUtc: entry.closeAtUtc
+        closeAtUtc: entry.closeAtUtc,
+        resultRevealedAt: null
       });
     }
 

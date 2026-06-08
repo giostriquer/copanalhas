@@ -66,7 +66,8 @@ describe("postDuePredictionReveals", () => {
         threadId: "thread-1",
         messageId: "reveal-message-1",
         revealedAt: "2026-06-25T00:30:00.000Z",
-        closeAtUtc: "2026-06-25T00:30:00.000Z"
+        closeAtUtc: "2026-06-25T00:30:00.000Z",
+        resultRevealedAt: null
       },
       {
         matchId: "wc2026-054",
@@ -74,7 +75,8 @@ describe("postDuePredictionReveals", () => {
         threadId: "thread-1",
         messageId: "reveal-message-1",
         revealedAt: "2026-06-25T00:30:00.000Z",
-        closeAtUtc: "2026-06-25T00:30:00.000Z"
+        closeAtUtc: "2026-06-25T00:30:00.000Z",
+        resultRevealedAt: null
       }
     ]);
   });
@@ -97,7 +99,8 @@ describe("postDuePredictionReveals", () => {
           threadId: "thread-1",
           messageId: "reveal-message-1",
           revealedAt: "2026-06-11T18:30:00.000Z",
-          closeAtUtc: "2026-06-11T18:30:00.000Z"
+          closeAtUtc: "2026-06-11T18:30:00.000Z",
+          resultRevealedAt: null
         }
       ],
       sendPredictionReveal,

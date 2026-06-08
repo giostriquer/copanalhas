@@ -23,7 +23,9 @@ describe("parseCopanalhasConfig", () => {
         timezone: "America/Sao_Paulo",
         matchdayRolloverTime: "06:00",
         footballDataToken: null,
-        resultSyncEnabled: false
+        resultSyncEnabled: false,
+        resultSyncFirstCheckMinutes: 135,
+        resultSyncRetryMinutes: 30
       }
     });
   });
@@ -47,7 +49,9 @@ describe("parseCopanalhasConfig", () => {
         timezone: "America/Sao_Paulo",
         matchdayRolloverTime: "06:00",
         footballDataToken: null,
-        resultSyncEnabled: false
+        resultSyncEnabled: false,
+        resultSyncFirstCheckMinutes: 135,
+        resultSyncRetryMinutes: 30
       }
     });
   });
@@ -63,7 +67,9 @@ describe("parseCopanalhasConfig", () => {
         COPANALHAS_TIMEZONE: "UTC",
         COPANALHAS_MATCHDAY_ROLLOVER_TIME: "05:30",
         FOOTBALL_DATA_TOKEN: "football-data-token",
-        COPANALHAS_RESULT_SYNC_ENABLED: "true"
+        COPANALHAS_RESULT_SYNC_ENABLED: "true",
+        COPANALHAS_RESULT_SYNC_FIRST_CHECK_MINUTES: "150",
+        COPANALHAS_RESULT_SYNC_RETRY_MINUTES: "45"
       })
     ).toEqual({
       ok: true,
@@ -73,7 +79,9 @@ describe("parseCopanalhasConfig", () => {
         timezone: "UTC",
         matchdayRolloverTime: "05:30",
         footballDataToken: "football-data-token",
-        resultSyncEnabled: true
+        resultSyncEnabled: true,
+        resultSyncFirstCheckMinutes: 150,
+        resultSyncRetryMinutes: 45
       })
     });
   });
@@ -103,6 +111,24 @@ describe("parseCopanalhasConfig", () => {
     ).toEqual({
       ok: false,
       errors: ["COPANALHAS_MATCHDAY_ROLLOVER_TIME must use HH:mm"]
+    });
+  });
+
+  test("rejects invalid result sync timing", () => {
+    expect(
+      parseCopanalhasConfig({
+        DISCORD_BOT_TOKEN: "token-value",
+        DISCORD_GUILD_ID: "guild-1",
+        DISCORD_CHANNEL_ID: "channel-1",
+        COPANALHAS_RESULT_SYNC_FIRST_CHECK_MINUTES: "0",
+        COPANALHAS_RESULT_SYNC_RETRY_MINUTES: "later"
+      })
+    ).toEqual({
+      ok: false,
+      errors: [
+        "COPANALHAS_RESULT_SYNC_FIRST_CHECK_MINUTES must be a positive integer",
+        "COPANALHAS_RESULT_SYNC_RETRY_MINUTES must be a positive integer"
+      ]
     });
   });
 

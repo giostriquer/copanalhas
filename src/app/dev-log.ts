@@ -98,6 +98,12 @@ export function formatResultSyncLog(result: RuntimeResultSyncStatus): string {
     return `[result-sync] disabled reason=${result.reason}`;
   }
 
+  if (result.action === "not-due") {
+    return `[result-sync] not-due pending=${result.pendingMatchIds.length}${
+      result.nextCheckAtUtc ? ` next=${result.nextCheckAtUtc}` : ""
+    }`;
+  }
+
   if (result.action === "failed") {
     return `[result-sync] range=${result.dateFrom}..${result.dateTo} failed reason=${result.reason}`;
   }

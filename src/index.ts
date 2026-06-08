@@ -16,9 +16,11 @@ import {
 } from "./discord/ingestion.js";
 import { postDiscordMatchCards } from "./discord/posting.js";
 import {
+  editDiscordPredictionReveal,
   postDiscordPredictionReveal,
   type PredictionRevealThreadMessage
 } from "./discord/prediction-reveal-posting.js";
+import type { PredictionResultThreadMessage } from "./app/prediction-result-posting.js";
 import { upsertDiscordStandingsMessage } from "./discord/standings-posting.js";
 import { formatLeaderboard } from "./leaderboard/format.js";
 import { buildLeaderboard, scoreMatch } from "./scoring/scoring.js";
@@ -53,6 +55,7 @@ export interface CliDependencies {
     threadId: string;
     messageId: string;
   }>;
+  editPredictionReveal?(message: PredictionResultThreadMessage): Promise<void>;
   upsertStandingsMessage?(
     message: StandingsDashboardMessage,
     existingMessageId: string | null
@@ -271,6 +274,9 @@ async function startBot(dependencies: CliDependencies): Promise<void> {
     sendPredictionReveal:
       dependencies.sendPredictionReveal ??
       ((message) => postDiscordPredictionReveal(configResult.config, message)),
+    editPredictionReveal:
+      dependencies.editPredictionReveal ??
+      ((message) => editDiscordPredictionReveal(configResult.config, message)),
     upsertStandingsMessage:
       dependencies.upsertStandingsMessage ??
       ((message, existingMessageId) =>

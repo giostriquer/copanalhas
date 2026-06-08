@@ -16,6 +16,10 @@ import {
   type PredictionRevealSendResult,
   type PredictionRevealThreadMessage
 } from "./prediction-reveal-posting.js";
+import {
+  postDuePredictionResultReveals,
+  type PredictionResultThreadMessage
+} from "./prediction-result-posting.js";
 import { updateStandingsDashboard } from "./standings-posting.js";
 import type { MatchCardMessage } from "../discord/components.js";
 import type { CopanalhasConfig } from "../discord/config.js";
@@ -44,7 +48,6 @@ import type {
   StoredStandingsPost
 } from "../storage/database.js";
 import type { WorldCupMatch } from "../worldcup/types.js";
-import { getLocalDateTimeParts } from "./scheduler.js";
 import { canSubmitPredictionAt } from "../worldcup/cutoff.js";
 import { getMatchdayDateTimeParts, isMatchOnMatchday } from "../worldcup/matchday.js";
 import { formatTeamName } from "../worldcup/team-display.js";
@@ -53,11 +56,11 @@ import {
   type SyncFinishedResultsOptions,
   type SyncFinishedResultsResult
 } from "../results/sync.js";
+import { planResultSyncAttempt } from "../results/schedule.js";
 
 const autoPostIntervalMs = 60 * 1000;
 const predictionRevealIntervalMs = 60 * 1000;
 const resultSyncIntervalMs = 15 * 60 * 1000;
-const resultSyncLookbackDays = 2;
 
 export interface BotRuntimeStore {
   migrate(): void;
@@ -96,6 +99,7 @@ interface AutoPostRuntimeState {
 
 interface ResultSyncRuntimeState {
   lastResult: RuntimeResultSyncStatus;
+  lastAttemptAtUtc: string | null;
 }
 
 export interface StartCopanalhasBotRuntimeOptions {
@@ -111,6 +115,7 @@ export interface StartCopanalhasBotRuntimeOptions {
   startInterval(callback: () => void | Promise<void>, intervalMs: number): RuntimeInterval;
   sendMatchCard(message: MatchCardMessage): Promise<string>;
   sendPredictionReveal(message: PredictionRevealThreadMessage): Promise<PredictionRevealSendResult>;
+  editPredictionReveal?(message: PredictionResultThreadMessage): Promise<void>;
   upsertStandingsMessage(
     message: StandingsDashboardMessage,
     existingMessageId: string | null
@@ -138,7 +143,8 @@ export async function startCopanalhasBotRuntime(
     lastResult: { action: "never" }
   };
   const resultSyncState: ResultSyncRuntimeState = {
-    lastResult: { action: "never" }
+    lastResult: { action: "never" },
+    lastAttemptAtUtc: null
   };
   const operatorCommandOptions = createOperatorCommandOptions(
     options,
@@ -170,6 +176,7 @@ export async function startCopanalhasBotRuntime(
   await runAutoPost(options, operatorCommandOptions, autoPostState);
   await runPredictionReveals(options);
   await runResultSync(options, operatorCommandOptions, resultSyncState);
+  await runPredictionResultReveals(options);
   const intervals = startRuntimeIntervals(
     options,
     operatorCommandOptions,
@@ -286,6 +293,7 @@ function createOperatorCommandOptions(
 
       return result;
     },
+    updatePredictionResultReveals: async () => runPredictionResultReveals(options),
     logOperatorCommand: (input, result) =>
       options.writeLine(formatOperatorCommandLog(input, result)),
     logOperatorAutocomplete: (input, result) =>
@@ -313,6 +321,7 @@ function startRuntimeIntervals(
   intervals.push(
     options.startInterval(async () => {
       await runPredictionReveals(options);
+      await runPredictionResultReveals(options);
     }, predictionRevealIntervalMs)
   );
 
@@ -370,52 +379,87 @@ async function runPredictionReveals(options: StartCopanalhasBotRuntimeOptions): 
   }
 }
 
+async function runPredictionResultReveals(
+  options: StartCopanalhasBotRuntimeOptions
+): Promise<void> {
+  if (!options.editPredictionReveal) {
+    return;
+  }
+
+  const result = await postDuePredictionResultReveals({
+    channelId: options.config.channelId,
+    matches: options.matches,
+    predictions: options.store.listPredictions(),
+    results: options.store.listResults(),
+    now: options.now,
+    listPredictionRevealPosts: () => options.store.listPredictionRevealPosts(),
+    editPredictionReveal: options.editPredictionReveal,
+    recordPredictionRevealPost: (post) => options.store.recordPredictionRevealPost(post)
+  });
+
+  if (result.edited.length > 0) {
+    options.writeLine(
+      `[prediction-result] batches=${result.edited.length} matches=${result.edited
+        .flatMap((post) => post.matchIds)
+        .join(",")}`
+    );
+  }
+}
+
 async function runResultSync(
   options: StartCopanalhasBotRuntimeOptions,
   operatorCommandOptions: OperatorCommandOptions,
   state: ResultSyncRuntimeState
 ): Promise<void> {
-  if (!options.config.resultSyncEnabled || !options.config.footballDataToken) {
+  if (!options.config.resultSyncEnabled) {
+    state.lastResult = { action: "disabled", reason: "disabled" };
+    options.writeLine(formatResultSyncLog(state.lastResult));
+    return;
+  }
+
+  if (!options.config.footballDataToken) {
+    state.lastResult = { action: "disabled", reason: "missing-token" };
+    options.writeLine(formatResultSyncLog(state.lastResult));
     return;
   }
 
   const syncFinishedResults = options.syncFinishedResults ?? syncFinishedResultsDefault;
-  const { dateFrom, dateTo } = getResultSyncDateWindow(options.now(), options.config.timezone);
+  const syncPlan = planResultSyncAttempt({
+    matches: options.matches,
+    results: options.store.listResults(),
+    now: options.now(),
+    firstCheckDelayMinutes: options.config.resultSyncFirstCheckMinutes,
+    retryIntervalMinutes: options.config.resultSyncRetryMinutes,
+    lastAttemptAtUtc: state.lastAttemptAtUtc
+  });
+
+  if (syncPlan.action === "not-due") {
+    state.lastResult = syncPlan;
+    options.writeLine(formatResultSyncLog(state.lastResult));
+    return;
+  }
+
+  state.lastAttemptAtUtc = options.now().toISOString();
   const syncResult = await syncFinishedResults({
     enabled: options.config.resultSyncEnabled,
     token: options.config.footballDataToken,
     matches: options.matches,
-    dateFrom,
-    dateTo,
+    dateFrom: syncPlan.dateFrom,
+    dateTo: syncPlan.dateTo,
     now: options.now,
     listResults: () => options.store.listResults(),
     listPredictions: () => options.store.listPredictions(),
     upsertResult: (result) => options.store.upsertResult(result),
     insertScoringRun: (run) => options.store.insertScoringRun(run)
   });
-  state.lastResult = resultSyncStatus(syncResult, dateFrom, dateTo);
+  state.lastResult = resultSyncStatus(syncResult, syncPlan.dateFrom, syncPlan.dateTo);
   options.writeLine(formatResultSyncLog(state.lastResult));
 
   if (syncResult.action === "synced" && syncResult.storedResults.length > 0) {
     await operatorCommandOptions.updateStandingsDashboard();
     await operatorCommandOptions.updateLeaderboardDashboard();
+    await runPredictionResultReveals(options);
   }
-}
-
-function getResultSyncDateWindow(now: Date, timeZone: string): { dateFrom: string; dateTo: string } {
-  const { localDate } = getLocalDateTimeParts(now, timeZone);
-
-  return {
-    dateFrom: shiftDate(localDate, -resultSyncLookbackDays),
-    dateTo: localDate
-  };
-}
-
-function shiftDate(localDate: string, days: number): string {
-  const date = new Date(`${localDate}T00:00:00.000Z`);
-  date.setUTCDate(date.getUTCDate() + days);
-
-  return date.toISOString().slice(0, 10);
 }
 
 function resultSyncStatus(

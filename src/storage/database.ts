@@ -61,6 +61,7 @@ export interface StoredPredictionRevealPost {
   messageId: string;
   revealedAt: string;
   closeAtUtc: string;
+  resultRevealedAt: string | null;
 }
 
 export interface NewScoringRun {
@@ -153,6 +154,7 @@ export class CopanalhasDatabase {
         message_id TEXT NOT NULL,
         revealed_at TEXT NOT NULL,
         close_at_utc TEXT NOT NULL,
+        result_revealed_at TEXT,
         PRIMARY KEY (match_id, channel_id)
       ) STRICT;
 
@@ -169,6 +171,7 @@ export class CopanalhasDatabase {
     this.ensureColumn("results", "result_source", "TEXT NOT NULL DEFAULT 'manual'");
     this.ensureColumn("results", "external_match_id", "TEXT");
     this.ensureColumn("results", "fetched_at", "TEXT");
+    this.ensureColumn("prediction_reveal_posts", "result_revealed_at", "TEXT");
   }
 
   upsertMatches(matches: WorldCupMatch[]): void {
@@ -420,14 +423,16 @@ export class CopanalhasDatabase {
           thread_id,
           message_id,
           revealed_at,
-          close_at_utc
+          close_at_utc,
+          result_revealed_at
         )
-        VALUES (?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(match_id, channel_id) DO UPDATE SET
           thread_id = excluded.thread_id,
           message_id = excluded.message_id,
           revealed_at = excluded.revealed_at,
-          close_at_utc = excluded.close_at_utc
+          close_at_utc = excluded.close_at_utc,
+          result_revealed_at = excluded.result_revealed_at
       `)
       .run(
         post.matchId,
@@ -435,7 +440,8 @@ export class CopanalhasDatabase {
         post.threadId,
         post.messageId,
         post.revealedAt,
-        post.closeAtUtc
+        post.closeAtUtc,
+        post.resultRevealedAt
       );
   }
 
@@ -450,7 +456,8 @@ export class CopanalhasDatabase {
       threadId: row.thread_id,
       messageId: row.message_id,
       revealedAt: row.revealed_at,
-      closeAtUtc: row.close_at_utc
+      closeAtUtc: row.close_at_utc,
+      resultRevealedAt: row.result_revealed_at
     }));
   }
 
@@ -670,6 +677,7 @@ interface PredictionRevealPostRow {
   message_id: string;
   revealed_at: string;
   close_at_utc: string;
+  result_revealed_at: string | null;
 }
 
 interface ScoringRunRow {
