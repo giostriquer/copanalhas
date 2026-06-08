@@ -116,10 +116,9 @@ the required visible attribution when result data may be synced from the API:
 
 ## Public Repo Policy
 
-This repo is not currently accepting external pull requests. Issues are welcome
-for bugs, safety concerns, or questions, but do not include Discord tokens,
-Football-Data tokens, guild IDs, channel IDs, runtime SQLite files, logs,
-screenshots with secrets, or private Discord message content.
+Issues are welcome for bugs, safety concerns, or questions, but do not include
+Discord tokens, Football-Data tokens, guild IDs, channel IDs, runtime SQLite
+files, logs, screenshots with secrets, or private Discord message content.
 
 The code is released under the MIT License. Runtime data remains private and is
 ignored by git.
