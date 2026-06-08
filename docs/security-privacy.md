@@ -9,6 +9,7 @@ become a broad Discord scraper, odds tool, payment tool, or wagering system.
 
 - Store Discord bot tokens outside git.
 - Store `FOOTBALL_DATA_TOKEN` outside git.
+- Never store Football-Data developer credentials in open-source repositories.
 - Add `.env` files to `.gitignore`.
 - Provide examples with placeholder IDs only.
 - Rotate tokens if they are ever pasted into chat, commits, logs, or screenshots.
@@ -30,6 +31,11 @@ unless a later documented feature truly needs them.
 Optional provider sync stores only result provenance needed for auditability:
 provider name, provider match ID, final score, and fetch timestamp. It must not
 store raw provider responses.
+
+If Football-Data sync is enabled, keep the attribution visible in player-facing
+or operator-facing dashboard output:
+
+`Football data provided by the Football-Data.org API.`
 
 ## Operational Safety
 

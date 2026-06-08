@@ -13,7 +13,8 @@ describe("formatLeaderboard", () => {
         "- Envie seu palpite pelo botão do jogo do dia; você pode editar até 30 min antes da partida.",
         "- Placar exato vale 3 pts.",
         "- O palpite mais próximo vale 1 pt pela menor soma de diferenças nos gols dos dois times.",
-        "- O ponto de mais próximo também vale quando alguém acerta o placar exato; empates recebem a mesma posição."
+        "- O ponto de mais próximo também vale quando alguém acerta o placar exato; empates recebem a mesma posição.",
+        "Football data provided by the Football-Data.org API."
       ].join("\n")
     );
   });
@@ -40,7 +41,8 @@ describe("formatLeaderboard", () => {
         "- Envie seu palpite pelo botão do jogo do dia; você pode editar até 30 min antes da partida.",
         "- Placar exato vale 3 pts.",
         "- O palpite mais próximo vale 1 pt pela menor soma de diferenças nos gols dos dois times.",
-        "- O ponto de mais próximo também vale quando alguém acerta o placar exato; empates recebem a mesma posição."
+        "- O ponto de mais próximo também vale quando alguém acerta o placar exato; empates recebem a mesma posição.",
+        "Football data provided by the Football-Data.org API."
       ].join("\n")
     );
   });
@@ -63,7 +65,8 @@ describe("formatLeaderboard", () => {
         "- Envie seu palpite pelo botão do jogo do dia; você pode editar até 30 min antes da partida.",
         "- Placar exato vale 3 pts.",
         "- O palpite mais próximo vale 1 pt pela menor soma de diferenças nos gols dos dois times.",
-        "- O ponto de mais próximo também vale quando alguém acerta o placar exato; empates recebem a mesma posição."
+        "- O ponto de mais próximo também vale quando alguém acerta o placar exato; empates recebem a mesma posição.",
+        "Football data provided by the Football-Data.org API."
       ].join("\n")
     );
   });
@@ -99,10 +102,21 @@ describe("createLeaderboardDashboardMessage", () => {
         "- Envie seu palpite pelo botão do jogo do dia; você pode editar até 30 min antes da partida.",
         "- Placar exato vale 3 pts.",
         "- O palpite mais próximo vale 1 pt pela menor soma de diferenças nos gols dos dois times.",
-        "- O ponto de mais próximo também vale quando alguém acerta o placar exato; empates recebem a mesma posição."
+        "- O ponto de mais próximo também vale quando alguém acerta o placar exato; empates recebem a mesma posição.",
+        "Football data provided by the Football-Data.org API."
       ].join("\n"),
       embeds: []
     });
+  });
+
+  test("includes visible Football-Data attribution in the public dashboard", () => {
+    const message = createLeaderboardDashboardMessage({
+      rows: [],
+      updatedAt: new Date("2026-06-11T23:30:00.000Z"),
+      timeZone: "UTC"
+    });
+
+    expect(message.content).toContain("Football data provided by the Football-Data.org API");
   });
 
   test("renders ranked player rows in a compact table", () => {
@@ -145,7 +159,8 @@ describe("createLeaderboardDashboardMessage", () => {
         "- Envie seu palpite pelo botão do jogo do dia; você pode editar até 30 min antes da partida.",
         "- Placar exato vale 3 pts.",
         "- O palpite mais próximo vale 1 pt pela menor soma de diferenças nos gols dos dois times.",
-        "- O ponto de mais próximo também vale quando alguém acerta o placar exato; empates recebem a mesma posição."
+        "- O ponto de mais próximo também vale quando alguém acerta o placar exato; empates recebem a mesma posição.",
+        "Football data provided by the Football-Data.org API."
       ].join("\n")
     );
   });

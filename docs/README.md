@@ -14,3 +14,6 @@ safety decision.
 - `security-privacy.md`: secrets, privacy, and abuse boundaries.
 - `testing-policy.md`: initial test strategy.
 - `conventions/implementation-patterns.md`: reviewable implementation patterns.
+
+Public repository policy lives in the root `README.md`, `CONTRIBUTING.md`, and
+`LICENSE`.

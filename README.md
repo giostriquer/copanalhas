@@ -1,9 +1,13 @@
-# copanalhas
+# Copanalhas
 
-Copanalhas is a private Discord-based prediction game for the FIFA World Cup.
-It collects point-based match predictions from one configured channel in one
-Discord server owned by the operator. It is not gambling, does not involve real
-money, and should not collect more Discord data than is needed to score the game.
+Copanalhas is a Discord-based points prediction game for the FIFA World Cup. It
+posts matchday cards in one configured Discord channel, collects score
+predictions through Discord buttons/modals, locks picks before kickoff, reveals
+locked predictions in match threads, and keeps standings plus a player
+leaderboard updated.
+
+This repository is public source for a private server bot. It is not gambling:
+there is no real money, no odds, no payouts, and no wagering mechanic.
 
 ## Goals
 
@@ -21,14 +25,14 @@ money, and should not collect more Discord data than is needed to score the game
 - No broad Discord message archiving.
 - No dependency on unofficial sports APIs without a source and safety review.
 
-## Current Status
+## What It Does
 
 This repository contains an autonomous Discord operator runtime, a reviewed
 World Cup seed subset, SQLite storage, scoring/leaderboard logic, Discord-native
 matchday prediction cards, operator slash commands, prediction cutoffs,
 posted-card dedupe, and optional football-data.org result sync.
 
-Useful commands:
+## Local Commands
 
 - `npm run dev -- seed-matches`
 - `npm run dev -- bot`
@@ -48,6 +52,8 @@ Windows launchers:
 - `powershell -ExecutionPolicy Bypass -File scripts\windows\remove-startup-shortcut.ps1`:
   removes the automatic startup shortcut.
 
+## Discord Bot Flow
+
 Run `npm run dev -- bot` for the normal Discord experience. While the bot is
 running it registers `/copanalhas` operator commands, posts daily matchday cards
 with one prediction button per match at the configured local time, listens for
@@ -65,7 +71,7 @@ When a prediction window closes, the bot posts one compact reveal message in the
 matchday card thread, grouping matches that locked at the same time. After a
 result is stored, that same thread message is edited into a result receipt with
 the official score and points gained by each participant.
-Terminal commands remain useful for setup and manual recovery, but Discord slash
+Terminal commands remain useful for setup and manual recovery. Discord slash
 commands are the preferred operator controls during the game.
 
 Useful operator commands while the bot is running:
@@ -94,7 +100,7 @@ Useful operator commands while the bot is running:
   public leaderboard dashboard post is updated automatically after result
   changes.
 
-Result sync settings:
+## Result Sync
 
 - `FOOTBALL_DATA_TOKEN`: enables the provider client when present.
 - `COPANALHAS_RESULT_SYNC_ENABLED`: set to `false` to disable provider result
@@ -103,6 +109,20 @@ Result sync settings:
   kickoff, default `135`.
 - `COPANALHAS_RESULT_SYNC_RETRY_MINUTES`: retry delay when a due match is still
   not final, default `30`.
+
+Football-Data credentials must never be committed. The public dashboard includes
+the required visible attribution when result data may be synced from the API:
+`Football data provided by the Football-Data.org API.`
+
+## Public Repo Policy
+
+This repo is not currently accepting external pull requests. Issues are welcome
+for bugs, safety concerns, or questions, but do not include Discord tokens,
+Football-Data tokens, guild IDs, channel IDs, runtime SQLite files, logs,
+screenshots with secrets, or private Discord message content.
+
+The code is released under the MIT License. Runtime data remains private and is
+ignored by git.
 
 ## Documentation
 

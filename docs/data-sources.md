@@ -24,6 +24,13 @@ provides a v4 API. Copanalhas uses it only when `FOOTBALL_DATA_TOKEN` is set and
 `COPANALHAS_RESULT_SYNC_ENABLED` allows sync. The consumed fields are provider
 match ID, `utcDate`, `status`, and `score.fullTime`.
 
+Football-Data credentials are developer credentials and must not be stored in
+open-source repositories. When Copanalhas may use Football-Data result sync, the
+public Discord dashboard and public documentation must include visible
+attribution:
+
+`Football data provided by the Football-Data.org API.`
+
 Community APIs such as `rezarahiminia/worldcup2026`, `worldcup26.ir`, and
 `wc2026api.com` advertise World Cup 2026 fixtures and scores. They are useful to
 inspect, but they should not become trusted production sources without checking

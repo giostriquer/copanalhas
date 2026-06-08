@@ -18,7 +18,8 @@ const rulesLines = [
   "- Envie seu palpite pelo botão do jogo do dia; você pode editar até 30 min antes da partida.",
   "- Placar exato vale 3 pts.",
   "- O palpite mais próximo vale 1 pt pela menor soma de diferenças nos gols dos dois times.",
-  "- O ponto de mais próximo também vale quando alguém acerta o placar exato; empates recebem a mesma posição."
+  "- O ponto de mais próximo também vale quando alguém acerta o placar exato; empates recebem a mesma posição.",
+  "Football data provided by the Football-Data.org API."
 ];
 
 export function formatLeaderboard(

@@ -1,7 +1,9 @@
 {
   "name": "copanalhas",
   "version": "0.1.0",
+  "description": "Discord-based points prediction game for the FIFA World Cup.",
   "private": true,
+  "license": "MIT",
   "type": "module",
   "scripts": {
     "build": "tsc -p tsconfig.json",
