@@ -1,6 +1,6 @@
 $ErrorActionPreference = "Stop"
 
-$repoRoot = Resolve-Path (Join-Path $PSScriptRoot "..\..")
+$repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
 $launcher = Join-Path $repoRoot "scripts\windows\start-copanalhas-bot.cmd"
 $startupDirectory = [Environment]::GetFolderPath("Startup")
 $shortcutPath = Join-Path $startupDirectory "Copanalhas Bot.lnk"
