@@ -66,7 +66,7 @@ import {
   type SyncFinishedResultsOptions,
   type SyncFinishedResultsResult
 } from "../results/sync.js";
-import { planResultSyncAttempt } from "../results/schedule.js";
+import { planForcedResultSyncAttempt, planResultSyncAttempt } from "../results/schedule.js";
 
 const autoPostIntervalMs = 60 * 1000;
 const predictionRevealIntervalMs = 60 * 1000;
@@ -242,6 +242,48 @@ function createOperatorCommandOptions(
   autoPostState: AutoPostRuntimeState,
   resultSyncState: ResultSyncRuntimeState
 ): OperatorCommandOptions {
+  const updateStandingsDashboardForRuntime = async () => {
+    const result = await updateStandingsDashboard({
+      guildId: options.config.guildId,
+      channelId: options.config.channelId,
+      matches: options.matches,
+      results: options.store.listResults(),
+      timeZone: options.config.timezone,
+      now: options.now,
+      listStandingsPosts: () => options.store.listStandingsPosts(),
+      recordStandingsPost: (post) => options.store.recordStandingsPost(post),
+      upsertStandingsMessage: options.upsertStandingsMessage
+    });
+
+    writeRuntimeLine(options, formatStandingsDashboardLog(result));
+
+    return result;
+  };
+  const updateLeaderboardDashboardForRuntime = async () => {
+    const result = await updateLeaderboardDashboard({
+      guildId: options.config.guildId,
+      channelId: options.config.channelId,
+      predictions: options.store.listPredictions(),
+      results: options.store.listResults(),
+      timeZone: options.config.timezone,
+      now: options.now,
+      listLeaderboardPosts: () => options.store.listLeaderboardPosts(),
+      recordLeaderboardPost: (post) => options.store.recordLeaderboardPost(post),
+      ...(options.resolveUserDisplayNames
+        ? { resolveUserDisplayNames: options.resolveUserDisplayNames }
+        : {}),
+      upsertLeaderboardMessage: options.upsertLeaderboardMessage
+    });
+
+    writeRuntimeLine(options, formatLeaderboardDashboardLog(result));
+
+    return result;
+  };
+  const resultSyncRefreshers = {
+    updateStandingsDashboard: updateStandingsDashboardForRuntime,
+    updateLeaderboardDashboard: updateLeaderboardDashboardForRuntime
+  };
+
   return {
     guildId: options.config.guildId,
     channelId: options.config.channelId,
@@ -275,45 +317,12 @@ function createOperatorCommandOptions(
     listResults: () => options.store.listResults(),
     upsertResult: (result) => options.store.upsertResult(result),
     listStandingsPosts: () => options.store.listStandingsPosts(),
-    updateStandingsDashboard: async () => {
-      const result = await updateStandingsDashboard({
-        guildId: options.config.guildId,
-        channelId: options.config.channelId,
-        matches: options.matches,
-        results: options.store.listResults(),
-        timeZone: options.config.timezone,
-        now: options.now,
-        listStandingsPosts: () => options.store.listStandingsPosts(),
-        recordStandingsPost: (post) => options.store.recordStandingsPost(post),
-        upsertStandingsMessage: options.upsertStandingsMessage
-      });
-
-      writeRuntimeLine(options, formatStandingsDashboardLog(result));
-
-      return result;
-    },
+    updateStandingsDashboard: updateStandingsDashboardForRuntime,
     listLeaderboardPosts: () => options.store.listLeaderboardPosts(),
-    updateLeaderboardDashboard: async () => {
-      const result = await updateLeaderboardDashboard({
-        guildId: options.config.guildId,
-        channelId: options.config.channelId,
-        predictions: options.store.listPredictions(),
-        results: options.store.listResults(),
-        timeZone: options.config.timezone,
-        now: options.now,
-        listLeaderboardPosts: () => options.store.listLeaderboardPosts(),
-        recordLeaderboardPost: (post) => options.store.recordLeaderboardPost(post),
-        ...(options.resolveUserDisplayNames
-          ? { resolveUserDisplayNames: options.resolveUserDisplayNames }
-          : {}),
-        upsertLeaderboardMessage: options.upsertLeaderboardMessage
-      });
-
-      writeRuntimeLine(options, formatLeaderboardDashboardLog(result));
-
-      return result;
-    },
+    updateLeaderboardDashboard: updateLeaderboardDashboardForRuntime,
     updatePredictionResultReveals: async () => runPredictionResultReveals(options),
+    syncResultsNow: async () =>
+      runResultSync(options, resultSyncRefreshers, resultSyncState, { force: true }),
     logOperatorCommand: (input, result) =>
       writeRuntimeLine(options, formatOperatorCommandLog(input, result)),
     logOperatorAutocomplete: (input, result) =>
@@ -431,35 +440,45 @@ async function runPredictionResultReveals(
 
 async function runResultSync(
   options: StartCopanalhasBotRuntimeOptions,
-  operatorCommandOptions: OperatorCommandOptions,
-  state: ResultSyncRuntimeState
-): Promise<void> {
+  operatorCommandOptions: Pick<
+    OperatorCommandOptions,
+    "updateStandingsDashboard" | "updateLeaderboardDashboard"
+  >,
+  state: ResultSyncRuntimeState,
+  runOptions: { force?: boolean } = {}
+): Promise<RuntimeResultSyncStatus> {
   if (!options.config.resultSyncEnabled) {
     state.lastResult = { action: "disabled", reason: "disabled" };
     writeRuntimeLine(options, formatResultSyncLog(state.lastResult));
-    return;
+    return state.lastResult;
   }
 
   if (!options.config.footballDataToken) {
     state.lastResult = { action: "disabled", reason: "missing-token" };
     writeRuntimeLine(options, formatResultSyncLog(state.lastResult));
-    return;
+    return state.lastResult;
   }
 
   const syncFinishedResults = options.syncFinishedResults ?? syncFinishedResultsDefault;
-  const syncPlan = planResultSyncAttempt({
-    matches: options.matches,
-    results: options.store.listResults(),
-    now: options.now(),
-    firstCheckDelayMinutes: options.config.resultSyncFirstCheckMinutes,
-    retryIntervalMinutes: options.config.resultSyncRetryMinutes,
-    lastAttemptAtUtc: state.lastAttemptAtUtc
-  });
+  const syncPlan = runOptions.force
+    ? planForcedResultSyncAttempt({
+        matches: options.matches,
+        results: options.store.listResults(),
+        now: options.now()
+      })
+    : planResultSyncAttempt({
+        matches: options.matches,
+        results: options.store.listResults(),
+        now: options.now(),
+        firstCheckDelayMinutes: options.config.resultSyncFirstCheckMinutes,
+        retryIntervalMinutes: options.config.resultSyncRetryMinutes,
+        lastAttemptAtUtc: state.lastAttemptAtUtc
+      });
 
   if (syncPlan.action === "not-due") {
     state.lastResult = syncPlan;
     writeRuntimeLine(options, formatResultSyncLog(state.lastResult));
-    return;
+    return state.lastResult;
   }
 
   state.lastAttemptAtUtc = options.now().toISOString();
@@ -483,6 +502,8 @@ async function runResultSync(
     await operatorCommandOptions.updateLeaderboardDashboard();
     await runPredictionResultReveals(options);
   }
+
+  return state.lastResult;
 }
 
 function resultSyncStatus(

@@ -256,6 +256,10 @@ function operatorOptions(): OperatorCommandOptions {
     updateLeaderboardDashboard: vi.fn(async () => ({
       action: "updated" as const,
       post: { messageId: "leaderboard-message-1", action: "edited" as const }
+    })),
+    syncResultsNow: vi.fn(async () => ({
+      action: "disabled" as const,
+      reason: "disabled" as const
     }))
   };
 }

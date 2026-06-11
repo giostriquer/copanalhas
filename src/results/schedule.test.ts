@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 
-import { planResultSyncAttempt } from "./schedule.js";
+import { planForcedResultSyncAttempt, planResultSyncAttempt } from "./schedule.js";
 import type { StoredResult } from "../storage/database.js";
 import type { WorldCupMatch } from "../worldcup/types.js";
 
@@ -72,6 +72,40 @@ describe("planResultSyncAttempt", () => {
         firstCheckDelayMinutes: 135,
         retryIntervalMinutes: 30,
         lastAttemptAtUtc: null
+      })
+    ).toEqual({
+      action: "not-due",
+      nextCheckAtUtc: null,
+      pendingMatchIds: []
+    });
+  });
+});
+
+describe("planForcedResultSyncAttempt", () => {
+  test("plans one provider request for unresolved mapped matches that already kicked off", () => {
+    expect(
+      planForcedResultSyncAttempt({
+        matches: [
+          match("wc2026-001", "2026-06-11T19:00:00.000Z", 537327),
+          match("wc2026-002", "2026-06-12T02:00:00.000Z", 537328)
+        ],
+        results: [],
+        now: new Date("2026-06-11T20:57:00.000Z")
+      })
+    ).toEqual({
+      action: "due",
+      dateFrom: "2026-06-11",
+      dateTo: "2026-06-11",
+      pendingMatchIds: ["wc2026-001"]
+    });
+  });
+
+  test("does not force a provider request before any unresolved mapped match kicks off", () => {
+    expect(
+      planForcedResultSyncAttempt({
+        matches: [match("wc2026-001", "2026-06-11T19:00:00.000Z", 537327)],
+        results: [],
+        now: new Date("2026-06-11T18:57:00.000Z")
       })
     ).toEqual({
       action: "not-due",

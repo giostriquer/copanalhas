@@ -78,6 +78,8 @@ until at least one mapped, unresolved match is past
 `COPANALHAS_RESULT_SYNC_FIRST_CHECK_MINUTES` after kickoff, then sends one
 batched date-range request for due matches. If the provider has not marked a due
 match final yet, retries wait `COPANALHAS_RESULT_SYNC_RETRY_MINUTES`.
+Operators can run `/copanalhas sync-results` to force one immediate finished
+result check for unresolved mapped matches that have already kicked off.
 
 Keep polling conservative; the free football-data.org client limit is small, and
 failures such as rate limiting should not break prediction collection.

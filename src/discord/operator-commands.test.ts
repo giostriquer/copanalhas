@@ -222,6 +222,31 @@ describe("handleOperatorCommand", () => {
     expect(result.content).toContain("Como funciona");
   });
 
+  test("sync-results forces an immediate provider result sync", async () => {
+    const syncResultsNow = vi.fn(async () => ({
+      action: "synced" as const,
+      dateFrom: "2026-06-11",
+      dateTo: "2026-06-11",
+      storedResults: ["wc2026-001"],
+      skipped: ["wc2026-002"]
+    }));
+
+    const result = await handleOperatorCommand(
+      command("sync-results"),
+      options({
+        resultSyncEnabled: true,
+        syncResultsNow
+      })
+    );
+
+    expect(result).toEqual({
+      action: "replied",
+      content: "Synced results now: stored 1, skipped 1 (2026-06-11 to 2026-06-11).",
+      ephemeral: true
+    });
+    expect(syncResultsNow).toHaveBeenCalledOnce();
+  });
+
   test("meus-palpites returns the caller's predictions for the current local date", async () => {
     const result = await handleOperatorCommand(
       command("meus-palpites"),
@@ -536,6 +561,35 @@ describe("handleDiscordOperatorCommand", () => {
     expect(interaction.reply).not.toHaveBeenCalled();
   });
 
+  test("maps sync-results through a private deferred reply", async () => {
+    const events: string[] = [];
+    const interaction = discordCommandInteraction("sync-results", events);
+
+    await handleDiscordOperatorCommand(
+      interaction as unknown as Interaction,
+      options({
+        resultSyncEnabled: true,
+        syncResultsNow: vi.fn(async () => ({
+          action: "synced" as const,
+          dateFrom: "2026-06-11",
+          dateTo: "2026-06-11",
+          storedResults: ["wc2026-001"],
+          skipped: []
+        }))
+      })
+    );
+
+    expect(events).toEqual(["defer", "edit"]);
+    expect(interaction.deferReply).toHaveBeenCalledWith({
+      flags: MessageFlags.Ephemeral
+    });
+    expect(interaction.editReply).toHaveBeenCalledWith({
+      content: "Synced results now: stored 1, skipped 0 (2026-06-11 to 2026-06-11).",
+      allowedMentions: { parse: [] }
+    });
+    expect(interaction.reply).not.toHaveBeenCalled();
+  });
+
   test("maps public operator replies without the ephemeral flag", async () => {
     const interaction = discordCommandInteraction("reveal");
 
@@ -593,6 +647,10 @@ function options(overrides: Partial<OperatorCommandOptions> = {}): OperatorComma
     updateLeaderboardDashboard: vi.fn(async () => ({
       action: "updated" as const,
       post: { messageId: "leaderboard-message-1", action: "edited" as const }
+    })),
+    syncResultsNow: vi.fn(async () => ({
+      action: "disabled" as const,
+      reason: "disabled" as const
     })),
     ...overrides
   };

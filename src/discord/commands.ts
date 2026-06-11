@@ -65,6 +65,11 @@ export function createCopanalhasCommand() {
     )
     .addSubcommand((subcommand) =>
       subcommand
+        .setName("sync-results")
+        .setDescription("Force an immediate Football Data result sync")
+    )
+    .addSubcommand((subcommand) =>
+      subcommand
         .setName("meus-palpites")
         .setDescription("Show your predictions for one matchday")
         .addStringOption((option) =>

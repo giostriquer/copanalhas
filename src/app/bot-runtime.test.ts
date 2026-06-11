@@ -346,6 +346,65 @@ describe("startCopanalhasBotRuntime", () => {
     expect(upsertLeaderboardMessage).toHaveBeenCalledTimes(2);
   });
 
+  test("operator sync-results bypasses the scheduled first-check delay", async () => {
+    const store = createStore();
+    let operatorOptions: OperatorCommandOptions | undefined;
+    const startDiscord = vi.fn(async (_config, _onMessage, _predictionOptions, readyOptions) => {
+      operatorOptions = readyOptions.operatorCommandOptions;
+      return { destroy: vi.fn(async () => undefined) };
+    });
+    const upsertStandingsMessage = vi.fn(async (message) => `standings-${message.key}`);
+    const upsertLeaderboardMessage = vi.fn(async () => "leaderboard-message-1");
+    const writeLine = vi.fn();
+    const syncFinishedResults = vi.fn(async () => ({
+      action: "synced" as const,
+      storedResults: ["wc2026-001"],
+      skipped: []
+    }));
+
+    await startCopanalhasBotRuntime({
+      config: { ...config(), footballDataToken: "token-value", resultSyncEnabled: true },
+      store,
+      matches: WORLD_CUP_2026_SEED.matches,
+      startDiscord,
+      startInterval: vi.fn(() => ({ stop: vi.fn() })),
+      sendMatchCard: vi.fn(async () => "discord-message-1"),
+      sendPredictionReveal: vi.fn(async () => ({
+        threadId: "thread-1",
+        messageId: "reveal-message-1"
+      })),
+      upsertStandingsMessage,
+      upsertLeaderboardMessage,
+      syncFinishedResults,
+      now: () => new Date("2026-06-11T21:00:00.000Z"),
+      writeLine
+    });
+    upsertStandingsMessage.mockClear();
+    upsertLeaderboardMessage.mockClear();
+    syncFinishedResults.mockClear();
+
+    await expect(operatorOptions?.syncResultsNow?.()).resolves.toEqual({
+      action: "synced",
+      dateFrom: "2026-06-11",
+      dateTo: "2026-06-11",
+      storedResults: ["wc2026-001"],
+      skipped: []
+    });
+
+    expect(syncFinishedResults).toHaveBeenCalledOnce();
+    expect(syncFinishedResults).toHaveBeenCalledWith(
+      expect.objectContaining({
+        dateFrom: "2026-06-11",
+        dateTo: "2026-06-11"
+      })
+    );
+    expect(upsertStandingsMessage).toHaveBeenCalledTimes(2);
+    expect(upsertLeaderboardMessage).toHaveBeenCalledOnce();
+    expect(writeLine).toHaveBeenCalledWith(
+      "[2026-06-11T21:00:00.000Z][result-sync] range=2026-06-11..2026-06-11 synced stored=1 skipped=0"
+    );
+  });
+
   test("edits prediction reveal messages after result sync stores final scores", async () => {
     const results: StoredResult[] = [];
     const revealPosts: StoredPredictionRevealPost[] = [

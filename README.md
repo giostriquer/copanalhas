@@ -97,6 +97,9 @@ Useful operator commands while the bot is running:
 - `/copanalhas reveal match:wc2026-001`: publicly reveal submitted picks only
   after predictions have closed.
 - `/copanalhas result match:wc2026-001 score:2-1`: record or override a result.
+- `/copanalhas sync-results`: force one immediate Football-Data result sync for
+  unresolved matches that have already kicked off. Only `FINISHED` provider
+  results are stored.
 - `/copanalhas leaderboard`: privately preview the current leaderboard. The
   public leaderboard dashboard post is updated automatically after result
   changes.

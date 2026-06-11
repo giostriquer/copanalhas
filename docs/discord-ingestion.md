@@ -115,6 +115,7 @@ While `bot` is running, use `/copanalhas` for normal operator work:
 - `/copanalhas predictions match:wc2026-001`
 - `/copanalhas reveal match:wc2026-001`
 - `/copanalhas result match:wc2026-001 score:2-1`
+- `/copanalhas sync-results`
 
 Posted matchday cards are deduped by match and channel. The grouped Discord
 message ID is recorded once per included match, so restarting the process or
@@ -142,8 +143,8 @@ channel:
 
 The standings and leaderboard messages are edited in place. Startup posts or
 repairs missing dashboard messages. Automatic result sync, manual result entry,
-and `reset-test-date` refresh the affected dashboards so the channel does not
-fill with new scoreboard messages.
+forced result sync, and `reset-test-date` refresh the affected dashboards so the
+channel does not fill with new scoreboard messages.
 
 Prediction reveal posts are automatic. Every minute, the bot checks for matches
 whose prediction cutoff has passed, groups matches that share the same cutoff
@@ -172,6 +173,11 @@ after the match cutoff has passed.
 Match arguments for `predictions`, `reveal`, and `result` use Discord
 autocomplete. Operators can search by match number, team code, translated team
 name, original team name, or date instead of typing internal match IDs.
+
+`sync-results` is an operator-only private command for match-end impatience. It
+bypasses the scheduled result-sync delay for unresolved Football-Data mapped
+matches that have already kicked off, but it still stores only provider matches
+whose status is `FINISHED`.
 
 ## Permissions
 

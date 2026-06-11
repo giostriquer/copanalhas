@@ -33,6 +33,7 @@ export type OperatorSubcommand =
   | "status"
   | "standings"
   | "leaderboard"
+  | "sync-results"
   | "meus-palpites"
   | "predictions"
   | "reveal"
@@ -77,6 +78,7 @@ export interface OperatorCommandOptions {
   updateStandingsDashboard(): Promise<UpdateStandingsDashboardResult>;
   listLeaderboardPosts(): StoredLeaderboardPost[];
   updateLeaderboardDashboard(): Promise<UpdateLeaderboardDashboardResult>;
+  syncResultsNow(): Promise<RuntimeResultSyncStatus>;
   updatePredictionResultReveals?(): Promise<unknown>;
   resolveUserDisplayNames?(userIds: readonly string[]): Promise<ReadonlyMap<string, string>>;
   logOperatorCommand?(input: OperatorCommandInput, result: OperatorCommandResult): void;
@@ -270,6 +272,10 @@ export async function handleOperatorCommand(
     );
 
     return reply(formatLeaderboard(rows, displayNames));
+  }
+
+  if (command.subcommand === "sync-results") {
+    return reply(formatSyncResultsNowReply(await options.syncResultsNow()));
   }
 
   if (command.subcommand === "meus-palpites") {
@@ -560,6 +566,7 @@ function parseOperatorSubcommand(value: string): OperatorSubcommand | undefined 
     value === "status" ||
     value === "standings" ||
     value === "leaderboard" ||
+    value === "sync-results" ||
     value === "meus-palpites" ||
     value === "predictions" ||
     value === "reveal" ||
@@ -760,4 +767,24 @@ function formatLastResultSync(status: RuntimeResultSyncStatus | undefined): stri
   return [
     `Last result sync: synced ${status.storedResults.length}, skipped ${status.skipped.length} (${status.dateFrom} to ${status.dateTo})`
   ];
+}
+
+function formatSyncResultsNowReply(status: RuntimeResultSyncStatus): string {
+  if (status.action === "disabled") {
+    return `Result sync is disabled (${status.reason}).`;
+  }
+
+  if (status.action === "not-due") {
+    return "Result sync did not run: no unresolved Football-Data matches have kicked off yet.";
+  }
+
+  if (status.action === "failed") {
+    return `Result sync failed: ${status.reason} (${status.dateFrom} to ${status.dateTo}).`;
+  }
+
+  if (status.action === "never") {
+    return "Result sync has not run yet.";
+  }
+
+  return `Synced results now: stored ${status.storedResults.length}, skipped ${status.skipped.length} (${status.dateFrom} to ${status.dateTo}).`;
 }

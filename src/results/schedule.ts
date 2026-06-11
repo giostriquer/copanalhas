@@ -82,6 +82,44 @@ export function planResultSyncAttempt(
   };
 }
 
+export function planForcedResultSyncAttempt(
+  options: Pick<PlanResultSyncAttemptOptions, "matches" | "results" | "now">
+): ResultSyncAttemptPlan {
+  const resolvedMatchIds = new Set(options.results.map((result) => result.matchId));
+  const nowMs = options.now.getTime();
+  const pendingMatches = options.matches
+    .filter(
+      (match) =>
+        match.kickoffAtUtc !== null &&
+        match.externalIds.footballData !== undefined &&
+        !resolvedMatchIds.has(match.id)
+    )
+    .filter((match) => {
+      const kickoffMs = Date.parse(match.kickoffAtUtc ?? "");
+
+      return Number.isFinite(kickoffMs) && kickoffMs <= nowMs;
+    })
+    .toSorted((left, right) =>
+      (left.kickoffAtUtc ?? "").localeCompare(right.kickoffAtUtc ?? "")
+    );
+
+  if (pendingMatches.length === 0) {
+    return { action: "not-due", nextCheckAtUtc: null, pendingMatchIds: [] };
+  }
+
+  const kickoffDates = pendingMatches
+    .map((match) => match.kickoffAtUtc?.slice(0, 10))
+    .filter((date): date is string => date !== undefined)
+    .sort();
+
+  return {
+    action: "due",
+    dateFrom: kickoffDates[0] ?? options.now.toISOString().slice(0, 10),
+    dateTo: kickoffDates.at(-1) ?? options.now.toISOString().slice(0, 10),
+    pendingMatchIds: pendingMatches.map((match) => match.id)
+  };
+}
+
 function minutesToMs(minutes: number): number {
   return minutes * 60 * 1000;
 }
