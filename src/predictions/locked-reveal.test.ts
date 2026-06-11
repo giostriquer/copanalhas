@@ -42,6 +42,31 @@ describe("formatLockedPredictionRevealBatch", () => {
       })
     ).toContain("Nenhum palpite enviado.");
   });
+
+  test("groups locked predictions by score before submission time", () => {
+    expect(
+      formatLockedPredictionRevealBatch({
+        matches: [match("wc2026-001", 1, "MEX", "Mexico", "RSA", "South Africa")],
+        predictions: [
+          prediction("user-1", "wc2026-001", 2, 0, "2026-06-11T10:00:00.000Z"),
+          prediction("user-2", "wc2026-001", 3, 1, "2026-06-11T10:05:00.000Z"),
+          prediction("user-3", "wc2026-001", 2, 0, "2026-06-11T10:02:00.000Z"),
+          prediction("user-4", "wc2026-001", 2, 1, "2026-06-11T10:01:00.000Z")
+        ]
+      })
+    ).toBe(
+      [
+        "Palpites encerrados",
+        "",
+        "#1 México x África do Sul",
+        "4 palpites",
+        "<@user-2>  3x1",
+        "<@user-4>  2x1",
+        "<@user-1>  2x0",
+        "<@user-3>  2x0"
+      ].join("\n")
+    );
+  });
 });
 
 describe("formatPredictionResultRevealBatch", () => {
@@ -62,8 +87,8 @@ describe("formatPredictionResultRevealBatch", () => {
         "",
         "#1 México (1) x (0) África do Sul",
         "3 palpites",
-        "<@user-2>  1x0 - 3 pts",
         "<@user-1>  2x1 - 0 pts",
+        "<@user-2>  1x0 - 3 pts",
         "<@user-3>  0x0 - 0 pts"
       ].join("\n")
     );

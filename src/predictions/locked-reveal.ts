@@ -71,11 +71,25 @@ function predictionsForMatch(
 ): StoredPrediction[] {
   return predictions
     .filter((prediction) => prediction.matchId === matchId)
-    .toSorted((left, right) => {
-      const bySubmittedAt = left.submittedAt.localeCompare(right.submittedAt);
+    .toSorted(comparePredictionsForReveal);
+}
 
-      return bySubmittedAt === 0 ? left.userId.localeCompare(right.userId) : bySubmittedAt;
-    });
+function comparePredictionsForReveal(left: StoredPrediction, right: StoredPrediction): number {
+  const byHomeScore = right.homeScore - left.homeScore;
+
+  if (byHomeScore !== 0) {
+    return byHomeScore;
+  }
+
+  const byAwayScore = right.awayScore - left.awayScore;
+
+  if (byAwayScore !== 0) {
+    return byAwayScore;
+  }
+
+  const bySubmittedAt = left.submittedAt.localeCompare(right.submittedAt);
+
+  return bySubmittedAt === 0 ? left.userId.localeCompare(right.userId) : bySubmittedAt;
 }
 
 function formatPredictionLines(predictions: readonly StoredPrediction[]): string[] {
