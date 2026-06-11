@@ -148,13 +148,13 @@ describe("handleOperatorCommand", () => {
         "Discord: online",
         "Route: guild guild-1, channel channel-1",
         "Local time: 2026-06-11 18:00 America/Sao_Paulo",
-        "Auto-post: on at 09:00 America/Sao_Paulo",
+        "Auto-post: on at 09:00 America/Sao_Paulo (3 day window)",
         "Next matchday post: 2026-06-11 (2 matches, 1/2 posted)",
         "Prediction windows: 1 open, 1 closed, 0 missing kickoff",
         "Pending locked reveals: 1 (#2 Coreia do Sul x Tchéquia)",
         "Football Data: configured, result sync on",
         "Next result-sync check: 2026-06-11T22:15:00.000Z (2 pending)",
-        "Last auto-post: posted 1, skipped 1 on 2026-06-11",
+        "Last auto-post: posted 1, skipped 1 across 3 days from 2026-06-11",
         "Last result sync: waiting for 2 pending matches; next check 2026-06-11T22:15:00.000Z",
         "Dashboards: standings 1/2, leaderboard present",
         "Last leaderboard update: 2026-06-11T18:00:00.000Z",
@@ -690,6 +690,7 @@ function operatorHealthSnapshot(): OperatorHealthSnapshot {
     timeZone: "America/Sao_Paulo",
     autoPostEnabled: true,
     autoPostTime: "09:00",
+    autoPostWindowDays: 3,
     nextMatchday: {
       date: "2026-06-11",
       matchCount: 2,
@@ -717,6 +718,14 @@ function operatorHealthSnapshot(): OperatorHealthSnapshot {
     lastAutoPost: {
       action: "posted",
       localDate: "2026-06-11",
+      windowDays: 3,
+      dates: [
+        {
+          date: "2026-06-11",
+          posted: ["wc2026-001"],
+          skipped: ["wc2026-002"]
+        }
+      ],
       posted: ["wc2026-001"],
       skipped: ["wc2026-002"]
     },

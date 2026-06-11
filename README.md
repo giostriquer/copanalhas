@@ -55,18 +55,19 @@ Windows launchers:
 ## Discord Bot Flow
 
 Run `npm run dev -- bot` for the normal Discord experience. While the bot is
-running it registers `/copanalhas` operator commands, posts daily matchday cards
-with one prediction button per match at the configured local time, listens for
-prediction button/modal interactions with team-specific score fields, and can
-sync finished results from football-data.org when a token is configured.
+running it registers `/copanalhas` operator commands, posts a rolling window of
+day-level matchday cards with one prediction button per match at the configured
+local time, listens for prediction button/modal interactions with team-specific
+score fields, and can sync finished results from football-data.org when a token
+is configured.
 `COPANALHAS_MATCHDAY_ROLLOVER_TIME` defaults to `06:00`, so matches that start
 after midnight but before 06:00 in `COPANALHAS_TIMEZONE` still belong to the
 previous operational matchday.
-On startup, the bot immediately catches up the current matchday if the configured
-auto-post time has already passed, refreshes standings, and runs result sync with
-a small lookback window when result sync is enabled. The main public dashboard is
-three persistent posts: group standings A-F, group standings G-L, and the
-Copanalhas player leaderboard.
+On startup, the bot immediately catches up the configured auto-post window if
+the configured auto-post time has already passed, refreshes standings, and runs
+result sync with a small lookback window when result sync is enabled. The main
+public dashboard is three persistent posts: group standings A-F, group standings
+G-L, and the Copanalhas player leaderboard.
 When a prediction window closes, the bot posts one compact reveal message in the
 matchday card thread, grouping matches that locked at the same time. After a
 result is stored, that same thread message is edited into a result receipt with
@@ -99,6 +100,12 @@ Useful operator commands while the bot is running:
 - `/copanalhas leaderboard`: privately preview the current leaderboard. The
   public leaderboard dashboard post is updated automatically after result
   changes.
+
+## Automation Settings
+
+- `COPANALHAS_AUTO_POST_WINDOW_DAYS`: number of operational matchdays to post on
+  each daily auto-post run, default `3`. Each date is still posted as its own
+  matchday card.
 
 ## Result Sync
 

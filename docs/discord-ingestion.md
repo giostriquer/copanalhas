@@ -5,8 +5,8 @@
 The preferred member workflow is Discord-native:
 
 1. The operator starts the bot with `npm run dev -- bot`.
-2. The bot posts one matchday card for the configured daily schedule while the
-   bot process is running.
+2. The bot posts one day-level matchday card for each date in the configured
+   rolling auto-post window while the bot process is running.
 3. The matchday card contains one prediction button per reviewed match, with the
    match ID in each button custom ID.
 4. A member clicks the match's prediction button and the bot opens a score modal
@@ -99,8 +99,8 @@ raw content can be removed.
 - `npm run dev -- bot`: starts the long-running bot. It listens for the card
   button and modal interactions, saves predictions, registers operator slash
   commands, runs auto-posting, posts locked prediction reveals into matchday
-  threads, and runs optional result sync. Startup also catches up the active
-  matchday card if auto-post time already passed and runs result sync with a
+  threads, and runs optional result sync. Startup also catches up the configured
+  auto-post window if auto-post time already passed and runs result sync with a
   two-day lookback window when result sync is enabled.
 
 While `bot` is running, use `/copanalhas` for normal operator work:
@@ -121,6 +121,10 @@ message ID is recorded once per included match, so restarting the process or
 re-running an operator post command does not repost matches already recorded in
 SQLite. During smoke tests, `clear-posted-date` removes only those dedupe rows
 for the configured channel and selected date.
+
+`COPANALHAS_AUTO_POST_WINDOW_DAYS` defaults to `3`. Automatic posting still keeps
+one Discord message per operational date; the window only controls how many dates
+the daily catch-up tries to post.
 
 `status` is the operator health check. It reports the active matchday, current
 local time, auto-post setting, reviewed matches, posted/unposted card state,

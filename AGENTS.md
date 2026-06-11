@@ -57,6 +57,9 @@ Read these docs before changing behavior:
 ## Bot Operation Rules
 
 - The normal local run command is `npm run dev -- bot`.
+- Automatic match posting is a rolling window of day-level matchday cards.
+  `COPANALHAS_AUTO_POST_WINDOW_DAYS` defaults to `3`; keep each operational date
+  as its own Discord message instead of combining multiple days into one card.
 - Use `/copanalhas status` after startup to check Discord route, matchday post
   health, prediction windows, pending reveals, result sync, and dashboards.
 - Prediction identity is keyed by Discord user ID plus match ID. Display names

@@ -2,7 +2,14 @@ export type OperatorHealthAutoPostStatus =
   | { action: "never" }
   | { action: "disabled" }
   | { action: "not-due"; localDate: string; localTime: string }
-  | { action: "posted"; localDate: string; posted: string[]; skipped: string[] };
+  | {
+      action: "posted";
+      localDate: string;
+      windowDays: number;
+      dates: Array<{ date: string; posted: string[]; skipped: string[] }>;
+      posted: string[];
+      skipped: string[];
+    };
 
 export type OperatorHealthResultSyncStatus =
   | { action: "never" }
@@ -35,6 +42,7 @@ export interface OperatorHealthSnapshot {
   timeZone: string;
   autoPostEnabled: boolean;
   autoPostTime: string;
+  autoPostWindowDays: number;
   nextMatchday: OperatorHealthMatchdayStatus | null;
   predictionWindows: {
     open: number;
@@ -70,7 +78,7 @@ export function formatOperatorHealthReport(snapshot: OperatorHealthSnapshot): st
     `Local time: ${snapshot.localDate} ${snapshot.localTime} ${snapshot.timeZone}`,
     `Auto-post: ${snapshot.autoPostEnabled ? `on at ${snapshot.autoPostTime}` : "off"} ${
       snapshot.timeZone
-    }`,
+    } (${snapshot.autoPostWindowDays} day window)`,
     `Next matchday post: ${formatNextMatchday(snapshot.nextMatchday)}`,
     `Prediction windows: ${snapshot.predictionWindows.open} open, ${snapshot.predictionWindows.closed} closed, ${snapshot.predictionWindows.missingKickoff} missing kickoff`,
     `Pending locked reveals: ${formatPendingReveals(snapshot.pendingPredictionReveals)}`,
@@ -95,7 +103,9 @@ export function formatOperatorHealthLogLines(snapshot: OperatorHealthSnapshot): 
     } channel=${snapshot.discord.channelId}`,
     `[health] local=${snapshot.localDate} ${snapshot.localTime} timezone=${
       snapshot.timeZone
-    } autoPost=${snapshot.autoPostEnabled ? `on@${snapshot.autoPostTime}` : "off"}`,
+    } autoPost=${snapshot.autoPostEnabled ? `on@${snapshot.autoPostTime}` : "off"} windowDays=${
+      snapshot.autoPostWindowDays
+    }`,
     `[health] nextMatchday=${formatNextMatchdayForLog(snapshot.nextMatchday)}`,
     `[health] predictions open=${snapshot.predictionWindows.open} closed=${
       snapshot.predictionWindows.closed
@@ -214,7 +224,7 @@ function formatLastAutoPost(status: OperatorHealthAutoPostStatus): string {
     return `not due at ${status.localDate} ${status.localTime}`;
   }
 
-  return `posted ${status.posted.length}, skipped ${status.skipped.length} on ${status.localDate}`;
+  return `posted ${status.posted.length}, skipped ${status.skipped.length} across ${status.windowDays} days from ${status.localDate}`;
 }
 
 function formatLastResultSync(status: OperatorHealthResultSyncStatus): string {

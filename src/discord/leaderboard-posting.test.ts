@@ -148,6 +148,7 @@ function config(): CopanalhasConfig {
     databasePath: "./data/copanalhas.sqlite",
     autoPostEnabled: true,
     autoPostTime: "09:00",
+    autoPostWindowDays: 3,
     timezone: "America/Sao_Paulo",
     matchdayRolloverTime: "06:00",
     footballDataToken: null,

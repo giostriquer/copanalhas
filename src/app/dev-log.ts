@@ -98,7 +98,7 @@ export function formatAutoPostLog(result: RuntimeAutoPostStatus): string {
     return `[auto-post] date=${result.localDate} time=${result.localTime} not-due`;
   }
 
-  return `[auto-post] date=${result.localDate} posted=${result.posted.length} skipped=${result.skipped.length}`;
+  return `[auto-post] date=${result.localDate} windowDays=${result.windowDays} posted=${result.posted.length} skipped=${result.skipped.length}`;
 }
 
 export function formatResultSyncLog(result: RuntimeResultSyncStatus): string {

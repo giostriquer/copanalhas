@@ -366,6 +366,7 @@ async function runAutoPost(
     targetTime: options.config.autoPostTime,
     timeZone: options.config.timezone,
     matchdayRolloverTime: options.config.matchdayRolloverTime,
+    windowDays: options.config.autoPostWindowDays,
     lastRunDate: state.lastRunDate,
     now: options.now,
     postDueMatchCards: (date) => operatorCommandOptions.postDueMatchCards(date, "auto")
@@ -527,6 +528,7 @@ function createRuntimeStatus(
     timeZone: options.config.timezone,
     autoPostEnabled: options.config.autoPostEnabled,
     autoPostTime: options.config.autoPostTime,
+    autoPostWindowDays: options.config.autoPostWindowDays,
     todayMatches: options.matches
       .filter((match) =>
         isMatchOnMatchday(
@@ -600,6 +602,7 @@ function createOperatorHealthSnapshot(
     timeZone: runtimeStatus.timeZone,
     autoPostEnabled: runtimeStatus.autoPostEnabled,
     autoPostTime: runtimeStatus.autoPostTime,
+    autoPostWindowDays: runtimeStatus.autoPostWindowDays,
     nextMatchday: nextMatchdayStatus(options, runtimeStatus.localDate, postedCards),
     predictionWindows: predictionWindowCounts(runtimeStatus.todayMatches),
     pendingPredictionReveals: options.matches

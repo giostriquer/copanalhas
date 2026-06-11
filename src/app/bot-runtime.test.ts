@@ -70,7 +70,7 @@ describe("startCopanalhasBotRuntime", () => {
       "[2026-06-11T21:15:00.000Z][dashboard] leaderboard action=posted message=leaderboard-message-1"
     );
     expect(writeLine).toHaveBeenCalledWith(
-      "[2026-06-11T21:15:00.000Z][auto-post] date=2026-06-11 posted=2 skipped=0"
+      "[2026-06-11T21:15:00.000Z][auto-post] date=2026-06-11 windowDays=3 posted=8 skipped=0"
     );
     expect(writeLine).toHaveBeenCalledWith(
       "[2026-06-11T21:15:00.000Z][health] discord=online guild=guild-1 channel=channel-1"
@@ -108,7 +108,7 @@ describe("startCopanalhasBotRuntime", () => {
       writeLine: vi.fn()
     });
 
-    expect(sendMatchCard).toHaveBeenCalledOnce();
+    expect(sendMatchCard).toHaveBeenCalledTimes(3);
     expect(store.recordPostedMatchCard).toHaveBeenCalledWith(
       expect.objectContaining({
         matchId: "wc2026-001",
@@ -482,6 +482,7 @@ describe("startCopanalhasBotRuntime", () => {
       timeZone: "America/Sao_Paulo",
       autoPostEnabled: true,
       autoPostTime: "09:00",
+      autoPostWindowDays: 3,
       todayMatches: [
         {
           matchId: "wc2026-001",
@@ -501,7 +502,17 @@ describe("startCopanalhasBotRuntime", () => {
       lastAutoPost: {
         action: "posted",
         localDate: "2026-06-11",
-        posted: ["wc2026-001", "wc2026-002"],
+        windowDays: 3,
+        posted: [
+          "wc2026-001",
+          "wc2026-002",
+          "wc2026-003",
+          "wc2026-004",
+          "wc2026-005",
+          "wc2026-006",
+          "wc2026-007",
+          "wc2026-008"
+        ],
         skipped: []
       },
       resultSyncEnabled: false,
@@ -588,6 +599,7 @@ function config(): CopanalhasConfig {
     databasePath: "./data/copanalhas.sqlite",
     autoPostEnabled: true,
     autoPostTime: "09:00",
+    autoPostWindowDays: 3,
     timezone: "America/Sao_Paulo",
     matchdayRolloverTime: "06:00",
     footballDataToken: null,

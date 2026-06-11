@@ -7,15 +7,29 @@ export interface AutoPostTickOptions {
   targetTime: string;
   timeZone: string;
   matchdayRolloverTime: string;
+  windowDays: number;
   lastRunDate: string | null;
   now(): Date;
   postDueMatchCards(date: string): Promise<PostDueMatchCardsResult>;
 }
 
+export interface AutoPostWindowDateResult {
+  date: string;
+  posted: string[];
+  skipped: string[];
+}
+
 export type AutoPostTickResult =
   | { action: "disabled" }
   | { action: "not-due"; localDate: string; localTime: string }
-  | { action: "posted"; localDate: string; posted: string[]; skipped: string[] };
+  | {
+      action: "posted";
+      localDate: string;
+      windowDays: number;
+      dates: AutoPostWindowDateResult[];
+      posted: string[];
+      skipped: string[];
+    };
 
 export async function runAutoPostTick(
   options: AutoPostTickOptions
@@ -45,12 +59,34 @@ export async function runAutoPostTick(
     };
   }
 
-  const result = await options.postDueMatchCards(decision.runDate);
+  const dates: AutoPostWindowDateResult[] = [];
+
+  for (const date of windowDates(decision.runDate, options.windowDays)) {
+    const result = await options.postDueMatchCards(date);
+    dates.push({
+      date,
+      posted: result.posted,
+      skipped: result.skipped
+    });
+  }
 
   return {
     action: "posted",
     localDate: decision.runDate,
-    posted: result.posted,
-    skipped: result.skipped
+    windowDays: options.windowDays,
+    dates,
+    posted: dates.flatMap((result) => result.posted),
+    skipped: dates.flatMap((result) => result.skipped)
   };
+}
+
+function windowDates(startDate: string, windowDays: number): string[] {
+  return Array.from({ length: windowDays }, (_, index) => shiftDate(startDate, index));
+}
+
+function shiftDate(localDate: string, days: number): string {
+  const date = new Date(`${localDate}T00:00:00.000Z`);
+  date.setUTCDate(date.getUTCDate() + days);
+
+  return date.toISOString().slice(0, 10);
 }

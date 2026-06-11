@@ -5,6 +5,7 @@ export interface CopanalhasConfig {
   databasePath: string;
   autoPostEnabled: boolean;
   autoPostTime: string;
+  autoPostWindowDays: number;
   timezone: string;
   matchdayRolloverTime: string;
   footballDataToken: string | null;
@@ -27,6 +28,9 @@ export function parseCopanalhasConfig(
   const databasePath = clean(env.COPANALHAS_DATABASE_PATH) ?? "./data/copanalhas.sqlite";
   const autoPostEnabled = clean(env.COPANALHAS_AUTO_POST_ENABLED)?.toLowerCase() !== "false";
   const autoPostTime = clean(env.COPANALHAS_AUTO_POST_TIME) ?? "09:00";
+  const autoPostWindowDays = parsePositiveInteger(
+    clean(env.COPANALHAS_AUTO_POST_WINDOW_DAYS) ?? "3"
+  );
   const timezone = clean(env.COPANALHAS_TIMEZONE) ?? "America/Sao_Paulo";
   const matchdayRolloverTime = clean(env.COPANALHAS_MATCHDAY_ROLLOVER_TIME) ?? "06:00";
   const footballDataToken = clean(env.FOOTBALL_DATA_TOKEN) ?? null;
@@ -56,6 +60,10 @@ export function parseCopanalhasConfig(
     errors.push("COPANALHAS_AUTO_POST_TIME must use HH:mm");
   }
 
+  if (autoPostWindowDays === undefined) {
+    errors.push("COPANALHAS_AUTO_POST_WINDOW_DAYS must be a positive integer");
+  }
+
   if (!isValidTime(matchdayRolloverTime)) {
     errors.push("COPANALHAS_MATCHDAY_ROLLOVER_TIME must use HH:mm");
   }
@@ -73,6 +81,7 @@ export function parseCopanalhasConfig(
     !discordToken ||
     !guildId ||
     !channelId ||
+    autoPostWindowDays === undefined ||
     resultSyncFirstCheckMinutes === undefined ||
     resultSyncRetryMinutes === undefined
   ) {
@@ -88,6 +97,7 @@ export function parseCopanalhasConfig(
       databasePath,
       autoPostEnabled,
       autoPostTime,
+      autoPostWindowDays,
       timezone,
       matchdayRolloverTime,
       footballDataToken,

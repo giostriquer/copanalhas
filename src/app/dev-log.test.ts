@@ -92,10 +92,15 @@ describe("dev log formatting", () => {
       formatAutoPostLog({
         action: "posted",
         localDate: "2026-06-11",
+        windowDays: 3,
+        dates: [
+          { date: "2026-06-11", posted: ["wc2026-001", "wc2026-002"], skipped: [] },
+          { date: "2026-06-12", posted: [], skipped: ["wc2026-003"] }
+        ],
         posted: ["wc2026-001", "wc2026-002"],
         skipped: ["wc2026-003"]
       })
-    ).toBe("[auto-post] date=2026-06-11 posted=2 skipped=1");
+    ).toBe("[auto-post] date=2026-06-11 windowDays=3 posted=2 skipped=1");
 
     expect(
       formatResultSyncLog({

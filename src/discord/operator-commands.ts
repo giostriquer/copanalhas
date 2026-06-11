@@ -108,7 +108,14 @@ export type RuntimeAutoPostStatus =
   | { action: "never" }
   | { action: "disabled" }
   | { action: "not-due"; localDate: string; localTime: string }
-  | { action: "posted"; localDate: string; posted: string[]; skipped: string[] };
+  | {
+      action: "posted";
+      localDate: string;
+      windowDays: number;
+      dates: Array<{ date: string; posted: string[]; skipped: string[] }>;
+      posted: string[];
+      skipped: string[];
+    };
 
 export type RuntimeResultSyncStatus =
   | { action: "never" }
@@ -123,6 +130,7 @@ export interface RuntimeStatusSnapshot {
   timeZone: string;
   autoPostEnabled: boolean;
   autoPostTime: string;
+  autoPostWindowDays: number;
   todayMatches: RuntimeTodayMatchStatus[];
   lastAutoPost: RuntimeAutoPostStatus;
   resultSyncEnabled: boolean;
@@ -691,7 +699,7 @@ function formatRuntimeStatus(status: RuntimeStatusSnapshot | undefined): string[
     `Local time: ${status.localTime} ${status.timeZone}`,
     `Auto-post: ${status.autoPostEnabled ? `on at ${status.autoPostTime}` : "off"} ${
       status.timeZone
-    }`,
+    } (${status.autoPostWindowDays} day window)`,
     `Matchday matches: ${status.todayMatches.length}`,
     `Posted matchday: ${postedToday}/${status.todayMatches.length}`,
     `Unposted matchday: ${formatUnpostedMatches(unpostedToday)}`,
@@ -721,7 +729,7 @@ function formatLastAutoPost(status: RuntimeAutoPostStatus): string {
     return `not due at ${status.localDate} ${status.localTime}`;
   }
 
-  return `posted ${status.posted.length}, skipped ${status.skipped.length} on ${status.localDate}`;
+  return `posted ${status.posted.length}, skipped ${status.skipped.length} across ${status.windowDays} days from ${status.localDate}`;
 }
 
 function formatLastResultSync(status: RuntimeResultSyncStatus | undefined): string[] {
