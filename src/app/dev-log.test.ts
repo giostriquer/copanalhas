@@ -110,9 +110,25 @@ describe("dev log formatting", () => {
         dateFrom: "2026-06-09",
         dateTo: "2026-06-11",
         storedResults: ["wc2026-001"],
-        skipped: []
+        skipped: [],
+        skippedDetails: []
       })
     ).toBe("[result-sync] range=2026-06-09..2026-06-11 synced stored=1 skipped=0");
+
+    expect(
+      formatResultSyncLog({
+        action: "synced",
+        dateFrom: "2026-06-11",
+        dateTo: "2026-06-11",
+        storedResults: [],
+        skipped: ["wc2026-001"],
+        skippedDetails: [
+          { matchId: "wc2026-001", reason: "missing-final-score", providerStatus: "FINISHED" }
+        ]
+      })
+    ).toBe(
+      "[result-sync] range=2026-06-11..2026-06-11 synced stored=0 skipped=1 manual=0 notFinal=0 missingScore=1"
+    );
 
     expect(
       formatResultSyncStartLog({

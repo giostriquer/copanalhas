@@ -36,7 +36,8 @@ describe("syncFinishedResults", () => {
     expect(result).toEqual({
       action: "synced",
       storedResults: ["wc2026-001"],
-      skipped: []
+      skipped: [],
+      skippedDetails: []
     });
     expect(upsertResult).toHaveBeenCalledWith({
       matchId: "wc2026-001",
@@ -87,7 +88,8 @@ describe("syncFinishedResults", () => {
     ).resolves.toEqual({
       action: "synced",
       storedResults: [],
-      skipped: ["wc2026-001"]
+      skipped: ["wc2026-001"],
+      skippedDetails: [{ matchId: "wc2026-001", reason: "manual-result" }]
     });
     expect(upsertResult).not.toHaveBeenCalled();
   });
@@ -125,7 +127,8 @@ describe("syncFinishedResults", () => {
       ).resolves.toEqual({
         action: "synced",
         storedResults: [],
-        skipped: ["wc2026-001"]
+        skipped: ["wc2026-001"],
+        skippedDetails: [{ matchId: "wc2026-001", reason: "not-final", providerStatus: status }]
       });
       expect(upsertResult).not.toHaveBeenCalled();
       expect(insertScoringRun).not.toHaveBeenCalled();
@@ -163,7 +166,10 @@ describe("syncFinishedResults", () => {
     ).resolves.toEqual({
       action: "synced",
       storedResults: [],
-      skipped: ["wc2026-001"]
+      skipped: ["wc2026-001"],
+      skippedDetails: [
+        { matchId: "wc2026-001", reason: "missing-final-score", providerStatus: "FINISHED" }
+      ]
     });
     expect(upsertResult).not.toHaveBeenCalled();
     expect(insertScoringRun).not.toHaveBeenCalled();

@@ -1,3 +1,5 @@
+import type { ResultSyncSkippedMatch } from "../results/sync.js";
+
 export type OperatorHealthAutoPostStatus =
   | { action: "never" }
   | { action: "disabled" }
@@ -17,7 +19,14 @@ export type OperatorHealthResultSyncStatus =
   | { action: "not-due"; nextCheckAtUtc: string | null; pendingMatchIds: string[] }
   | { action: "due"; dateFrom: string; dateTo: string; pendingMatchIds: string[] }
   | { action: "failed"; dateFrom: string; dateTo: string; reason: "rate-limited" | "unavailable" }
-  | { action: "synced"; dateFrom: string; dateTo: string; storedResults: string[]; skipped: string[] };
+  | {
+      action: "synced";
+      dateFrom: string;
+      dateTo: string;
+      storedResults: string[];
+      skipped: string[];
+      skippedDetails?: ResultSyncSkippedMatch[];
+    };
 
 export interface OperatorHealthMatchdayStatus {
   date: string;

@@ -9,6 +9,7 @@ import type {
   RuntimeResultSyncStatus
 } from "../discord/operator-commands.js";
 import type { PredictionInteractionResult } from "../discord/interactions.js";
+import type { ResultSyncSkippedMatch } from "../results/sync.js";
 
 export function formatRuntimeLogLine(timestamp: Date, line: string): string {
   const match = /^\[([^\]\r\n]+)\]\s*(.*)$/u.exec(line);
@@ -120,7 +121,9 @@ export function formatResultSyncLog(result: RuntimeResultSyncStatus): string {
     return `[result-sync] range=${result.dateFrom}..${result.dateTo} failed reason=${result.reason}`;
   }
 
-  return `[result-sync] range=${result.dateFrom}..${result.dateTo} synced stored=${result.storedResults.length} skipped=${result.skipped.length}`;
+  return `[result-sync] range=${result.dateFrom}..${result.dateTo} synced stored=${
+    result.storedResults.length
+  } skipped=${result.skipped.length}${formatResultSyncSkipCounts(result.skippedDetails)}`;
 }
 
 export function formatResultSyncStartLog(input: {
@@ -207,6 +210,20 @@ function safeLogMessage(error: unknown): string {
   }
 
   return normalized.length > 240 ? `${normalized.slice(0, 237)}...` : normalized;
+}
+
+function formatResultSyncSkipCounts(details: ResultSyncSkippedMatch[] | undefined): string {
+  if (!Array.isArray(details) || details.length === 0) {
+    return "";
+  }
+
+  const manual = details.filter((detail) => detail.reason === "manual-result").length;
+  const notFinal = details.filter((detail) => detail.reason === "not-final").length;
+  const missingScore = details.filter(
+    (detail) => detail.reason === "missing-final-score"
+  ).length;
+
+  return ` manual=${manual} notFinal=${notFinal} missingScore=${missingScore}`;
 }
 
 function countDashboardActions(actions: Array<"posted" | "edited" | "replaced">): {

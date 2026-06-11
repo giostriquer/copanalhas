@@ -22,7 +22,9 @@ March 2026 playoff berths were resolved.
 `football-data.org` lists FIFA World Cup coverage in its free coverage table and
 provides a v4 API. Copanalhas uses it only when `FOOTBALL_DATA_TOKEN` is set and
 `COPANALHAS_RESULT_SYNC_ENABLED` allows sync. The consumed fields are provider
-match ID, `utcDate`, `status`, and `score.fullTime`.
+match ID, `utcDate`, `status`, and `score.fullTime`. Football-Data v4 date-range
+filters treat `dateTo` as exclusive, and v4 score nodes use `home`/`away` team
+keys while older examples may show `homeTeam`/`awayTeam`.
 
 Football-Data credentials are developer credentials and must not be stored in
 open-source repositories. When Copanalhas may use Football-Data result sync, the

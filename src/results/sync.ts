@@ -24,7 +24,20 @@ export interface SyncFinishedResultsOptions {
 export type SyncFinishedResultsResult =
   | { action: "disabled"; reason: "disabled" | "missing-token" }
   | { action: "failed"; reason: "rate-limited" | "unavailable" }
-  | { action: "synced"; storedResults: string[]; skipped: string[] };
+  | {
+      action: "synced";
+      storedResults: string[];
+      skipped: string[];
+      skippedDetails?: ResultSyncSkippedMatch[];
+    };
+
+export type ResultSyncSkipReason = "manual-result" | "not-final" | "missing-final-score";
+
+export interface ResultSyncSkippedMatch {
+  matchId: string;
+  reason: ResultSyncSkipReason;
+  providerStatus?: string;
+}
 
 export async function syncFinishedResults(
   options: SyncFinishedResultsOptions
@@ -52,7 +65,7 @@ export async function syncFinishedResults(
   );
   const fetchedAt = options.now().toISOString();
   const storedResults: StoredResult[] = [];
-  const skipped: string[] = [];
+  const skippedDetails: ResultSyncSkippedMatch[] = [];
 
   for (const providerMatch of fetchResult.matches) {
     const localMatch = localMatchesByExternalId.get(providerMatch.externalMatchId);
@@ -62,19 +75,19 @@ export async function syncFinishedResults(
     }
 
     if (manualResultMatchIds.has(localMatch.id)) {
-      skipped.push(localMatch.id);
+      skippedDetails.push({ matchId: localMatch.id, reason: "manual-result" });
       continue;
     }
 
     const result = resultFromProviderMatch(localMatch.id, providerMatch, fetchedAt);
 
-    if (!result) {
-      skipped.push(localMatch.id);
+    if (result.action === "skipped") {
+      skippedDetails.push(result.detail);
       continue;
     }
 
-    await options.upsertResult(result);
-    storedResults.push(result);
+    await options.upsertResult(result.result);
+    storedResults.push(result.result);
   }
 
   if (storedResults.length > 0) {
@@ -84,7 +97,8 @@ export async function syncFinishedResults(
   return {
     action: "synced",
     storedResults: storedResults.map((result) => result.matchId),
-    skipped
+    skipped: skippedDetails.map((detail) => detail.matchId),
+    skippedDetails
   };
 }
 
@@ -118,19 +132,34 @@ function resultFromProviderMatch(
   matchId: string,
   providerMatch: FootballDataMatch,
   fetchedAt: string
-): StoredResult | undefined {
-  if (providerMatch.status !== "FINISHED" || !providerMatch.fullTime) {
-    return undefined;
+):
+  | { action: "stored"; result: StoredResult }
+  | { action: "skipped"; detail: ResultSyncSkippedMatch } {
+  if (providerMatch.status !== "FINISHED") {
+    return {
+      action: "skipped",
+      detail: { matchId, reason: "not-final", providerStatus: providerMatch.status }
+    };
+  }
+
+  if (!providerMatch.fullTime) {
+    return {
+      action: "skipped",
+      detail: { matchId, reason: "missing-final-score", providerStatus: providerMatch.status }
+    };
   }
 
   return {
-    matchId,
-    homeScore: providerMatch.fullTime.homeScore,
-    awayScore: providerMatch.fullTime.awayScore,
-    recordedAt: fetchedAt,
-    resultSource: "football-data",
-    externalMatchId: providerMatch.externalMatchId,
-    fetchedAt
+    action: "stored",
+    result: {
+      matchId,
+      homeScore: providerMatch.fullTime.homeScore,
+      awayScore: providerMatch.fullTime.awayScore,
+      recordedAt: fetchedAt,
+      resultSource: "football-data",
+      externalMatchId: providerMatch.externalMatchId,
+      fetchedAt
+    }
   };
 }
 

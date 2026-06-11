@@ -37,21 +37,13 @@ export interface FootballDataResponse {
 
 export function parseFootballDataMatch(input: unknown): FootballDataMatch {
   const match = input as FootballDataRawMatch;
-  const fullTime = match.score?.fullTime;
-  const homeScore = fullTime?.homeTeam;
-  const awayScore = fullTime?.awayTeam;
-  const hasFullTimeScore = typeof homeScore === "number" && typeof awayScore === "number";
+  const fullTime = readFullTimeScore(match.score?.fullTime);
 
   return {
     externalMatchId: String(match.id),
     kickoffAtUtc: new Date(assertString(match.utcDate, "utcDate")).toISOString(),
     status: assertString(match.status, "status"),
-    fullTime: hasFullTimeScore
-      ? {
-          homeScore,
-          awayScore
-        }
-      : null
+    fullTime
   };
 }
 
@@ -61,7 +53,7 @@ export async function fetchFootballDataMatches(
   const fetch = options.fetch ?? globalThis.fetch;
   const url = new URL("https://api.football-data.org/v4/competitions/WC/matches");
   url.searchParams.set("dateFrom", options.dateFrom);
-  url.searchParams.set("dateTo", options.dateTo);
+  url.searchParams.set("dateTo", exclusiveProviderDateTo(options.dateTo));
 
   const response = await fetch(url.toString(), {
     method: "GET",
@@ -91,11 +83,42 @@ interface FootballDataRawMatch {
   utcDate: unknown;
   status: unknown;
   score?: {
-    fullTime?: {
-      homeTeam: number | null;
-      awayTeam: number | null;
-    };
+    fullTime?: FootballDataRawFullTimeScore;
   };
+}
+
+interface FootballDataRawFullTimeScore {
+  home?: number | null;
+  away?: number | null;
+  homeTeam?: number | null;
+  awayTeam?: number | null;
+}
+
+function scoreValue(value: unknown): number | undefined {
+  return typeof value === "number" ? value : undefined;
+}
+
+function readFullTimeScore(
+  fullTime: FootballDataRawFullTimeScore | undefined
+): { homeScore: number; awayScore: number } | null {
+  const homeScore = scoreValue(fullTime?.home) ?? scoreValue(fullTime?.homeTeam);
+  const awayScore = scoreValue(fullTime?.away) ?? scoreValue(fullTime?.awayTeam);
+
+  if (homeScore === undefined || awayScore === undefined) {
+    return null;
+  }
+
+  return { homeScore, awayScore };
+}
+
+function exclusiveProviderDateTo(inclusiveDateTo: string): string {
+  const inclusiveMidnightMs = Date.parse(`${inclusiveDateTo}T00:00:00.000Z`);
+
+  if (!Number.isFinite(inclusiveMidnightMs)) {
+    return inclusiveDateTo;
+  }
+
+  return new Date(inclusiveMidnightMs + 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
 }
 
 function assertString(value: unknown, fieldName: string): string {

@@ -23,6 +23,7 @@ import {
 import { formatTeamName } from "../worldcup/team-display.js";
 import type { UpdateStandingsDashboardResult } from "../app/standings-posting.js";
 import type { UpdateLeaderboardDashboardResult } from "../app/leaderboard-posting.js";
+import type { ResultSyncSkippedMatch } from "../results/sync.js";
 import { copanalhasCommandName } from "./commands.js";
 
 export type OperatorSubcommand =
@@ -124,7 +125,14 @@ export type RuntimeResultSyncStatus =
   | { action: "disabled"; reason: "disabled" | "missing-token" }
   | { action: "not-due"; nextCheckAtUtc: string | null; pendingMatchIds: string[] }
   | { action: "failed"; dateFrom: string; dateTo: string; reason: "rate-limited" | "unavailable" }
-  | { action: "synced"; dateFrom: string; dateTo: string; storedResults: string[]; skipped: string[] };
+  | {
+      action: "synced";
+      dateFrom: string;
+      dateTo: string;
+      storedResults: string[];
+      skipped: string[];
+      skippedDetails?: ResultSyncSkippedMatch[];
+    };
 
 export interface RuntimeStatusSnapshot {
   localDate: string;
