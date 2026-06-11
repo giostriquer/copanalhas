@@ -46,7 +46,9 @@ export function scoreMatch(
         prediction.awayScore === result.awayScore
     }));
 
-  const closestDistance = minDistance(rows.filter((row) => !row.isExact));
+  const exactCount = rows.filter((row) => row.isExact).length;
+  const exactPoints = exactCount === 1 ? 3 : 1;
+  const closestDistance = exactCount === 0 ? minDistance(rows) : undefined;
 
   return rows.map((row) => {
     const awards: ScoreAward[] = [];
@@ -54,10 +56,10 @@ export function scoreMatch(
 
     if (row.isExact) {
       awards.push("exact");
-      points += 3;
+      points += exactPoints;
     }
 
-    if (!row.isExact && closestDistance !== undefined && row.distance === closestDistance) {
+    if (closestDistance !== undefined && row.distance === closestDistance) {
       awards.push("closest");
       points += 1;
     }

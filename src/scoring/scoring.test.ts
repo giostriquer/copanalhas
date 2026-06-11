@@ -3,7 +3,7 @@ import { describe, expect, test } from "vitest";
 import { buildLeaderboard, scoreMatch } from "./scoring.js";
 
 describe("scoreMatch", () => {
-  test("awards 3 points for exact scoreline predictions", () => {
+  test("awards 3 points when exactly one member lands the exact scoreline", () => {
     const scored = scoreMatch(
       { matchId: "match-1", homeScore: 2, awayScore: 1 },
       [
@@ -23,11 +23,28 @@ describe("scoreMatch", () => {
       {
         userId: "u2",
         matchId: "match-1",
-        points: 1,
+        points: 0,
         distance: 1,
-        awards: ["closest"]
+        awards: []
       }
     ]);
+  });
+
+  test("awards 1 point each when multiple members land the exact scoreline", () => {
+    const scored = scoreMatch(
+      { matchId: "match-1", homeScore: 2, awayScore: 1 },
+      [
+        prediction("u1", "match-1", 2, 1),
+        prediction("u2", "match-1", 2, 1),
+        prediction("u3", "match-1", 2, 0)
+      ]
+    );
+
+    expect(pointsByUser(scored)).toEqual({
+      u1: 1,
+      u2: 1,
+      u3: 0
+    });
   });
 
   test("awards closest prediction when nobody lands the exact score", () => {
@@ -47,7 +64,7 @@ describe("scoreMatch", () => {
     });
   });
 
-  test("awards closest non-exact prediction even when exact predictions exist", () => {
+  test("does not award closest points when any exact prediction exists", () => {
     const scored = scoreMatch(
       { matchId: "match-1", homeScore: 1, awayScore: 0 },
       [
@@ -59,7 +76,7 @@ describe("scoreMatch", () => {
 
     expect(pointsByUser(scored)).toEqual({
       u1: 3,
-      u2: 1,
+      u2: 0,
       u3: 0
     });
   });

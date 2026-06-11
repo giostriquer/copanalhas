@@ -16,9 +16,10 @@ const leaderboardTitle = "Ranking Copanalhas";
 const rulesLines = [
   "Como funciona",
   "- Envie seu palpite pelo botão do jogo do dia; você pode editar até 30 min antes da partida.",
-  "- Placar exato vale 3 pts.",
-  "- O palpite mais próximo vale 1 pt pela menor soma de diferenças nos gols dos dois times.",
-  "- O ponto de mais próximo também vale quando alguém acerta o placar exato; empates recebem a mesma posição.",
+  "- Se só uma pessoa acertar o placar exato, ela ganha 3 pts.",
+  "- Se mais de uma pessoa acertar o placar exato, cada uma ganha 1 pt.",
+  "- O ponto de mais próximo só vale quando ninguém acerta o placar exato.",
+  "- Nesse caso, ganha 1 pt quem tiver a menor soma de diferenças nos gols dos dois times; empates recebem 1 pt cada.",
   "",
   "Premiação",
   "- 1000 (da pra aumentar se alguem quiser contribuir)",

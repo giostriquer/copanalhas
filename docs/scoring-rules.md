@@ -15,12 +15,12 @@ ambiguous input rather than guessing.
 
 For each completed match:
 
-- Exact scoreline: 3 points.
-- Closest non-exact prediction: 1 point.
-- If exact scorelines exist, exact predictors still receive 3 points and the
-  closest non-exact prediction also receives 1 point.
-- If no exact scoreline exists, the closest prediction receives 1 point.
-- If multiple predictions tie for closest, all tied predictions receive 1 point.
+- If exactly one member lands the exact scoreline, that member receives 3 points.
+- If multiple members land the exact scoreline, each exact predictor receives 1 point.
+- Closest points are awarded only when nobody lands the exact scoreline.
+- If nobody lands the exact scoreline, the closest prediction receives 1 point.
+- If nobody lands the exact scoreline and multiple predictions tie for closest,
+  all tied predictions receive 1 point each.
 
 ## Closest Metric
 

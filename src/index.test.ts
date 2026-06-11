@@ -54,9 +54,9 @@ describe("runCli", () => {
     expect(lines).toHaveLength(1);
     expect(lines[0]).toContain("Ranking Copanalhas");
     expect(lines[0]).toContain("1. u1 - 3 pts (1 exato, 0 mais próximos, 1 partida)");
-    expect(lines[0]).toContain("2. u2 - 1 pt (0 exatos, 1 mais próximo, 1 partida)");
+    expect(lines[0]).toContain("2. u2 - 0 pts (0 exatos, 0 mais próximos, 1 partida)");
     expect(lines[0]).toContain("Como funciona");
-    expect(lines[0]).toContain("Placar exato vale 3 pts.");
+    expect(lines[0]).toContain("Se só uma pessoa acertar o placar exato, ela ganha 3 pts.");
   });
 
   test("seeds reviewed World Cup matches", async () => {

@@ -68,7 +68,8 @@
 
 - [ ] Write tests for exact scoreline giving 3 points.
 - [ ] Write tests for closest non-exact giving 1 point when no exact exists.
-- [ ] Write tests for exact winners plus closest non-exact also receiving points.
+- [ ] Write tests for multiple exact winners receiving 1 point each.
+- [ ] Write tests that closest points are not awarded when any exact prediction exists.
 - [ ] Write tests for tied closest predictions all receiving 1 point.
 - [ ] Run scoring tests and confirm they fail because the scorer is missing.
 - [ ] Implement pure scoring and leaderboard aggregation.

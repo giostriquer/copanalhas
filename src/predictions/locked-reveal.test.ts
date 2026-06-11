@@ -64,7 +64,7 @@ describe("formatPredictionResultRevealBatch", () => {
         "3 palpites",
         "<@user-2>  1x0 - 3 pts",
         "<@user-1>  2x1 - 0 pts",
-        "<@user-3>  0x0 - 1 pt"
+        "<@user-3>  0x0 - 0 pts"
       ].join("\n")
     );
   });
