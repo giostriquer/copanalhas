@@ -7,7 +7,9 @@ import {
   formatOperatorCommandLog,
   formatPredictionInteractionLog,
   formatRuntimeLogLine,
+  formatResultSyncErrorLog,
   formatResultSyncLog,
+  formatResultSyncStartLog,
   formatStandingsDashboardLog
 } from "./dev-log.js";
 
@@ -111,6 +113,26 @@ describe("dev log formatting", () => {
         skipped: []
       })
     ).toBe("[result-sync] range=2026-06-09..2026-06-11 synced stored=1 skipped=0");
+
+    expect(
+      formatResultSyncStartLog({
+        mode: "scheduled",
+        dateFrom: "2026-06-09",
+        dateTo: "2026-06-11",
+        pendingMatchIds: ["wc2026-001", "wc2026-002"]
+      })
+    ).toBe("[result-sync] start mode=scheduled range=2026-06-09..2026-06-11 pending=2");
+
+    expect(
+      formatResultSyncErrorLog({
+        mode: "scheduled",
+        dateFrom: "2026-06-09",
+        dateTo: "2026-06-11",
+        error: new Error("Football Data timeout\nwith detail")
+      })
+    ).toBe(
+      "[result-sync] error mode=scheduled range=2026-06-09..2026-06-11 message=Football Data timeout with detail"
+    );
 
     expect(
       formatStandingsDashboardLog({

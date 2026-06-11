@@ -7,7 +7,9 @@ import {
   formatOperatorCommandLog,
   formatPredictionInteractionLog,
   formatRuntimeLogLine,
+  formatResultSyncErrorLog,
   formatResultSyncLog,
+  formatResultSyncStartLog,
   formatStandingsDashboardLog
 } from "./dev-log.js";
 import {
@@ -460,6 +462,7 @@ async function runResultSync(
   }
 
   const syncFinishedResults = options.syncFinishedResults ?? syncFinishedResultsDefault;
+  const syncMode = runOptions.force ? "forced" : "scheduled";
   const syncPlan = runOptions.force
     ? planForcedResultSyncAttempt({
         matches: options.matches,
@@ -482,18 +485,44 @@ async function runResultSync(
   }
 
   state.lastAttemptAtUtc = options.now().toISOString();
-  const syncResult = await syncFinishedResults({
-    enabled: options.config.resultSyncEnabled,
-    token: options.config.footballDataToken,
-    matches: options.matches,
-    dateFrom: syncPlan.dateFrom,
-    dateTo: syncPlan.dateTo,
-    now: options.now,
-    listResults: () => options.store.listResults(),
-    listPredictions: () => options.store.listPredictions(),
-    upsertResult: (result) => options.store.upsertResult(result),
-    insertScoringRun: (run) => options.store.insertScoringRun(run)
-  });
+  writeRuntimeLine(options, formatResultSyncStartLog({ mode: syncMode, ...syncPlan }));
+
+  let syncResult: SyncFinishedResultsResult;
+
+  try {
+    syncResult = await syncFinishedResults({
+      enabled: options.config.resultSyncEnabled,
+      token: options.config.footballDataToken,
+      matches: options.matches,
+      dateFrom: syncPlan.dateFrom,
+      dateTo: syncPlan.dateTo,
+      now: options.now,
+      listResults: () => options.store.listResults(),
+      listPredictions: () => options.store.listPredictions(),
+      upsertResult: (result) => options.store.upsertResult(result),
+      insertScoringRun: (run) => options.store.insertScoringRun(run)
+    });
+  } catch (error) {
+    writeRuntimeLine(
+      options,
+      formatResultSyncErrorLog({
+        mode: syncMode,
+        dateFrom: syncPlan.dateFrom,
+        dateTo: syncPlan.dateTo,
+        error
+      })
+    );
+    state.lastResult = {
+      action: "failed",
+      dateFrom: syncPlan.dateFrom,
+      dateTo: syncPlan.dateTo,
+      reason: "unavailable"
+    };
+    writeRuntimeLine(options, formatResultSyncLog(state.lastResult));
+
+    return state.lastResult;
+  }
+
   state.lastResult = resultSyncStatus(syncResult, syncPlan.dateFrom, syncPlan.dateTo);
   writeRuntimeLine(options, formatResultSyncLog(state.lastResult));
 

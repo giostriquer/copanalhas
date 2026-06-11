@@ -123,6 +123,24 @@ export function formatResultSyncLog(result: RuntimeResultSyncStatus): string {
   return `[result-sync] range=${result.dateFrom}..${result.dateTo} synced stored=${result.storedResults.length} skipped=${result.skipped.length}`;
 }
 
+export function formatResultSyncStartLog(input: {
+  mode: "scheduled" | "forced";
+  dateFrom: string;
+  dateTo: string;
+  pendingMatchIds: readonly string[];
+}): string {
+  return `[result-sync] start mode=${input.mode} range=${input.dateFrom}..${input.dateTo} pending=${input.pendingMatchIds.length}`;
+}
+
+export function formatResultSyncErrorLog(input: {
+  mode: "scheduled" | "forced";
+  dateFrom: string;
+  dateTo: string;
+  error: unknown;
+}): string {
+  return `[result-sync] error mode=${input.mode} range=${input.dateFrom}..${input.dateTo} message=${safeLogMessage(input.error)}`;
+}
+
 export function formatStandingsDashboardLog(result: UpdateStandingsDashboardResult): string {
   const counts = countDashboardActions(result.posts.map((post) => post.action));
 
@@ -177,6 +195,18 @@ function safeLogValue(value: string): string {
   }
 
   return normalized.length > 80 ? `${normalized.slice(0, 77)}...` : normalized;
+}
+
+function safeLogMessage(error: unknown): string {
+  const value =
+    error instanceof Error && error.message.trim() !== "" ? error.message : String(error);
+  const normalized = value.trim().replace(/\s+/gu, " ");
+
+  if (normalized === "") {
+    return "unknown";
+  }
+
+  return normalized.length > 240 ? `${normalized.slice(0, 237)}...` : normalized;
 }
 
 function countDashboardActions(actions: Array<"posted" | "edited" | "replaced">): {

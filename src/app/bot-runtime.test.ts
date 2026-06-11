@@ -334,6 +334,9 @@ describe("startCopanalhasBotRuntime", () => {
       })
     );
     expect(writeLine).toHaveBeenCalledWith(
+      "[2026-06-11T21:15:00.000Z][result-sync] start mode=scheduled range=2026-06-11..2026-06-11 pending=1"
+    );
+    expect(writeLine).toHaveBeenCalledWith(
       "[2026-06-11T21:15:00.000Z][result-sync] range=2026-06-11..2026-06-11 synced stored=1 skipped=0"
     );
     expect(writeLine).toHaveBeenCalledWith(
@@ -344,6 +347,44 @@ describe("startCopanalhasBotRuntime", () => {
     );
     expect(upsertStandingsMessage).toHaveBeenCalledTimes(4);
     expect(upsertLeaderboardMessage).toHaveBeenCalledTimes(2);
+  });
+
+  test("logs thrown result sync errors without aborting startup", async () => {
+    const store = createStore();
+    const writeLine = vi.fn();
+    const syncFinishedResults = vi.fn(async () => {
+      throw new Error("Football Data timeout\nwith detail");
+    });
+
+    await expect(
+      startCopanalhasBotRuntime({
+        config: { ...config(), footballDataToken: "token-value", resultSyncEnabled: true },
+        store,
+        matches: WORLD_CUP_2026_SEED.matches,
+        startDiscord: vi.fn(async () => ({ destroy: vi.fn(async () => undefined) })),
+        startInterval: vi.fn(() => ({ stop: vi.fn() })),
+        sendMatchCard: vi.fn(async () => "discord-message-1"),
+        sendPredictionReveal: vi.fn(async () => ({
+          threadId: "thread-1",
+          messageId: "reveal-message-1"
+        })),
+        upsertStandingsMessage: vi.fn(async (message) => `standings-${message.key}`),
+        upsertLeaderboardMessage: vi.fn(async () => "leaderboard-message-1"),
+        syncFinishedResults,
+        now: () => new Date("2026-06-11T21:15:00.000Z"),
+        writeLine
+      })
+    ).resolves.toEqual(expect.objectContaining({ stop: expect.any(Function) }));
+
+    expect(writeLine).toHaveBeenCalledWith(
+      "[2026-06-11T21:15:00.000Z][result-sync] start mode=scheduled range=2026-06-11..2026-06-11 pending=1"
+    );
+    expect(writeLine).toHaveBeenCalledWith(
+      "[2026-06-11T21:15:00.000Z][result-sync] error mode=scheduled range=2026-06-11..2026-06-11 message=Football Data timeout with detail"
+    );
+    expect(writeLine).toHaveBeenCalledWith(
+      "[2026-06-11T21:15:00.000Z][result-sync] range=2026-06-11..2026-06-11 failed reason=unavailable"
+    );
   });
 
   test("operator sync-results bypasses the scheduled first-check delay", async () => {
@@ -400,6 +441,9 @@ describe("startCopanalhasBotRuntime", () => {
     );
     expect(upsertStandingsMessage).toHaveBeenCalledTimes(2);
     expect(upsertLeaderboardMessage).toHaveBeenCalledOnce();
+    expect(writeLine).toHaveBeenCalledWith(
+      "[2026-06-11T21:00:00.000Z][result-sync] start mode=forced range=2026-06-11..2026-06-11 pending=1"
+    );
     expect(writeLine).toHaveBeenCalledWith(
       "[2026-06-11T21:00:00.000Z][result-sync] range=2026-06-11..2026-06-11 synced stored=1 skipped=0"
     );
