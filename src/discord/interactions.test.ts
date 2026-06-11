@@ -345,6 +345,7 @@ function buttonInteraction(
     guildId: "guild-1",
     channelId: "channel-1",
     userId: "user-1",
+    createdAt: new Date("2026-06-10T12:00:00.000Z"),
     showModal: vi.fn(async () => undefined),
     reply: vi.fn(async () => undefined),
     ...overrides

@@ -171,5 +171,10 @@ function isRevealParentChannel(
 ): channel is DiscordPredictionRevealChannel & {
   messages: { fetch(messageId: string): Promise<DiscordPredictionRevealParentMessage> };
 } {
-  return !!channel && !("send" in channel) && channel.isTextBased() && !!channel.messages;
+  return (
+    !!channel &&
+    typeof channel.isTextBased === "function" &&
+    channel.isTextBased() &&
+    typeof channel.messages?.fetch === "function"
+  );
 }

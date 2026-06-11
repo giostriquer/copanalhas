@@ -57,6 +57,22 @@ describe("postPredictionRevealWithClient", () => {
       reason: "Post locked Copanalhas predictions"
     });
   });
+
+  test("accepts normal text channels that can send messages and fetch parent messages", async () => {
+    const send = vi.fn(async () => ({ id: "reveal-message-3" }));
+    const startThread = vi.fn(async () => ({
+      id: "thread-3",
+      send
+    }));
+    const client = clientWithParentMessage({ startThread }, { channelCanSend: true });
+
+    await expect(
+      postPredictionRevealWithClient(config(), message(), client)
+    ).resolves.toEqual({
+      threadId: "thread-3",
+      messageId: "reveal-message-3"
+    });
+  });
 });
 
 describe("editPredictionRevealWithClient", () => {
@@ -110,12 +126,17 @@ function clientWithParentMessage(parentMessage: {
     id: string;
     send(message: { content: string; allowedMentions: { parse: [] } }): Promise<{ id: string }>;
   }>;
-}): DiscordPredictionRevealClient {
+}, options: { channelCanSend?: boolean } = {}): DiscordPredictionRevealClient {
   return {
     login: vi.fn(async () => undefined),
     channels: {
       fetch: vi.fn(async () => ({
         isTextBased: () => true,
+        ...(options.channelCanSend
+          ? {
+              send: vi.fn(async () => ({ id: "channel-message-unused" }))
+            }
+          : {}),
         messages: {
           fetch: vi.fn(async () => parentMessage)
         }
