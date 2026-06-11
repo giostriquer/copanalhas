@@ -112,8 +112,8 @@ describe("updateLeaderboardDashboard", () => {
       upsertLeaderboardMessage
     });
 
-    expect(postedContent).toContain("1    0     0     0     0  user-1");
-    expect(postedContent).toContain("1    0     0     0     0  user-2");
+    expect(postedContent).toContain("1    0     0     0     0     0  user-1");
+    expect(postedContent).toContain("1    0     0     0     0     0  user-2");
   });
 
   test("renders resolved Discord display names instead of raw user ids", async () => {
@@ -150,8 +150,8 @@ describe("updateLeaderboardDashboard", () => {
     });
 
     expect(resolveUserDisplayNames).toHaveBeenCalledOnce();
-    expect(postedContent).toContain("1    0     0     0     0  Giova");
-    expect(postedContent).toContain("1    0     0     0     0  Ana");
+    expect(postedContent).toContain("1    0     0     0     0     0  Giova");
+    expect(postedContent).toContain("1    0     0     0     0     0  Ana");
     expect(postedContent).not.toContain("user-1");
     expect(postedContent).not.toContain("user-2");
   });

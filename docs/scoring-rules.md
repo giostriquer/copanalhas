@@ -17,10 +17,15 @@ For each completed match:
 
 - If exactly one member lands the exact scoreline, that member receives 3 points.
 - If multiple members land the exact scoreline, each exact predictor receives 1 point.
-- Closest points are awarded only when nobody lands the exact scoreline.
-- If nobody lands the exact scoreline, the closest prediction receives 1 point.
-- If nobody lands the exact scoreline and multiple predictions tie for closest,
-  all tied predictions receive 1 point each.
+- Correct-outcome points are awarded only when nobody lands the exact scoreline.
+- If nobody lands the exact scoreline, each member who lands the winner or draw
+  receives 1 point.
+- Closest points are awarded only when nobody lands the exact scoreline or the
+  correct winner/draw.
+- If nobody lands the exact scoreline or correct winner/draw, the closest
+  prediction receives 1 point.
+- If nobody lands the exact scoreline or correct winner/draw and multiple
+  predictions tie for closest, all tied predictions receive 1 point each.
 
 ## Closest Metric
 

@@ -13,7 +13,8 @@ describe("formatLeaderboard", () => {
         "- Envie seu palpite pelo botão do jogo do dia; você pode editar até 30 min antes da partida.",
         "- Se só uma pessoa acertar o placar exato, ela ganha 3 pts.",
         "- Se mais de uma pessoa acertar o placar exato, cada uma ganha 1 pt.",
-        "- O ponto de mais próximo só vale quando ninguém acerta o placar exato.",
+        "- Se ninguém acertar o placar exato, quem acertar o vencedor ou empate ganha 1 pt.",
+        "- O ponto de mais próximo só vale quando ninguém acerta o placar exato nem o vencedor/empate.",
         "- Nesse caso, ganha 1 pt quem tiver a menor soma de diferenças nos gols dos dois times; empates recebem 1 pt cada.",
         "",
         "Premiação",
@@ -31,8 +32,8 @@ describe("formatLeaderboard", () => {
     expect(
       formatLeaderboard(
         [
-          { userId: "u1", points: 4, exactCount: 1, closestCount: 1, matchesScored: 2 },
-          { userId: "u2", points: 1, exactCount: 0, closestCount: 1, matchesScored: 1 }
+          { userId: "u1", points: 4, exactCount: 1, outcomeCount: 0, closestCount: 1, matchesScored: 2 },
+          { userId: "u2", points: 1, exactCount: 0, outcomeCount: 1, closestCount: 0, matchesScored: 1 }
         ],
         new Map([
           ["u1", "Alice"],
@@ -42,14 +43,15 @@ describe("formatLeaderboard", () => {
     ).toBe(
       [
         "Ranking Copanalhas",
-        "1. Alice - 4 pts (1 exato, 1 mais próximo, 2 partidas)",
-        "2. Bob - 1 pt (0 exatos, 1 mais próximo, 1 partida)",
+        "1. Alice - 4 pts (1 exato, 0 resultados, 1 mais próximo, 2 partidas)",
+        "2. Bob - 1 pt (0 exatos, 1 resultado, 0 mais próximos, 1 partida)",
         "",
         "Como funciona",
         "- Envie seu palpite pelo botão do jogo do dia; você pode editar até 30 min antes da partida.",
         "- Se só uma pessoa acertar o placar exato, ela ganha 3 pts.",
         "- Se mais de uma pessoa acertar o placar exato, cada uma ganha 1 pt.",
-        "- O ponto de mais próximo só vale quando ninguém acerta o placar exato.",
+        "- Se ninguém acertar o placar exato, quem acertar o vencedor ou empate ganha 1 pt.",
+        "- O ponto de mais próximo só vale quando ninguém acerta o placar exato nem o vencedor/empate.",
         "- Nesse caso, ganha 1 pt quem tiver a menor soma de diferenças nos gols dos dois times; empates recebem 1 pt cada.",
         "",
         "Premiação",
@@ -66,22 +68,23 @@ describe("formatLeaderboard", () => {
   test("uses shared ranks for tied scores", () => {
     expect(
       formatLeaderboard([
-        { userId: "u1", points: 3, exactCount: 1, closestCount: 0, matchesScored: 1 },
-        { userId: "u2", points: 1, exactCount: 0, closestCount: 1, matchesScored: 1 },
-        { userId: "u3", points: 1, exactCount: 0, closestCount: 1, matchesScored: 1 }
+        { userId: "u1", points: 3, exactCount: 1, outcomeCount: 0, closestCount: 0, matchesScored: 1 },
+        { userId: "u2", points: 1, exactCount: 0, outcomeCount: 0, closestCount: 1, matchesScored: 1 },
+        { userId: "u3", points: 1, exactCount: 0, outcomeCount: 1, closestCount: 0, matchesScored: 1 }
       ])
     ).toBe(
       [
         "Ranking Copanalhas",
-        "1. u1 - 3 pts (1 exato, 0 mais próximos, 1 partida)",
-        "2. u2 - 1 pt (0 exatos, 1 mais próximo, 1 partida)",
-        "2. u3 - 1 pt (0 exatos, 1 mais próximo, 1 partida)",
+        "1. u1 - 3 pts (1 exato, 0 resultados, 0 mais próximos, 1 partida)",
+        "2. u2 - 1 pt (0 exatos, 0 resultados, 1 mais próximo, 1 partida)",
+        "2. u3 - 1 pt (0 exatos, 1 resultado, 0 mais próximos, 1 partida)",
         "",
         "Como funciona",
         "- Envie seu palpite pelo botão do jogo do dia; você pode editar até 30 min antes da partida.",
         "- Se só uma pessoa acertar o placar exato, ela ganha 3 pts.",
         "- Se mais de uma pessoa acertar o placar exato, cada uma ganha 1 pt.",
-        "- O ponto de mais próximo só vale quando ninguém acerta o placar exato.",
+        "- Se ninguém acertar o placar exato, quem acertar o vencedor ou empate ganha 1 pt.",
+        "- O ponto de mais próximo só vale quando ninguém acerta o placar exato nem o vencedor/empate.",
         "- Nesse caso, ganha 1 pt quem tiver a menor soma de diferenças nos gols dos dois times; empates recebem 1 pt cada.",
         "",
         "Premiação",
@@ -97,7 +100,7 @@ describe("formatLeaderboard", () => {
 
   test("normalizes display names before rendering them", () => {
     const output = formatLeaderboard(
-      [{ userId: "u1", points: 0, exactCount: 0, closestCount: 0, matchesScored: 0 }],
+      [{ userId: "u1", points: 0, exactCount: 0, outcomeCount: 0, closestCount: 0, matchesScored: 0 }],
       new Map([["u1", "Ana\nMaria"]])
     );
 
@@ -142,7 +145,8 @@ describe("createLeaderboardDashboardMessage", () => {
         "- Envie seu palpite pelo botão do jogo do dia; você pode editar até 30 min antes da partida.",
         "- Se só uma pessoa acertar o placar exato, ela ganha 3 pts.",
         "- Se mais de uma pessoa acertar o placar exato, cada uma ganha 1 pt.",
-        "- O ponto de mais próximo só vale quando ninguém acerta o placar exato.",
+        "- Se ninguém acertar o placar exato, quem acertar o vencedor ou empate ganha 1 pt.",
+        "- O ponto de mais próximo só vale quando ninguém acerta o placar exato nem o vencedor/empate.",
         "- Nesse caso, ganha 1 pt quem tiver a menor soma de diferenças nos gols dos dois times; empates recebem 1 pt cada.",
         "",
         "Premiação",
@@ -175,6 +179,7 @@ describe("createLeaderboardDashboardMessage", () => {
             userId: "user-1",
             points: 6,
             exactCount: 2,
+            outcomeCount: 0,
             closestCount: 0,
             matchesScored: 2
           },
@@ -182,7 +187,8 @@ describe("createLeaderboardDashboardMessage", () => {
             userId: "user-2",
             points: 1,
             exactCount: 0,
-            closestCount: 1,
+            outcomeCount: 1,
+            closestCount: 0,
             matchesScored: 2
           }
         ],
@@ -198,16 +204,17 @@ describe("createLeaderboardDashboardMessage", () => {
         "Ranking Copanalhas",
         "Atualizado: 2026-06-11 23:30 UTC",
         "```text",
-        "#  Pts Exato Perto Jogos  Jogador",
-        "1    6     2     0     2  Giova",
-        "2    1     0     1     2  Ana",
+        "#  Pts Exato Resul Perto Jogos  Jogador",
+        "1    6     2     0     0     2  Giova",
+        "2    1     0     1     0     2  Ana",
         "```",
         "",
         "Como funciona",
         "- Envie seu palpite pelo botão do jogo do dia; você pode editar até 30 min antes da partida.",
         "- Se só uma pessoa acertar o placar exato, ela ganha 3 pts.",
         "- Se mais de uma pessoa acertar o placar exato, cada uma ganha 1 pt.",
-        "- O ponto de mais próximo só vale quando ninguém acerta o placar exato.",
+        "- Se ninguém acertar o placar exato, quem acertar o vencedor ou empate ganha 1 pt.",
+        "- O ponto de mais próximo só vale quando ninguém acerta o placar exato nem o vencedor/empate.",
         "- Nesse caso, ganha 1 pt quem tiver a menor soma de diferenças nos gols dos dois times; empates recebem 1 pt cada.",
         "",
         "Premiação",
@@ -223,21 +230,21 @@ describe("createLeaderboardDashboardMessage", () => {
 
   test("normalizes dashboard display names before placing them in the table", () => {
     const content = createLeaderboardDashboardMessage({
-      rows: [{ userId: "user-1", points: 0, exactCount: 0, closestCount: 0, matchesScored: 0 }],
+      rows: [{ userId: "user-1", points: 0, exactCount: 0, outcomeCount: 0, closestCount: 0, matchesScored: 0 }],
       displayNames: new Map([["user-1", "Ana\nMaria"]]),
       updatedAt: new Date("2026-06-11T23:30:00.000Z"),
       timeZone: "UTC"
     }).content;
 
-    expect(content).toContain("1    0     0     0     0  Ana Maria");
+    expect(content).toContain("1    0     0     0     0     0  Ana Maria");
     expect(content).not.toContain("Ana\nMaria");
   });
 
   test("keeps numeric columns aligned before long display names", () => {
     const content = createLeaderboardDashboardMessage({
       rows: [
-        { userId: "user-1", points: 0, exactCount: 0, closestCount: 0, matchesScored: 0 },
-        { userId: "user-2", points: 0, exactCount: 0, closestCount: 0, matchesScored: 0 }
+        { userId: "user-1", points: 0, exactCount: 0, outcomeCount: 0, closestCount: 0, matchesScored: 0 },
+        { userId: "user-2", points: 0, exactCount: 0, outcomeCount: 0, closestCount: 0, matchesScored: 0 }
       ],
       displayNames: new Map([
         ["user-1", "Anguishx"],
@@ -248,8 +255,8 @@ describe("createLeaderboardDashboardMessage", () => {
     }).content;
 
     expect(content).toContain(
-      ["#  Pts Exato Perto Jogos  Jogador", "1    0     0     0     0  Anguishx"].join("\n")
+      ["#  Pts Exato Resul Perto Jogos  Jogador", "1    0     0     0     0     0  Anguishx"].join("\n")
     );
-    expect(content).toContain("1    0     0     0     0  QUINZE DIASFIPS");
+    expect(content).toContain("1    0     0     0     0     0  QUINZE DIASFIPS");
   });
 });

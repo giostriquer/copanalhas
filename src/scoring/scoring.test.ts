@@ -64,6 +64,88 @@ describe("scoreMatch", () => {
     });
   });
 
+  test("awards all correct winner predictions when nobody lands the exact score", () => {
+    const scored = scoreMatch(
+      { matchId: "match-1", homeScore: 3, awayScore: 1 },
+      [
+        prediction("u1", "match-1", 1, 0),
+        prediction("u2", "match-1", 4, 2),
+        prediction("u3", "match-1", 2, 2),
+        prediction("u4", "match-1", 0, 1)
+      ]
+    );
+
+    expect(scored).toEqual([
+      {
+        userId: "u1",
+        matchId: "match-1",
+        points: 1,
+        distance: 3,
+        awards: ["outcome"]
+      },
+      {
+        userId: "u2",
+        matchId: "match-1",
+        points: 1,
+        distance: 2,
+        awards: ["outcome"]
+      },
+      {
+        userId: "u3",
+        matchId: "match-1",
+        points: 0,
+        distance: 2,
+        awards: []
+      },
+      {
+        userId: "u4",
+        matchId: "match-1",
+        points: 0,
+        distance: 3,
+        awards: []
+      }
+    ]);
+  });
+
+  test("awards all correct draw predictions when nobody lands the exact score", () => {
+    const scored = scoreMatch(
+      { matchId: "match-1", homeScore: 0, awayScore: 0 },
+      [
+        prediction("u1", "match-1", 2, 2),
+        prediction("u2", "match-1", 1, 1),
+        prediction("u3", "match-1", 1, 0)
+      ]
+    );
+
+    expect(pointsByUser(scored)).toEqual({
+      u1: 1,
+      u2: 1,
+      u3: 0
+    });
+  });
+
+  test("does not award closest points when any correct outcome prediction exists", () => {
+    const scored = scoreMatch(
+      { matchId: "match-1", homeScore: 4, awayScore: 1 },
+      [
+        prediction("u1", "match-1", 4, 2),
+        prediction("u2", "match-1", 1, 0),
+        prediction("u3", "match-1", 3, 3)
+      ]
+    );
+
+    expect(pointsByUser(scored)).toEqual({
+      u1: 1,
+      u2: 1,
+      u3: 0
+    });
+    expect(awardsByUser(scored)).toEqual({
+      u1: ["outcome"],
+      u2: ["outcome"],
+      u3: []
+    });
+  });
+
   test("does not award closest points when any exact prediction exists", () => {
     const scored = scoreMatch(
       { matchId: "match-1", homeScore: 1, awayScore: 0 },
@@ -85,9 +167,9 @@ describe("scoreMatch", () => {
     const scored = scoreMatch(
       { matchId: "match-1", homeScore: 2, awayScore: 2 },
       [
-        prediction("u1", "match-1", 2, 1),
-        prediction("u2", "match-1", 1, 2),
-        prediction("u3", "match-1", 0, 0)
+        prediction("u1", "match-1", 3, 2),
+        prediction("u2", "match-1", 2, 3),
+        prediction("u3", "match-1", 4, 0)
       ]
     );
 
@@ -116,14 +198,16 @@ describe("buildLeaderboard", () => {
     const leaderboard = buildLeaderboard([
       { userId: "u2", matchId: "m1", points: 1, distance: 1, awards: ["closest"] },
       { userId: "u1", matchId: "m1", points: 3, distance: 0, awards: ["exact"] },
+      { userId: "u4", matchId: "m1", points: 1, distance: 2, awards: ["outcome"] },
       { userId: "u1", matchId: "m2", points: 1, distance: 1, awards: ["closest"] },
       { userId: "u3", matchId: "m1", points: 1, distance: 2, awards: [] }
     ]);
 
     expect(leaderboard).toEqual([
-      { userId: "u1", points: 4, exactCount: 1, closestCount: 1, matchesScored: 2 },
-      { userId: "u2", points: 1, exactCount: 0, closestCount: 1, matchesScored: 1 },
-      { userId: "u3", points: 1, exactCount: 0, closestCount: 0, matchesScored: 1 }
+      { userId: "u1", points: 4, exactCount: 1, outcomeCount: 0, closestCount: 1, matchesScored: 2 },
+      { userId: "u2", points: 1, exactCount: 0, outcomeCount: 0, closestCount: 1, matchesScored: 1 },
+      { userId: "u3", points: 1, exactCount: 0, outcomeCount: 0, closestCount: 0, matchesScored: 1 },
+      { userId: "u4", points: 1, exactCount: 0, outcomeCount: 1, closestCount: 0, matchesScored: 1 }
     ]);
   });
 
@@ -140,9 +224,9 @@ describe("buildLeaderboard", () => {
     );
 
     expect(leaderboard).toEqual([
-      { userId: "u2", points: 3, exactCount: 1, closestCount: 0, matchesScored: 1 },
-      { userId: "u1", points: 0, exactCount: 0, closestCount: 0, matchesScored: 0 },
-      { userId: "u3", points: 0, exactCount: 0, closestCount: 0, matchesScored: 0 }
+      { userId: "u2", points: 3, exactCount: 1, outcomeCount: 0, closestCount: 0, matchesScored: 1 },
+      { userId: "u1", points: 0, exactCount: 0, outcomeCount: 0, closestCount: 0, matchesScored: 0 },
+      { userId: "u3", points: 0, exactCount: 0, outcomeCount: 0, closestCount: 0, matchesScored: 0 }
     ]);
   });
 });
@@ -158,4 +242,8 @@ function prediction(
 
 function pointsByUser(scored: Array<{ userId: string; points: number }>) {
   return Object.fromEntries(scored.map((row) => [row.userId, row.points]));
+}
+
+function awardsByUser(scored: Array<{ userId: string; awards: string[] }>) {
+  return Object.fromEntries(scored.map((row) => [row.userId, row.awards]));
 }

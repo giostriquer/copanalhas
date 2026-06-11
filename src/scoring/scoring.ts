@@ -1,4 +1,5 @@
-export type ScoreAward = "exact" | "closest";
+export type ScoreAward = "exact" | "outcome" | "closest";
+type MatchOutcome = "home" | "away" | "draw";
 
 export interface MatchResult {
   matchId: string;
@@ -25,6 +26,7 @@ export interface LeaderboardRow {
   userId: string;
   points: number;
   exactCount: number;
+  outcomeCount: number;
   closestCount: number;
   matchesScored: number;
 }
@@ -41,14 +43,18 @@ export function scoreMatch(
       distance:
         Math.abs(prediction.homeScore - result.homeScore) +
         Math.abs(prediction.awayScore - result.awayScore),
+      outcome: outcomeForScore(prediction.homeScore, prediction.awayScore),
       isExact:
         prediction.homeScore === result.homeScore &&
         prediction.awayScore === result.awayScore
     }));
 
+  const resultOutcome = outcomeForScore(result.homeScore, result.awayScore);
   const exactCount = rows.filter((row) => row.isExact).length;
   const exactPoints = exactCount === 1 ? 3 : 1;
-  const closestDistance = exactCount === 0 ? minDistance(rows) : undefined;
+  const outcomeCount =
+    exactCount === 0 ? rows.filter((row) => row.outcome === resultOutcome).length : 0;
+  const closestDistance = exactCount === 0 && outcomeCount === 0 ? minDistance(rows) : undefined;
 
   return rows.map((row) => {
     const awards: ScoreAward[] = [];
@@ -57,6 +63,11 @@ export function scoreMatch(
     if (row.isExact) {
       awards.push("exact");
       points += exactPoints;
+    }
+
+    if (outcomeCount > 0 && row.outcome === resultOutcome) {
+      awards.push("outcome");
+      points += 1;
     }
 
     if (closestDistance !== undefined && row.distance === closestDistance) {
@@ -96,6 +107,10 @@ export function buildLeaderboard(
       row.exactCount += 1;
     }
 
+    if (scored.awards.includes("outcome")) {
+      row.outcomeCount += 1;
+    }
+
     if (scored.awards.includes("closest")) {
       row.closestCount += 1;
     }
@@ -113,9 +128,22 @@ function emptyLeaderboardRow(userId: string): LeaderboardRow {
     userId,
     points: 0,
     exactCount: 0,
+    outcomeCount: 0,
     closestCount: 0,
     matchesScored: 0
   };
+}
+
+function outcomeForScore(homeScore: number, awayScore: number): MatchOutcome {
+  if (homeScore > awayScore) {
+    return "home";
+  }
+
+  if (awayScore > homeScore) {
+    return "away";
+  }
+
+  return "draw";
 }
 
 function minDistance(rows: Array<{ distance: number }>): number | undefined {

@@ -93,6 +93,30 @@ describe("formatPredictionResultRevealBatch", () => {
       ].join("\n")
     );
   });
+
+  test("shows correct-winner points when nobody lands the exact score", () => {
+    expect(
+      formatPredictionResultRevealBatch({
+        matches: [match("wc2026-001", 1, "MEX", "Mexico", "RSA", "South Africa")],
+        predictions: [
+          prediction("user-1", "wc2026-001", 3, 1, "2026-06-11T10:05:00.000Z"),
+          prediction("user-2", "wc2026-001", 1, 0, "2026-06-11T10:00:00.000Z"),
+          prediction("user-3", "wc2026-001", 0, 1, "2026-06-11T10:10:00.000Z")
+        ],
+        results: [{ matchId: "wc2026-001", homeScore: 2, awayScore: 0 }]
+      })
+    ).toBe(
+      [
+        "Resultado",
+        "",
+        "#1 México (2) x (0) África do Sul",
+        "3 palpites",
+        "<@user-1>  3x1 - 1 pt",
+        "<@user-2>  1x0 - 1 pt",
+        "<@user-3>  0x1 - 0 pts"
+      ].join("\n")
+    );
+  });
 });
 
 function prediction(

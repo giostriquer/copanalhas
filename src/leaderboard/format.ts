@@ -18,7 +18,8 @@ const rulesLines = [
   "- Envie seu palpite pelo botão do jogo do dia; você pode editar até 30 min antes da partida.",
   "- Se só uma pessoa acertar o placar exato, ela ganha 3 pts.",
   "- Se mais de uma pessoa acertar o placar exato, cada uma ganha 1 pt.",
-  "- O ponto de mais próximo só vale quando ninguém acerta o placar exato.",
+  "- Se ninguém acertar o placar exato, quem acertar o vencedor ou empate ganha 1 pt.",
+  "- O ponto de mais próximo só vale quando ninguém acerta o placar exato nem o vencedor/empate.",
   "- Nesse caso, ganha 1 pt quem tiver a menor soma de diferenças nos gols dos dois times; empates recebem 1 pt cada.",
   "",
   "Premiação",
@@ -52,11 +53,11 @@ export function formatLeaderboard(
         row.exactCount,
         "exato",
         "exatos"
-      )}, ${count(row.closestCount, "mais próximo", "mais próximos")}, ${count(
-        row.matchesScored,
-        "partida",
-        "partidas"
-      )})`
+      )}, ${count(row.outcomeCount, "resultado", "resultados")}, ${count(
+        row.closestCount,
+        "mais próximo",
+        "mais próximos"
+      )}, ${count(row.matchesScored, "partida", "partidas")})`
     );
   });
 
@@ -89,12 +90,13 @@ function formatDashboardRows(
   }
 
   return [
-    "#  Pts Exato Perto Jogos  Jogador",
+    "#  Pts Exato Resul Perto Jogos  Jogador",
     ...rows.map((row, index) =>
       [
         String(rankForRow(rows, index)).padEnd(2),
         row.points.toString().padStart(3),
         row.exactCount.toString().padStart(5),
+        row.outcomeCount.toString().padStart(5),
         row.closestCount.toString().padStart(5),
         row.matchesScored.toString().padStart(5)
       ].join(" ") + `  ${playerName(row, displayNames)}`
