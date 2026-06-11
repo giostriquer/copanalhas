@@ -11,6 +11,7 @@ export interface SyncFinishedResultsOptions {
   enabled: boolean;
   token: string | null;
   matches: WorldCupMatch[];
+  pendingMatchIds?: readonly string[];
   dateFrom: string;
   dateTo: string;
   now(): Date;
@@ -50,13 +51,14 @@ export async function syncFinishedResults(
     return { action: "disabled", reason: "missing-token" };
   }
 
-  const fetchResult = await fetchProviderMatches(options);
+  const syncMatches = matchesForSync(options.matches, options.pendingMatchIds);
+  const fetchResult = await fetchProviderMatches(options, syncMatches);
 
   if (!fetchResult.ok) {
     return { action: "failed", reason: fetchResult.reason };
   }
 
-  const localMatchesByExternalId = matchByFootballDataId(options.matches);
+  const localMatchesByExternalId = matchByFootballDataId(syncMatches);
   const manualResultMatchIds = new Set(
     options
       .listResults()
@@ -103,17 +105,41 @@ export async function syncFinishedResults(
 }
 
 async function fetchProviderMatches(
-  options: SyncFinishedResultsOptions
+  options: SyncFinishedResultsOptions,
+  syncMatches: readonly WorldCupMatch[]
 ): Promise<FootballDataFetchResult> {
   if (options.fetchMatches) {
     return options.fetchMatches();
   }
 
+  const externalMatchIds = syncMatches
+    .map((match) => match.externalIds.footballData)
+    .filter((externalId): externalId is number => externalId !== undefined)
+    .map(String);
+
+  if (externalMatchIds.length === 0) {
+    return { ok: true, matches: [] };
+  }
+
   return fetchFootballDataMatches({
     token: options.token ?? "",
     dateFrom: options.dateFrom,
-    dateTo: options.dateTo
+    dateTo: options.dateTo,
+    externalMatchIds
   });
+}
+
+function matchesForSync(
+  matches: readonly WorldCupMatch[],
+  pendingMatchIds: readonly string[] | undefined
+): WorldCupMatch[] {
+  if (!pendingMatchIds || pendingMatchIds.length === 0) {
+    return [...matches];
+  }
+
+  const pending = new Set(pendingMatchIds);
+
+  return matches.filter((match) => pending.has(match.id));
 }
 
 function matchByFootballDataId(matches: WorldCupMatch[]): Map<string, WorldCupMatch> {

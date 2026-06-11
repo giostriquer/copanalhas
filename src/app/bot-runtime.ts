@@ -494,6 +494,7 @@ async function runResultSync(
       enabled: options.config.resultSyncEnabled,
       token: options.config.footballDataToken,
       matches: options.matches,
+      pendingMatchIds: syncPlan.pendingMatchIds,
       dateFrom: syncPlan.dateFrom,
       dateTo: syncPlan.dateTo,
       now: options.now,

@@ -329,6 +329,7 @@ describe("startCopanalhasBotRuntime", () => {
     expect(syncFinishedResults).toHaveBeenCalledOnce();
     expect(syncFinishedResults).toHaveBeenCalledWith(
       expect.objectContaining({
+        pendingMatchIds: ["wc2026-001"],
         dateFrom: "2026-06-11",
         dateTo: "2026-06-11"
       })
@@ -435,6 +436,7 @@ describe("startCopanalhasBotRuntime", () => {
     expect(syncFinishedResults).toHaveBeenCalledOnce();
     expect(syncFinishedResults).toHaveBeenCalledWith(
       expect.objectContaining({
+        pendingMatchIds: ["wc2026-001"],
         dateFrom: "2026-06-11",
         dateTo: "2026-06-11"
       })

@@ -115,7 +115,7 @@ describe("fetchFootballDataMatches", () => {
     const requestedUrl = new URL(String(url));
 
     expect(requestedUrl.href).toBe(
-      "https://api.football-data.org/v4/competitions/WC/matches?dateFrom=2026-06-11&dateTo=2026-06-13"
+      "https://api.football-data.org/v4/competitions/WC/matches?dateFrom=2026-06-11&dateTo=2026-06-12"
     );
     expect(init).toEqual({
       method: "GET",
@@ -125,7 +125,33 @@ describe("fetchFootballDataMatches", () => {
     });
   });
 
-  test("expands an inclusive sync end date to Football-Data's exclusive dateTo", async () => {
+  test("fetches specific matches by provider ids when supplied", async () => {
+    const fetch = vi.fn<FootballDataFetch>(async () => ({
+      ok: true,
+      status: 200,
+      json: async () => ({ matches: [] })
+    }));
+
+    await fetchFootballDataMatches({
+      token: "football-data-token",
+      dateFrom: "2026-06-11",
+      dateTo: "2026-06-11",
+      externalMatchIds: ["537327", "537328"],
+      fetch
+    });
+
+    const [url] = fetch.mock.calls[0] ?? [];
+    const requestedUrl = new URL(String(url));
+
+    expect(requestedUrl.origin + requestedUrl.pathname).toBe(
+      "https://api.football-data.org/v4/matches"
+    );
+    expect(requestedUrl.searchParams.get("ids")).toBe("537327,537328");
+    expect(requestedUrl.searchParams.has("dateFrom")).toBe(false);
+    expect(requestedUrl.searchParams.has("dateTo")).toBe(false);
+  });
+
+  test("keeps competition dateTo filters literal", async () => {
     const fetch = vi.fn<FootballDataFetch>(async () => ({
       ok: true,
       status: 200,
@@ -143,7 +169,7 @@ describe("fetchFootballDataMatches", () => {
     const requestedUrl = new URL(String(url));
 
     expect(requestedUrl.href).toBe(
-      "https://api.football-data.org/v4/competitions/WC/matches?dateFrom=2026-06-11&dateTo=2026-06-12"
+      "https://api.football-data.org/v4/competitions/WC/matches?dateFrom=2026-06-11&dateTo=2026-06-11"
     );
   });
 

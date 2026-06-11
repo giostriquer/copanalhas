@@ -58,6 +58,67 @@ describe("syncFinishedResults", () => {
     });
   });
 
+  test("only syncs matches selected by the result-sync plan", async () => {
+    const upsertResult = vi.fn();
+    const insertScoringRun = vi.fn();
+
+    const result = await syncFinishedResults({
+      enabled: true,
+      token: "football-data-token",
+      matches: [
+        { ...match("wc2026-001"), externalIds: { footballData: 537327 } },
+        { ...match("wc2026-002"), externalIds: { footballData: 537328 } },
+        { ...match("wc2026-003"), externalIds: { footballData: 537333 } }
+      ],
+      pendingMatchIds: ["wc2026-001"],
+      dateFrom: "2026-06-11",
+      dateTo: "2026-06-11",
+      now: () => new Date("2026-06-11T23:01:00.000Z"),
+      fetchMatches: async () => ({
+        ok: true,
+        matches: [
+          {
+            externalMatchId: "537327",
+            kickoffAtUtc: "2026-06-11T19:00:00.000Z",
+            status: "FINISHED",
+            fullTime: { homeScore: 2, awayScore: 0 }
+          },
+          {
+            externalMatchId: "537328",
+            kickoffAtUtc: "2026-06-12T02:00:00.000Z",
+            status: "TIMED",
+            fullTime: null
+          },
+          {
+            externalMatchId: "537333",
+            kickoffAtUtc: "2026-06-12T19:00:00.000Z",
+            status: "TIMED",
+            fullTime: null
+          }
+        ]
+      }),
+      listResults: () => [],
+      listPredictions: () => [],
+      upsertResult,
+      insertScoringRun
+    });
+
+    expect(result).toEqual({
+      action: "synced",
+      storedResults: ["wc2026-001"],
+      skipped: [],
+      skippedDetails: []
+    });
+    expect(upsertResult).toHaveBeenCalledOnce();
+    expect(upsertResult).toHaveBeenCalledWith(
+      expect.objectContaining({
+        matchId: "wc2026-001",
+        homeScore: 2,
+        awayScore: 0
+      })
+    );
+  });
+
   test("does not overwrite existing manual results", async () => {
     const upsertResult = vi.fn();
 

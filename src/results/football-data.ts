@@ -12,6 +12,7 @@ export interface FetchFootballDataMatchesOptions {
   token: string;
   dateFrom: string;
   dateTo: string;
+  externalMatchIds?: readonly string[];
   fetch?: FootballDataFetch;
 }
 
@@ -51,9 +52,17 @@ export async function fetchFootballDataMatches(
   options: FetchFootballDataMatchesOptions
 ): Promise<FootballDataFetchResult> {
   const fetch = options.fetch ?? globalThis.fetch;
-  const url = new URL("https://api.football-data.org/v4/competitions/WC/matches");
-  url.searchParams.set("dateFrom", options.dateFrom);
-  url.searchParams.set("dateTo", exclusiveProviderDateTo(options.dateTo));
+  const url =
+    options.externalMatchIds && options.externalMatchIds.length > 0
+      ? new URL("https://api.football-data.org/v4/matches")
+      : new URL("https://api.football-data.org/v4/competitions/WC/matches");
+
+  if (options.externalMatchIds && options.externalMatchIds.length > 0) {
+    url.searchParams.set("ids", options.externalMatchIds.join(","));
+  } else {
+    url.searchParams.set("dateFrom", options.dateFrom);
+    url.searchParams.set("dateTo", options.dateTo);
+  }
 
   const response = await fetch(url.toString(), {
     method: "GET",
@@ -109,16 +118,6 @@ function readFullTimeScore(
   }
 
   return { homeScore, awayScore };
-}
-
-function exclusiveProviderDateTo(inclusiveDateTo: string): string {
-  const inclusiveMidnightMs = Date.parse(`${inclusiveDateTo}T00:00:00.000Z`);
-
-  if (!Number.isFinite(inclusiveMidnightMs)) {
-    return inclusiveDateTo;
-  }
-
-  return new Date(inclusiveMidnightMs + 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
 }
 
 function assertString(value: unknown, fieldName: string): string {
