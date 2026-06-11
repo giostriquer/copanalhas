@@ -14,6 +14,13 @@ describe("formatLeaderboard", () => {
         "- Placar exato vale 3 pts.",
         "- O palpite mais próximo vale 1 pt pela menor soma de diferenças nos gols dos dois times.",
         "- O ponto de mais próximo também vale quando alguém acerta o placar exato; empates recebem a mesma posição.",
+        "",
+        "Premiação",
+        "- 1000 (da pra aumentar se alguem quiser contribuir)",
+        "- Primeiro lugar = 60%",
+        "- Segundo lugar = 30%",
+        "- Terceiro lugar = 10%",
+        "",
         "Football data provided by the Football-Data.org API."
       ].join("\n")
     );
@@ -42,6 +49,13 @@ describe("formatLeaderboard", () => {
         "- Placar exato vale 3 pts.",
         "- O palpite mais próximo vale 1 pt pela menor soma de diferenças nos gols dos dois times.",
         "- O ponto de mais próximo também vale quando alguém acerta o placar exato; empates recebem a mesma posição.",
+        "",
+        "Premiação",
+        "- 1000 (da pra aumentar se alguem quiser contribuir)",
+        "- Primeiro lugar = 60%",
+        "- Segundo lugar = 30%",
+        "- Terceiro lugar = 10%",
+        "",
         "Football data provided by the Football-Data.org API."
       ].join("\n")
     );
@@ -66,6 +80,13 @@ describe("formatLeaderboard", () => {
         "- Placar exato vale 3 pts.",
         "- O palpite mais próximo vale 1 pt pela menor soma de diferenças nos gols dos dois times.",
         "- O ponto de mais próximo também vale quando alguém acerta o placar exato; empates recebem a mesma posição.",
+        "",
+        "Premiação",
+        "- 1000 (da pra aumentar se alguem quiser contribuir)",
+        "- Primeiro lugar = 60%",
+        "- Segundo lugar = 30%",
+        "- Terceiro lugar = 10%",
+        "",
         "Football data provided by the Football-Data.org API."
       ].join("\n")
     );
@@ -79,6 +100,22 @@ describe("formatLeaderboard", () => {
 
     expect(output).toContain("1. Ana Maria - 0 pts");
     expect(output).not.toContain("Ana\nMaria");
+  });
+
+  test("renders prize guidance before Football-Data attribution", () => {
+    const output = formatLeaderboard([]);
+
+    expect(output).toContain(
+      [
+        "Premiação",
+        "- 1000 (da pra aumentar se alguem quiser contribuir)",
+        "- Primeiro lugar = 60%",
+        "- Segundo lugar = 30%",
+        "- Terceiro lugar = 10%",
+        "",
+        "Football data provided by the Football-Data.org API."
+      ].join("\n")
+    );
   });
 });
 
@@ -103,6 +140,13 @@ describe("createLeaderboardDashboardMessage", () => {
         "- Placar exato vale 3 pts.",
         "- O palpite mais próximo vale 1 pt pela menor soma de diferenças nos gols dos dois times.",
         "- O ponto de mais próximo também vale quando alguém acerta o placar exato; empates recebem a mesma posição.",
+        "",
+        "Premiação",
+        "- 1000 (da pra aumentar se alguem quiser contribuir)",
+        "- Primeiro lugar = 60%",
+        "- Segundo lugar = 30%",
+        "- Terceiro lugar = 10%",
+        "",
         "Football data provided by the Football-Data.org API."
       ].join("\n"),
       embeds: []
@@ -160,6 +204,13 @@ describe("createLeaderboardDashboardMessage", () => {
         "- Placar exato vale 3 pts.",
         "- O palpite mais próximo vale 1 pt pela menor soma de diferenças nos gols dos dois times.",
         "- O ponto de mais próximo também vale quando alguém acerta o placar exato; empates recebem a mesma posição.",
+        "",
+        "Premiação",
+        "- 1000 (da pra aumentar se alguem quiser contribuir)",
+        "- Primeiro lugar = 60%",
+        "- Segundo lugar = 30%",
+        "- Terceiro lugar = 10%",
+        "",
         "Football data provided by the Football-Data.org API."
       ].join("\n")
     );

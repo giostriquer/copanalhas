@@ -38,6 +38,15 @@ scoring-rule change and must include migration/recompute notes.
 Leaderboard rows must be recomputable from stored predictions plus final match
 results. Do not store points as the only source of truth.
 
+## Prize Display
+
+The leaderboard dashboard includes an operator-provided prize section:
+
+- 1000 (da pra aumentar se alguem quiser contribuir)
+- Primeiro lugar = 60%
+- Segundo lugar = 30%
+- Terceiro lugar = 10%
+
 ## Open Decisions
 
 - Whether edited Discord messages update predictions until kickoff.
