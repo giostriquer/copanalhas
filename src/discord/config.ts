@@ -41,10 +41,10 @@ export function parseCopanalhasConfig(
   const resultSyncEnabled =
     footballDataToken !== null && (resultSyncSetting === undefined || resultSyncSetting === "true");
   const resultSyncFirstCheckMinutes = parsePositiveInteger(
-    clean(env.COPANALHAS_RESULT_SYNC_FIRST_CHECK_MINUTES) ?? "135"
+    clean(env.COPANALHAS_RESULT_SYNC_FIRST_CHECK_MINUTES) ?? "110"
   );
   const resultSyncRetryMinutes = parsePositiveInteger(
-    clean(env.COPANALHAS_RESULT_SYNC_RETRY_MINUTES) ?? "30"
+    clean(env.COPANALHAS_RESULT_SYNC_RETRY_MINUTES) ?? "1"
   );
   const matchStartRoleId = clean(env.COPANALHAS_MATCH_START_ROLE_ID) ?? null;
   const matchStartAlertDeleteAfterMinutes = parsePositiveInteger(

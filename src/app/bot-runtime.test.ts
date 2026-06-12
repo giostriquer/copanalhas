@@ -395,7 +395,13 @@ describe("startCopanalhasBotRuntime", () => {
     }));
 
     await startCopanalhasBotRuntime({
-      config: { ...config(), footballDataToken: "token-value", resultSyncEnabled: true },
+      config: {
+        ...config(),
+        footballDataToken: "token-value",
+        resultSyncEnabled: true,
+        resultSyncFirstCheckMinutes: 110,
+        resultSyncRetryMinutes: 1
+      },
       store,
       matches: WORLD_CUP_2026_SEED.matches,
       startDiscord,
@@ -411,6 +417,7 @@ describe("startCopanalhasBotRuntime", () => {
       now: () => now,
       writeLine: vi.fn()
     });
+    expect(startInterval).toHaveBeenNthCalledWith(3, expect.any(Function), 60 * 1000);
     upsertStandingsMessage.mockClear();
     upsertLeaderboardMessage.mockClear();
     syncFinishedResults.mockClear();
@@ -421,6 +428,47 @@ describe("startCopanalhasBotRuntime", () => {
     expect(syncFinishedResults).toHaveBeenCalledOnce();
     expect(upsertStandingsMessage).toHaveBeenCalledTimes(2);
     expect(upsertLeaderboardMessage).toHaveBeenCalledOnce();
+  });
+
+  test("does not repeat unchanged result sync not-due logs every minute", async () => {
+    const intervalCallbacks: Array<() => void | Promise<void>> = [];
+    const startInterval = vi.fn((callback) => {
+      intervalCallbacks.push(callback);
+      return { stop: vi.fn() };
+    });
+    const writeLine = vi.fn();
+    let now = new Date("2026-06-11T20:40:00.000Z");
+
+    await startCopanalhasBotRuntime({
+      config: {
+        ...config(),
+        footballDataToken: "token-value",
+        resultSyncEnabled: true,
+        resultSyncFirstCheckMinutes: 110,
+        resultSyncRetryMinutes: 1
+      },
+      store: createStore(),
+      matches: WORLD_CUP_2026_SEED.matches,
+      startDiscord: vi.fn(async () => ({ destroy: vi.fn(async () => undefined) })),
+      startInterval,
+      sendMatchCard: vi.fn(async () => "discord-message-1"),
+      sendPredictionReveal: vi.fn(async () => ({
+        threadId: "thread-1",
+        messageId: "reveal-message-1"
+      })),
+      upsertStandingsMessage: vi.fn(async (message) => `standings-${message.key}`),
+      upsertLeaderboardMessage: vi.fn(async () => "leaderboard-message-1"),
+      now: () => now,
+      writeLine
+    });
+    writeLine.mockClear();
+
+    now = new Date("2026-06-11T20:41:00.000Z");
+    await intervalCallbacks[2]?.();
+
+    expect(writeLine).not.toHaveBeenCalledWith(
+      "[2026-06-11T20:41:00.000Z][result-sync] not-due pending=72 next=2026-06-11T20:50:00.000Z"
+    );
   });
 
   test("syncs recent results during startup catch-up when configured", async () => {
@@ -837,8 +885,8 @@ function config(): CopanalhasConfig {
     matchdayRolloverTime: "06:00",
     footballDataToken: null,
     resultSyncEnabled: false,
-    resultSyncFirstCheckMinutes: 135,
-    resultSyncRetryMinutes: 30
+    resultSyncFirstCheckMinutes: 110,
+    resultSyncRetryMinutes: 1
   };
 }
 

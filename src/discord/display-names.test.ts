@@ -72,7 +72,7 @@ function config(): CopanalhasConfig {
     matchdayRolloverTime: "06:00",
     footballDataToken: null,
     resultSyncEnabled: false,
-    resultSyncFirstCheckMinutes: 135,
-    resultSyncRetryMinutes: 30
+    resultSyncFirstCheckMinutes: 110,
+    resultSyncRetryMinutes: 1
   };
 }

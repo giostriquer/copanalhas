@@ -5,19 +5,19 @@ import type { StoredResult } from "../storage/database.js";
 import type { WorldCupMatch } from "../worldcup/types.js";
 
 describe("planResultSyncAttempt", () => {
-  test("waits until a mapped unresolved match reaches its first check time", () => {
+  test("waits until a mapped unresolved match reaches expected end plus five minutes", () => {
     expect(
       planResultSyncAttempt({
         matches: [match("wc2026-001", "2026-06-11T19:00:00.000Z", 537327)],
         results: [],
-        now: new Date("2026-06-11T21:00:00.000Z"),
-        firstCheckDelayMinutes: 135,
-        retryIntervalMinutes: 30,
+        now: new Date("2026-06-11T20:49:00.000Z"),
+        firstCheckDelayMinutes: 110,
+        retryIntervalMinutes: 1,
         lastAttemptAtUtc: null
       })
     ).toEqual({
       action: "not-due",
-      nextCheckAtUtc: "2026-06-11T21:15:00.000Z",
+      nextCheckAtUtc: "2026-06-11T20:50:00.000Z",
       pendingMatchIds: ["wc2026-001"]
     });
   });
@@ -31,8 +31,8 @@ describe("planResultSyncAttempt", () => {
         ],
         results: [],
         now: new Date("2026-06-12T04:30:00.000Z"),
-        firstCheckDelayMinutes: 135,
-        retryIntervalMinutes: 30,
+        firstCheckDelayMinutes: 110,
+        retryIntervalMinutes: 1,
         lastAttemptAtUtc: null
       })
     ).toEqual({
@@ -43,19 +43,19 @@ describe("planResultSyncAttempt", () => {
     });
   });
 
-  test("respects retry cooldown after a provider attempt", () => {
+  test("retries one minute after a provider attempt", () => {
     expect(
       planResultSyncAttempt({
         matches: [match("wc2026-001", "2026-06-11T19:00:00.000Z", 537327)],
         results: [],
-        now: new Date("2026-06-11T21:20:00.000Z"),
-        firstCheckDelayMinutes: 135,
-        retryIntervalMinutes: 30,
-        lastAttemptAtUtc: "2026-06-11T21:15:00.000Z"
+        now: new Date("2026-06-11T20:50:30.000Z"),
+        firstCheckDelayMinutes: 110,
+        retryIntervalMinutes: 1,
+        lastAttemptAtUtc: "2026-06-11T20:50:00.000Z"
       })
     ).toEqual({
       action: "not-due",
-      nextCheckAtUtc: "2026-06-11T21:45:00.000Z",
+      nextCheckAtUtc: "2026-06-11T20:51:00.000Z",
       pendingMatchIds: ["wc2026-001"]
     });
   });
@@ -69,8 +69,8 @@ describe("planResultSyncAttempt", () => {
         ],
         results: [result("wc2026-001")],
         now: new Date("2026-06-12T04:30:00.000Z"),
-        firstCheckDelayMinutes: 135,
-        retryIntervalMinutes: 30,
+        firstCheckDelayMinutes: 110,
+        retryIntervalMinutes: 1,
         lastAttemptAtUtc: null
       })
     ).toEqual({

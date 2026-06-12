@@ -127,9 +127,9 @@ Useful operator commands while the bot is running:
 - `COPANALHAS_RESULT_SYNC_ENABLED`: set to `false` to disable provider result
   sync even with a token.
 - `COPANALHAS_RESULT_SYNC_FIRST_CHECK_MINUTES`: first provider check after
-  kickoff, default `135`.
+  kickoff, default `110`, which is expected group-stage end plus five minutes.
 - `COPANALHAS_RESULT_SYNC_RETRY_MINUTES`: retry delay when a due match is still
-  not final, default `30`.
+  not final, default `1`.
 
 Football-Data credentials must never be committed. The public dashboard includes
 the required visible attribution when result data may be synced from the API:

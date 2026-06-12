@@ -157,9 +157,9 @@ describe("handleOperatorCommand", () => {
         "Prediction windows: 1 open, 1 closed, 0 missing kickoff",
         "Pending locked reveals: 1 (#2 Coreia do Sul x Tchéquia)",
         "Football Data: configured, result sync on",
-        "Next result-sync check: 2026-06-11T22:15:00.000Z (2 pending)",
+        "Next result-sync check: 2026-06-11T20:50:00.000Z (2 pending)",
         "Last auto-post: posted 1, skipped 1 across 3 days from 2026-06-11",
-        "Last result sync: waiting for 2 pending matches; next check 2026-06-11T22:15:00.000Z",
+        "Last result sync: waiting for 2 pending matches; next check 2026-06-11T20:50:00.000Z",
         "Dashboards: standings 1/2, leaderboard present",
         "Last leaderboard update: 2026-06-11T18:00:00.000Z",
         "Data: 72 matches loaded, 0 missing kickoff times"
@@ -779,7 +779,7 @@ function operatorHealthSnapshot(): OperatorHealthSnapshot {
     resultSyncEnabled: true,
     resultSyncPlan: {
       action: "not-due",
-      nextCheckAtUtc: "2026-06-11T22:15:00.000Z",
+      nextCheckAtUtc: "2026-06-11T20:50:00.000Z",
       pendingMatchIds: ["wc2026-001", "wc2026-002"]
     },
     lastAutoPost: {
@@ -798,7 +798,7 @@ function operatorHealthSnapshot(): OperatorHealthSnapshot {
     },
     lastResultSync: {
       action: "not-due",
-      nextCheckAtUtc: "2026-06-11T22:15:00.000Z",
+      nextCheckAtUtc: "2026-06-11T20:50:00.000Z",
       pendingMatchIds: ["wc2026-001", "wc2026-002"]
     },
     standingsPosts: {

@@ -82,6 +82,9 @@ until at least one mapped, unresolved match is past
 `COPANALHAS_RESULT_SYNC_FIRST_CHECK_MINUTES` after kickoff, then sends one
 batched date-range request for due matches. If the provider has not marked a due
 match final yet, retries wait `COPANALHAS_RESULT_SYNC_RETRY_MINUTES`.
+The default first check is 110 minutes after kickoff, approximating 90 minutes
+of play, halftime, and a five-minute buffer; default retries are one minute
+apart, with duplicate not-due logs suppressed while the next check is unchanged.
 Operators can run `/copanalhas sync-results` to force one immediate finished
 result check for unresolved mapped matches that have already kicked off.
 

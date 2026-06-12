@@ -78,7 +78,7 @@ import { planForcedResultSyncAttempt, planResultSyncAttempt } from "../results/s
 const autoPostIntervalMs = 60 * 1000;
 const matchStartAlertIntervalMs = 60 * 1000;
 const predictionRevealIntervalMs = 60 * 1000;
-const resultSyncIntervalMs = 15 * 60 * 1000;
+const resultSyncIntervalMs = 60 * 1000;
 
 export interface BotRuntimeStore {
   migrate(): void;
@@ -543,8 +543,13 @@ async function runResultSync(
       });
 
   if (syncPlan.action === "not-due") {
+    const previousResult = state.lastResult;
     state.lastResult = syncPlan;
-    writeRuntimeLine(options, formatResultSyncLog(state.lastResult));
+
+    if (shouldLogResultSyncStatus(previousResult, state.lastResult)) {
+      writeRuntimeLine(options, formatResultSyncLog(state.lastResult));
+    }
+
     return state.lastResult;
   }
 
@@ -835,6 +840,28 @@ function resultSyncPlanStatus(
 
 function latestTimestamp(timestamps: readonly string[]): string | null {
   return timestamps.toSorted().at(-1) ?? null;
+}
+
+function shouldLogResultSyncStatus(
+  previous: RuntimeResultSyncStatus,
+  next: RuntimeResultSyncStatus
+): boolean {
+  if (next.action !== "not-due") {
+    return true;
+  }
+
+  if (previous.action !== "not-due") {
+    return true;
+  }
+
+  return (
+    previous.nextCheckAtUtc !== next.nextCheckAtUtc ||
+    !sameIds(previous.pendingMatchIds, next.pendingMatchIds)
+  );
+}
+
+function sameIds(left: readonly string[], right: readonly string[]): boolean {
+  return left.length === right.length && left.every((value, index) => value === right[index]);
 }
 
 function shouldRunMatchStartAlertLoop(options: StartCopanalhasBotRuntimeOptions): boolean {

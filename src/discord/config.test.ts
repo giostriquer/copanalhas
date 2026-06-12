@@ -25,8 +25,8 @@ describe("parseCopanalhasConfig", () => {
         matchdayRolloverTime: "06:00",
         footballDataToken: null,
         resultSyncEnabled: false,
-        resultSyncFirstCheckMinutes: 135,
-        resultSyncRetryMinutes: 30,
+        resultSyncFirstCheckMinutes: 110,
+        resultSyncRetryMinutes: 1,
         matchStartRoleId: null,
         matchStartAlertDeleteAfterMinutes: 180,
         matchStartAlertGraceMinutes: 5
@@ -55,8 +55,8 @@ describe("parseCopanalhasConfig", () => {
         matchdayRolloverTime: "06:00",
         footballDataToken: null,
         resultSyncEnabled: false,
-        resultSyncFirstCheckMinutes: 135,
-        resultSyncRetryMinutes: 30,
+        resultSyncFirstCheckMinutes: 110,
+        resultSyncRetryMinutes: 1,
         matchStartRoleId: null,
         matchStartAlertDeleteAfterMinutes: 180,
         matchStartAlertGraceMinutes: 5
