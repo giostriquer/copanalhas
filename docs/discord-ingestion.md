@@ -156,14 +156,16 @@ edits that same thread message from `Palpites encerrados` to `Resultado`,
 showing the final score and points gained by each participant.
 
 Match-start alerts are automatic only when `COPANALHAS_MATCH_START_ROLE_ID` is
-configured. Every minute, the bot checks for reviewed matches whose kickoff just
-arrived, groups simultaneous kickoffs into one configured-channel message, and
-allows only that role mention to ping. The alert includes the match list and a
-CazeTV link. The bot records one alert row per represented match so restarts do
-not duplicate pings. The same scheduler deletes the alert message after all
-represented matches have stored results, or after
+configured. Every minute, the bot checks for reviewed matches whose alert window
+has arrived, defaulting to five minutes before kickoff with
+`COPANALHAS_MATCH_START_LEAD_MINUTES`, groups simultaneous kickoffs into one
+configured-channel message, and allows only that role mention to ping. The alert
+includes the match list and a CazeTV link. The bot records one alert row per
+represented match so restarts do not duplicate pings. The same scheduler deletes
+the alert message after all represented matches have stored results, or after
 `COPANALHAS_MATCH_START_DELETE_AFTER_MINUTES` from kickoff as a fallback for
-late result sync.
+late result sync. If the bot misses the early window, it can still catch up for
+`COPANALHAS_MATCH_START_GRACE_MINUTES` after kickoff.
 
 `reset-test-date` is the broader smoke-test reset. It clears posted-card dedupe
 records, predictions, prediction reveal records, match-start alert records, and

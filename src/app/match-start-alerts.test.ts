@@ -18,7 +18,7 @@ describe("runMatchStartAlertTick", () => {
       ],
       results: [],
       alerts: [],
-      now: () => new Date("2026-06-11T19:00:20.000Z"),
+      now: () => new Date("2026-06-11T18:55:20.000Z"),
       sendAlert: async (message) => {
         sentMessages.push(message);
         return "match-start-message-1";
@@ -51,7 +51,7 @@ describe("runMatchStartAlertTick", () => {
         matchId: "wc2026-001",
         channelId: "channel-1",
         messageId: "match-start-message-1",
-        postedAt: "2026-06-11T19:00:20.000Z",
+        postedAt: "2026-06-11T18:55:20.000Z",
         deleteAfterUtc: "2026-06-11T22:00:00.000Z",
         deletedAt: null
       },
@@ -59,11 +59,56 @@ describe("runMatchStartAlertTick", () => {
         matchId: "wc2026-002",
         channelId: "channel-1",
         messageId: "match-start-message-1",
-        postedAt: "2026-06-11T19:00:20.000Z",
+        postedAt: "2026-06-11T18:55:20.000Z",
         deleteAfterUtc: "2026-06-11T22:00:00.000Z",
         deletedAt: null
       }
     ]);
+  });
+
+  test("does not post before the start alert lead window", async () => {
+    const sendAlert = vi.fn(async () => "match-start-message-1");
+
+    const result = await runMatchStartAlertTick({
+      channelId: "channel-1",
+      roleId: "role-canalhas",
+      matches: [
+        match("wc2026-001", 1, "MEX", "México", "RSA", "África do Sul", "2026-06-11T19:00:00.000Z")
+      ],
+      results: [],
+      alerts: [],
+      now: () => new Date("2026-06-11T18:54:59.000Z"),
+      sendAlert,
+      deleteAlert: vi.fn(),
+      recordAlert: vi.fn(),
+      markAlertDeleted: vi.fn()
+    });
+
+    expect(result.posted).toEqual([]);
+    expect(sendAlert).not.toHaveBeenCalled();
+  });
+
+  test("uses a configured start alert lead window", async () => {
+    const sendAlert = vi.fn(async () => "match-start-message-1");
+
+    const result = await runMatchStartAlertTick({
+      channelId: "channel-1",
+      roleId: "role-canalhas",
+      matches: [
+        match("wc2026-001", 1, "MEX", "México", "RSA", "África do Sul", "2026-06-11T19:00:00.000Z")
+      ],
+      results: [],
+      alerts: [],
+      startLeadMinutes: 2,
+      now: () => new Date("2026-06-11T18:58:00.000Z"),
+      sendAlert,
+      deleteAlert: vi.fn(),
+      recordAlert: vi.fn(),
+      markAlertDeleted: vi.fn()
+    });
+
+    expect(result.posted).toEqual(["wc2026-001"]);
+    expect(sendAlert).toHaveBeenCalledOnce();
   });
 
   test("does not repost a match that already has a start alert", async () => {

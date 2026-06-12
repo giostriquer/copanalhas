@@ -4,6 +4,7 @@ import type { WorldCupMatch } from "../worldcup/types.js";
 
 const defaultCazeTvUrl = "https://www.youtube.com/@CazeTV";
 const defaultDeleteAfterMinutes = 180;
+const defaultStartLeadMinutes = 5;
 const defaultStartGraceMinutes = 5;
 
 export interface MatchStartAlertMessage {
@@ -21,6 +22,7 @@ export interface MatchStartAlertTickOptions {
   results: readonly StoredResult[];
   alerts: readonly StoredMatchStartAlert[];
   deleteAfterMinutes?: number;
+  startLeadMinutes?: number;
   startGraceMinutes?: number;
   cazeTvUrl?: string;
   now(): Date;
@@ -86,6 +88,7 @@ function dueStartMatches(options: MatchStartAlertTickOptions, now: Date): WorldC
       .map((alert) => alert.matchId)
   );
   const resultedMatchIds = new Set(options.results.map((result) => result.matchId));
+  const leadMs = (options.startLeadMinutes ?? defaultStartLeadMinutes) * 60 * 1000;
   const graceMs = (options.startGraceMinutes ?? defaultStartGraceMinutes) * 60 * 1000;
   const nowTime = now.getTime();
 
@@ -96,8 +99,9 @@ function dueStartMatches(options: MatchStartAlertTickOptions, now: Date): WorldC
       }
 
       const kickoffTime = new Date(match.kickoffAtUtc).getTime();
+      const alertStartTime = kickoffTime - leadMs;
 
-      return kickoffTime <= nowTime && nowTime <= kickoffTime + graceMs;
+      return alertStartTime <= nowTime && nowTime <= kickoffTime + graceMs;
     })
     .toSorted((left, right) => left.matchNumber - right.matchNumber);
 }
@@ -137,7 +141,7 @@ function formatMatchStartAlertMessage(
   return {
     content: [
       `<@&${roleId}>`,
-      matches.length === 1 ? "PARTIDA COMEÇOU" : "PARTIDAS COMEÇANDO",
+      matches.length === 1 ? "PARTIDA COMEÇANDO" : "PARTIDAS COMEÇANDO",
       ...matches.map(
         (match) => `${formatTeamName(match.homeTeam)} x ${formatTeamName(match.awayTeam)}`
       ),

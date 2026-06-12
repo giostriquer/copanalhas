@@ -61,7 +61,7 @@ describe("postMatchStartAlertWithClient", () => {
       destroy: vi.fn(async () => undefined)
     };
     const message = {
-      content: "<@&role-canalhas>\nPARTIDA COMEÇOU\nMéxico x África do Sul",
+      content: "<@&role-canalhas>\nPARTIDA COMEÇANDO\nMéxico x África do Sul",
       allowedMentions: { parse: [] as [], roles: ["role-canalhas"] }
     };
 

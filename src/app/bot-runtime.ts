@@ -487,6 +487,9 @@ async function runMatchStartAlerts(options: StartCopanalhasBotRuntimeOptions): P
     ...(options.config.matchStartAlertDeleteAfterMinutes !== undefined
       ? { deleteAfterMinutes: options.config.matchStartAlertDeleteAfterMinutes }
       : {}),
+    ...(options.config.matchStartAlertLeadMinutes !== undefined
+      ? { startLeadMinutes: options.config.matchStartAlertLeadMinutes }
+      : {}),
     ...(options.config.matchStartAlertGraceMinutes !== undefined
       ? { startGraceMinutes: options.config.matchStartAlertGraceMinutes }
       : {})

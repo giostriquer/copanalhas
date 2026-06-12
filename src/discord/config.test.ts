@@ -29,6 +29,7 @@ describe("parseCopanalhasConfig", () => {
         resultSyncRetryMinutes: 1,
         matchStartRoleId: null,
         matchStartAlertDeleteAfterMinutes: 180,
+        matchStartAlertLeadMinutes: 5,
         matchStartAlertGraceMinutes: 5
       }
     });
@@ -59,6 +60,7 @@ describe("parseCopanalhasConfig", () => {
         resultSyncRetryMinutes: 1,
         matchStartRoleId: null,
         matchStartAlertDeleteAfterMinutes: 180,
+        matchStartAlertLeadMinutes: 5,
         matchStartAlertGraceMinutes: 5
       }
     });
@@ -81,6 +83,7 @@ describe("parseCopanalhasConfig", () => {
         COPANALHAS_RESULT_SYNC_RETRY_MINUTES: "45",
         COPANALHAS_MATCH_START_ROLE_ID: "role-canalhas",
         COPANALHAS_MATCH_START_DELETE_AFTER_MINUTES: "210",
+        COPANALHAS_MATCH_START_LEAD_MINUTES: "3",
         COPANALHAS_MATCH_START_GRACE_MINUTES: "7"
       })
     ).toEqual({
@@ -97,6 +100,7 @@ describe("parseCopanalhasConfig", () => {
         resultSyncRetryMinutes: 45,
         matchStartRoleId: "role-canalhas",
         matchStartAlertDeleteAfterMinutes: 210,
+        matchStartAlertLeadMinutes: 3,
         matchStartAlertGraceMinutes: 7
       })
     });
@@ -169,12 +173,14 @@ describe("parseCopanalhasConfig", () => {
         DISCORD_GUILD_ID: "guild-1",
         DISCORD_CHANNEL_ID: "channel-1",
         COPANALHAS_MATCH_START_DELETE_AFTER_MINUTES: "0",
+        COPANALHAS_MATCH_START_LEAD_MINUTES: "-1",
         COPANALHAS_MATCH_START_GRACE_MINUTES: "later"
       })
     ).toEqual({
       ok: false,
       errors: [
         "COPANALHAS_MATCH_START_DELETE_AFTER_MINUTES must be a positive integer",
+        "COPANALHAS_MATCH_START_LEAD_MINUTES must be a non-negative integer",
         "COPANALHAS_MATCH_START_GRACE_MINUTES must be a positive integer"
       ]
     });

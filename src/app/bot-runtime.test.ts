@@ -225,13 +225,13 @@ describe("startCopanalhasBotRuntime", () => {
       deleteMatchStartAlert: vi.fn(async () => undefined),
       upsertStandingsMessage: vi.fn(async (message) => `standings-${message.key}`),
       upsertLeaderboardMessage: vi.fn(async () => "leaderboard-message-1"),
-      now: () => new Date("2026-06-11T19:00:20.000Z"),
+      now: () => new Date("2026-06-11T18:55:20.000Z"),
       writeLine
     });
 
     expect(sendMatchStartAlert).toHaveBeenCalledWith(
       expect.objectContaining({
-        content: expect.stringContaining("PARTIDA COMEÇOU"),
+        content: expect.stringContaining("PARTIDA COMEÇANDO"),
         allowedMentions: { parse: [], roles: ["role-canalhas"] }
       })
     );
@@ -243,7 +243,7 @@ describe("startCopanalhasBotRuntime", () => {
       })
     );
     expect(writeLine).toHaveBeenCalledWith(
-      "[2026-06-11T19:00:20.000Z][match-start] posted=1 deleted=0 matches=wc2026-001 messages=none"
+      "[2026-06-11T18:55:20.000Z][match-start] posted=1 deleted=0 matches=wc2026-001 messages=none"
     );
   });
 

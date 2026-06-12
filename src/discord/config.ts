@@ -14,6 +14,7 @@ export interface CopanalhasConfig {
   resultSyncRetryMinutes: number;
   matchStartRoleId?: string | null;
   matchStartAlertDeleteAfterMinutes?: number;
+  matchStartAlertLeadMinutes?: number;
   matchStartAlertGraceMinutes?: number;
 }
 
@@ -49,6 +50,9 @@ export function parseCopanalhasConfig(
   const matchStartRoleId = clean(env.COPANALHAS_MATCH_START_ROLE_ID) ?? null;
   const matchStartAlertDeleteAfterMinutes = parsePositiveInteger(
     clean(env.COPANALHAS_MATCH_START_DELETE_AFTER_MINUTES) ?? "180"
+  );
+  const matchStartAlertLeadMinutes = parseNonNegativeInteger(
+    clean(env.COPANALHAS_MATCH_START_LEAD_MINUTES) ?? "5"
   );
   const matchStartAlertGraceMinutes = parsePositiveInteger(
     clean(env.COPANALHAS_MATCH_START_GRACE_MINUTES) ?? "5"
@@ -90,6 +94,10 @@ export function parseCopanalhasConfig(
     errors.push("COPANALHAS_MATCH_START_DELETE_AFTER_MINUTES must be a positive integer");
   }
 
+  if (matchStartAlertLeadMinutes === undefined) {
+    errors.push("COPANALHAS_MATCH_START_LEAD_MINUTES must be a non-negative integer");
+  }
+
   if (matchStartAlertGraceMinutes === undefined) {
     errors.push("COPANALHAS_MATCH_START_GRACE_MINUTES must be a positive integer");
   }
@@ -103,6 +111,7 @@ export function parseCopanalhasConfig(
     resultSyncFirstCheckMinutes === undefined ||
     resultSyncRetryMinutes === undefined ||
     matchStartAlertDeleteAfterMinutes === undefined ||
+    matchStartAlertLeadMinutes === undefined ||
     matchStartAlertGraceMinutes === undefined
   ) {
     return { ok: false, errors };
@@ -126,6 +135,7 @@ export function parseCopanalhasConfig(
       resultSyncRetryMinutes,
       matchStartRoleId,
       matchStartAlertDeleteAfterMinutes,
+      matchStartAlertLeadMinutes,
       matchStartAlertGraceMinutes
     }
   };
@@ -148,4 +158,14 @@ function parsePositiveInteger(value: string): number | undefined {
   const parsed = Number.parseInt(value, 10);
 
   return parsed > 0 ? parsed : undefined;
+}
+
+function parseNonNegativeInteger(value: string): number | undefined {
+  if (!/^\d+$/u.test(value)) {
+    return undefined;
+  }
+
+  const parsed = Number.parseInt(value, 10);
+
+  return parsed >= 0 ? parsed : undefined;
 }
