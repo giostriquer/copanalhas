@@ -26,7 +26,10 @@ describe("parseCopanalhasConfig", () => {
         footballDataToken: null,
         resultSyncEnabled: false,
         resultSyncFirstCheckMinutes: 135,
-        resultSyncRetryMinutes: 30
+        resultSyncRetryMinutes: 30,
+        matchStartRoleId: null,
+        matchStartAlertDeleteAfterMinutes: 180,
+        matchStartAlertGraceMinutes: 5
       }
     });
   });
@@ -53,7 +56,10 @@ describe("parseCopanalhasConfig", () => {
         footballDataToken: null,
         resultSyncEnabled: false,
         resultSyncFirstCheckMinutes: 135,
-        resultSyncRetryMinutes: 30
+        resultSyncRetryMinutes: 30,
+        matchStartRoleId: null,
+        matchStartAlertDeleteAfterMinutes: 180,
+        matchStartAlertGraceMinutes: 5
       }
     });
   });
@@ -72,7 +78,10 @@ describe("parseCopanalhasConfig", () => {
         FOOTBALL_DATA_TOKEN: "football-data-token",
         COPANALHAS_RESULT_SYNC_ENABLED: "true",
         COPANALHAS_RESULT_SYNC_FIRST_CHECK_MINUTES: "150",
-        COPANALHAS_RESULT_SYNC_RETRY_MINUTES: "45"
+        COPANALHAS_RESULT_SYNC_RETRY_MINUTES: "45",
+        COPANALHAS_MATCH_START_ROLE_ID: "role-canalhas",
+        COPANALHAS_MATCH_START_DELETE_AFTER_MINUTES: "210",
+        COPANALHAS_MATCH_START_GRACE_MINUTES: "7"
       })
     ).toEqual({
       ok: true,
@@ -85,7 +94,10 @@ describe("parseCopanalhasConfig", () => {
         footballDataToken: "football-data-token",
         resultSyncEnabled: true,
         resultSyncFirstCheckMinutes: 150,
-        resultSyncRetryMinutes: 45
+        resultSyncRetryMinutes: 45,
+        matchStartRoleId: "role-canalhas",
+        matchStartAlertDeleteAfterMinutes: 210,
+        matchStartAlertGraceMinutes: 7
       })
     });
   });
@@ -146,6 +158,24 @@ describe("parseCopanalhasConfig", () => {
       errors: [
         "COPANALHAS_RESULT_SYNC_FIRST_CHECK_MINUTES must be a positive integer",
         "COPANALHAS_RESULT_SYNC_RETRY_MINUTES must be a positive integer"
+      ]
+    });
+  });
+
+  test("rejects invalid match start alert timing", () => {
+    expect(
+      parseCopanalhasConfig({
+        DISCORD_BOT_TOKEN: "token-value",
+        DISCORD_GUILD_ID: "guild-1",
+        DISCORD_CHANNEL_ID: "channel-1",
+        COPANALHAS_MATCH_START_DELETE_AFTER_MINUTES: "0",
+        COPANALHAS_MATCH_START_GRACE_MINUTES: "later"
+      })
+    ).toEqual({
+      ok: false,
+      errors: [
+        "COPANALHAS_MATCH_START_DELETE_AFTER_MINUTES must be a positive integer",
+        "COPANALHAS_MATCH_START_GRACE_MINUTES must be a positive integer"
       ]
     });
   });

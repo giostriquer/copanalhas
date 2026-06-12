@@ -12,6 +12,9 @@ export interface CopanalhasConfig {
   resultSyncEnabled: boolean;
   resultSyncFirstCheckMinutes: number;
   resultSyncRetryMinutes: number;
+  matchStartRoleId?: string | null;
+  matchStartAlertDeleteAfterMinutes?: number;
+  matchStartAlertGraceMinutes?: number;
 }
 
 export type CopanalhasConfigResult =
@@ -42,6 +45,13 @@ export function parseCopanalhasConfig(
   );
   const resultSyncRetryMinutes = parsePositiveInteger(
     clean(env.COPANALHAS_RESULT_SYNC_RETRY_MINUTES) ?? "30"
+  );
+  const matchStartRoleId = clean(env.COPANALHAS_MATCH_START_ROLE_ID) ?? null;
+  const matchStartAlertDeleteAfterMinutes = parsePositiveInteger(
+    clean(env.COPANALHAS_MATCH_START_DELETE_AFTER_MINUTES) ?? "180"
+  );
+  const matchStartAlertGraceMinutes = parsePositiveInteger(
+    clean(env.COPANALHAS_MATCH_START_GRACE_MINUTES) ?? "5"
   );
 
   if (!discordToken) {
@@ -76,6 +86,14 @@ export function parseCopanalhasConfig(
     errors.push("COPANALHAS_RESULT_SYNC_RETRY_MINUTES must be a positive integer");
   }
 
+  if (matchStartAlertDeleteAfterMinutes === undefined) {
+    errors.push("COPANALHAS_MATCH_START_DELETE_AFTER_MINUTES must be a positive integer");
+  }
+
+  if (matchStartAlertGraceMinutes === undefined) {
+    errors.push("COPANALHAS_MATCH_START_GRACE_MINUTES must be a positive integer");
+  }
+
   if (
     errors.length > 0 ||
     !discordToken ||
@@ -83,7 +101,9 @@ export function parseCopanalhasConfig(
     !channelId ||
     autoPostWindowDays === undefined ||
     resultSyncFirstCheckMinutes === undefined ||
-    resultSyncRetryMinutes === undefined
+    resultSyncRetryMinutes === undefined ||
+    matchStartAlertDeleteAfterMinutes === undefined ||
+    matchStartAlertGraceMinutes === undefined
   ) {
     return { ok: false, errors };
   }
@@ -103,7 +123,10 @@ export function parseCopanalhasConfig(
       footballDataToken,
       resultSyncEnabled,
       resultSyncFirstCheckMinutes,
-      resultSyncRetryMinutes
+      resultSyncRetryMinutes,
+      matchStartRoleId,
+      matchStartAlertDeleteAfterMinutes,
+      matchStartAlertGraceMinutes
     }
   };
 }

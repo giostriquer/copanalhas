@@ -72,6 +72,11 @@ When a prediction window closes, the bot posts one compact reveal message in the
 matchday card thread, grouping matches that locked at the same time. After a
 result is stored, that same thread message is edited into a result receipt with
 the official score and points gained by each participant.
+If `COPANALHAS_MATCH_START_ROLE_ID` is configured, the bot also pings that role
+in the configured channel when matches start, grouping simultaneous kickoffs in
+one message with a CazeTV link. It deletes the ping after the represented matches
+have stored results, or after the fallback cleanup deadline if result sync is
+late.
 Terminal commands remain useful for setup and manual recovery. Discord slash
 commands are the preferred operator controls during the game.
 
@@ -82,8 +87,8 @@ Useful operator commands while the bot is running:
 - `/copanalhas clear-posted-date date:2026-06-11`: clear posted-card dedupe
   records for a date so it can be reposted during testing.
 - `/copanalhas reset-test-date date:2026-06-11`: clear posted cards,
-  predictions, reveal records, and results for one test date, then refresh
-  standings.
+  predictions, reveal records, match-start alerts, and results for one test
+  date, then refresh standings.
 - `/copanalhas status`: privately show a morning health checklist with Discord
   route, local matchday time, next matchday post, prediction windows, pending
   locked reveal posts, Football Data/result-sync timing, and dashboard post
@@ -109,6 +114,12 @@ Useful operator commands while the bot is running:
 - `COPANALHAS_AUTO_POST_WINDOW_DAYS`: number of operational matchdays to post on
   each daily auto-post run, default `3`. Each date is still posted as its own
   matchday card.
+- `COPANALHAS_MATCH_START_ROLE_ID`: optional Discord role ID to ping when a
+  match starts. Leave blank to disable match-start pings.
+- `COPANALHAS_MATCH_START_DELETE_AFTER_MINUTES`: fallback deletion deadline
+  after kickoff for match-start pings, default `180`.
+- `COPANALHAS_MATCH_START_GRACE_MINUTES`: startup/tick grace window for posting
+  a just-started match ping, default `5`.
 
 ## Result Sync
 

@@ -64,6 +64,15 @@ export interface StoredPredictionRevealPost {
   resultRevealedAt: string | null;
 }
 
+export interface StoredMatchStartAlert {
+  matchId: string;
+  channelId: string;
+  messageId: string;
+  postedAt: string;
+  deleteAfterUtc: string;
+  deletedAt: string | null;
+}
+
 export interface NewScoringRun {
   createdAt: string;
   matchId: string | null;
@@ -155,6 +164,16 @@ export class CopanalhasDatabase {
         revealed_at TEXT NOT NULL,
         close_at_utc TEXT NOT NULL,
         result_revealed_at TEXT,
+        PRIMARY KEY (match_id, channel_id)
+      ) STRICT;
+
+      CREATE TABLE IF NOT EXISTS match_start_alerts (
+        match_id TEXT NOT NULL,
+        channel_id TEXT NOT NULL,
+        message_id TEXT NOT NULL,
+        posted_at TEXT NOT NULL,
+        delete_after_utc TEXT NOT NULL,
+        deleted_at TEXT,
         PRIMARY KEY (match_id, channel_id)
       ) STRICT;
 
@@ -465,6 +484,68 @@ export class CopanalhasDatabase {
     return this.clearRowsForMatches("prediction_reveal_posts", matchIds);
   }
 
+  recordMatchStartAlert(alert: StoredMatchStartAlert): void {
+    this.database
+      .prepare(
+        `
+        INSERT INTO match_start_alerts (
+          match_id,
+          channel_id,
+          message_id,
+          posted_at,
+          delete_after_utc,
+          deleted_at
+        )
+        VALUES (?, ?, ?, ?, ?, ?)
+        ON CONFLICT(match_id, channel_id) DO UPDATE SET
+          message_id = excluded.message_id,
+          posted_at = excluded.posted_at,
+          delete_after_utc = excluded.delete_after_utc,
+          deleted_at = excluded.deleted_at
+      `
+      )
+      .run(
+        alert.matchId,
+        alert.channelId,
+        alert.messageId,
+        alert.postedAt,
+        alert.deleteAfterUtc,
+        alert.deletedAt
+      );
+  }
+
+  listMatchStartAlerts(): StoredMatchStartAlert[] {
+    const rows = this.database
+      .prepare("SELECT * FROM match_start_alerts ORDER BY channel_id, message_id, match_id")
+      .all() as unknown as MatchStartAlertRow[];
+
+    return rows.map((row) => ({
+      matchId: row.match_id,
+      channelId: row.channel_id,
+      messageId: row.message_id,
+      postedAt: row.posted_at,
+      deleteAfterUtc: row.delete_after_utc,
+      deletedAt: row.deleted_at
+    }));
+  }
+
+  markMatchStartAlertsDeleted(matchIds: readonly string[], deletedAt: string): number {
+    if (matchIds.length === 0) {
+      return 0;
+    }
+
+    const placeholders = matchIds.map(() => "?").join(", ");
+    const result = this.database
+      .prepare(`UPDATE match_start_alerts SET deleted_at = ? WHERE match_id IN (${placeholders})`)
+      .run(deletedAt, ...matchIds);
+
+    return Number(result.changes);
+  }
+
+  clearMatchStartAlertsForMatches(matchIds: readonly string[]): number {
+    return this.clearRowsForMatches("match_start_alerts", matchIds);
+  }
+
   recordStandingsPost(post: StoredStandingsPost): void {
     this.database
       .prepare(`
@@ -579,7 +660,7 @@ export class CopanalhasDatabase {
   }
 
   private clearRowsForMatches(
-    tableName: "predictions" | "results" | "prediction_reveal_posts",
+    tableName: "predictions" | "results" | "prediction_reveal_posts" | "match_start_alerts",
     matchIds: readonly string[]
   ): number {
     if (matchIds.length === 0) {
@@ -678,6 +759,15 @@ interface PredictionRevealPostRow {
   revealed_at: string;
   close_at_utc: string;
   result_revealed_at: string | null;
+}
+
+interface MatchStartAlertRow {
+  match_id: string;
+  channel_id: string;
+  message_id: string;
+  posted_at: string;
+  delete_after_utc: string;
+  deleted_at: string | null;
 }
 
 interface ScoringRunRow {

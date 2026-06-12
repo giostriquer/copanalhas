@@ -1,6 +1,10 @@
 import { createPredictionPersistenceHandler } from "./collector.js";
 import { runAutoPostTick } from "./auto-posting.js";
 import {
+  runMatchStartAlertTick,
+  type MatchStartAlertMessage
+} from "./match-start-alerts.js";
+import {
   formatAutoPostLog,
   formatLeaderboardDashboardLog,
   formatOperatorAutocompleteLog,
@@ -48,6 +52,7 @@ import type { LeaderboardDashboardMessage } from "../leaderboard/format.js";
 import type { StandingsDashboardMessage } from "../standings/format.js";
 import type {
   NewScoringRun,
+  StoredMatchStartAlert,
   StoredLeaderboardPost,
   StoredPostedMatchCard,
   StoredPrediction,
@@ -71,6 +76,7 @@ import {
 import { planForcedResultSyncAttempt, planResultSyncAttempt } from "../results/schedule.js";
 
 const autoPostIntervalMs = 60 * 1000;
+const matchStartAlertIntervalMs = 60 * 1000;
 const predictionRevealIntervalMs = 60 * 1000;
 const resultSyncIntervalMs = 15 * 60 * 1000;
 
@@ -85,10 +91,14 @@ export interface BotRuntimeStore {
   recordPostedMatchCard(card: StoredPostedMatchCard): void;
   listPredictionRevealPosts(): StoredPredictionRevealPost[];
   recordPredictionRevealPost(post: StoredPredictionRevealPost): void;
+  listMatchStartAlerts(): StoredMatchStartAlert[];
+  recordMatchStartAlert(alert: StoredMatchStartAlert): void;
+  markMatchStartAlertsDeleted(matchIds: readonly string[], deletedAt: string): number;
   clearPostedMatchCardsForDate(channelId: string, postedForDate: string): number;
   clearPredictionsForMatches(matchIds: readonly string[]): number;
   clearResultsForMatches(matchIds: readonly string[]): number;
   clearPredictionRevealPostsForMatches(matchIds: readonly string[]): number;
+  clearMatchStartAlertsForMatches(matchIds: readonly string[]): number;
   listStandingsPosts(): StoredStandingsPost[];
   recordStandingsPost(post: StoredStandingsPost): void;
   listLeaderboardPosts(): StoredLeaderboardPost[];
@@ -128,6 +138,8 @@ export interface StartCopanalhasBotRuntimeOptions {
   sendMatchCard(message: MatchCardMessage): Promise<string>;
   sendPredictionReveal(message: PredictionRevealThreadMessage): Promise<PredictionRevealSendResult>;
   editPredictionReveal?(message: PredictionResultThreadMessage): Promise<void>;
+  sendMatchStartAlert?(message: MatchStartAlertMessage): Promise<string>;
+  deleteMatchStartAlert?(messageId: string): Promise<void>;
   upsertStandingsMessage(
     message: StandingsDashboardMessage,
     existingMessageId: string | null
@@ -189,6 +201,7 @@ export async function startCopanalhasBotRuntime(
   await runPredictionReveals(options);
   await runResultSync(options, operatorCommandOptions, resultSyncState);
   await runPredictionResultReveals(options);
+  await runMatchStartAlerts(options);
   const startupHealth = createOperatorHealthSnapshot(options, autoPostState, resultSyncState);
 
   for (const line of formatOperatorHealthLogLines(startupHealth)) {
@@ -315,6 +328,8 @@ function createOperatorCommandOptions(
     clearResultsForMatches: (matchIds) => options.store.clearResultsForMatches(matchIds),
     clearPredictionRevealPostsForMatches: (matchIds) =>
       options.store.clearPredictionRevealPostsForMatches(matchIds),
+    clearMatchStartAlertsForMatches: (matchIds) =>
+      options.store.clearMatchStartAlertsForMatches(matchIds),
     listPredictions: () => options.store.listPredictions(),
     listResults: () => options.store.listResults(),
     upsertResult: (result) => options.store.upsertResult(result),
@@ -361,6 +376,14 @@ function startRuntimeIntervals(
       options.startInterval(async () => {
         await runResultSync(options, operatorCommandOptions, resultSyncState);
       }, resultSyncIntervalMs)
+    );
+  }
+
+  if (shouldRunMatchStartAlertLoop(options)) {
+    intervals.push(
+      options.startInterval(async () => {
+        await runMatchStartAlerts(options);
+      }, matchStartAlertIntervalMs)
     );
   }
 
@@ -438,6 +461,47 @@ async function runPredictionResultReveals(
         .join(",")}`
     );
   }
+}
+
+async function runMatchStartAlerts(options: StartCopanalhasBotRuntimeOptions): Promise<void> {
+  if (!options.sendMatchStartAlert || !options.deleteMatchStartAlert) {
+    return;
+  }
+
+  if (!shouldRunMatchStartAlertLoop(options)) {
+    return;
+  }
+
+  const result = await runMatchStartAlertTick({
+    channelId: options.config.channelId,
+    roleId: options.config.matchStartRoleId ?? null,
+    matches: options.matches,
+    results: options.store.listResults(),
+    alerts: options.store.listMatchStartAlerts(),
+    now: options.now,
+    sendAlert: options.sendMatchStartAlert,
+    deleteAlert: options.deleteMatchStartAlert,
+    recordAlert: (alert) => options.store.recordMatchStartAlert(alert),
+    markAlertDeleted: (matchIds, deletedAt) =>
+      options.store.markMatchStartAlertsDeleted(matchIds, deletedAt),
+    ...(options.config.matchStartAlertDeleteAfterMinutes !== undefined
+      ? { deleteAfterMinutes: options.config.matchStartAlertDeleteAfterMinutes }
+      : {}),
+    ...(options.config.matchStartAlertGraceMinutes !== undefined
+      ? { startGraceMinutes: options.config.matchStartAlertGraceMinutes }
+      : {})
+  });
+
+  if (result.posted.length === 0 && result.deleted.length === 0) {
+    return;
+  }
+
+  writeRuntimeLine(
+    options,
+    `[match-start] posted=${result.posted.length} deleted=${result.deleted.length} matches=${formatIdList(
+      result.posted
+    )} messages=${formatIdList(result.deleted)}`
+  );
 }
 
 async function runResultSync(
@@ -531,6 +595,7 @@ async function runResultSync(
     await operatorCommandOptions.updateStandingsDashboard();
     await operatorCommandOptions.updateLeaderboardDashboard();
     await runPredictionResultReveals(options);
+    await runMatchStartAlerts(options);
   }
 
   return state.lastResult;
@@ -770,6 +835,19 @@ function resultSyncPlanStatus(
 
 function latestTimestamp(timestamps: readonly string[]): string | null {
   return timestamps.toSorted().at(-1) ?? null;
+}
+
+function shouldRunMatchStartAlertLoop(options: StartCopanalhasBotRuntimeOptions): boolean {
+  return (
+    (options.config.matchStartRoleId ?? null) !== null ||
+    options.store
+      .listMatchStartAlerts()
+      .some((alert) => alert.channelId === options.config.channelId && alert.deletedAt === null)
+  );
+}
+
+function formatIdList(ids: readonly string[]): string {
+  return ids.length > 0 ? ids.join(",") : "none";
 }
 
 function hasDestroy(value: unknown): value is { destroy(): void | Promise<void> } {

@@ -11,7 +11,8 @@ become a broad Discord scraper, odds tool, payment tool, or wagering system.
 - Store `FOOTBALL_DATA_TOKEN` outside git.
 - Never store Football-Data developer credentials in open-source repositories.
 - Add `.env` files to `.gitignore`.
-- Provide examples with placeholder IDs only.
+- Provide examples with placeholder IDs only, including Discord role IDs such as
+  `COPANALHAS_MATCH_START_ROLE_ID`.
 - Rotate tokens if they are ever pasted into chat, commits, logs, or screenshots.
 
 ## Data Minimization
@@ -45,4 +46,6 @@ or operator-facing dashboard output:
 - Keep admin/operator commands explicit and restricted.
 - Use `/copanalhas` commands only in the configured guild/channel.
 - Use thread posting only for matchday prediction reveal messages.
+- Allow role mentions only for the configured match-start role when that feature
+  is enabled.
 - Document permission changes before applying them to the Discord app.

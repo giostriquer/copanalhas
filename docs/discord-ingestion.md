@@ -155,10 +155,20 @@ When all matches represented by a reveal message have stored results, the bot
 edits that same thread message from `Palpites encerrados` to `Resultado`,
 showing the final score and points gained by each participant.
 
+Match-start alerts are automatic only when `COPANALHAS_MATCH_START_ROLE_ID` is
+configured. Every minute, the bot checks for reviewed matches whose kickoff just
+arrived, groups simultaneous kickoffs into one configured-channel message, and
+allows only that role mention to ping. The alert includes the match list and a
+CazeTV link. The bot records one alert row per represented match so restarts do
+not duplicate pings. The same scheduler deletes the alert message after all
+represented matches have stored results, or after
+`COPANALHAS_MATCH_START_DELETE_AFTER_MINUTES` from kickoff as a fallback for
+late result sync.
+
 `reset-test-date` is the broader smoke-test reset. It clears posted-card dedupe
-records, predictions, prediction reveal records, and results for matches on the
-selected date, then refreshes standings so temporary manual results do not keep
-affecting group tables.
+records, predictions, prediction reveal records, match-start alert records, and
+results for matches on the selected date, then refreshes standings so temporary
+manual results do not keep affecting group tables.
 
 `meus-palpites` is member-facing and private. It defaults to the active
 operational matchday and shows only that matchday's predictions for the caller.
@@ -185,4 +195,6 @@ The Discord application should stay scoped to the owned guild/channel. Any chang
 that broadens intents, guild scope, channel scope, stored data, or posting
 permissions must update this document and `docs/security-privacy.md`.
 The bot needs permission to create public threads from matchday card messages and
-send messages in those threads.
+send messages in those threads. If match-start role alerts are enabled, it also
+needs permission to mention the configured role and delete its own alert
+messages in the configured channel.

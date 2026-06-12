@@ -349,6 +349,7 @@ function createStore(overrides: Partial<CliStore> = {}): CliStore {
 function createStoreShape(): CliStore {
   const postedMatchCards: ReturnType<CliStore["listPostedMatchCards"]> = [];
   const predictionRevealPosts: ReturnType<CliStore["listPredictionRevealPosts"]> = [];
+  const matchStartAlerts: ReturnType<CliStore["listMatchStartAlerts"]> = [];
   const standingsPosts: ReturnType<CliStore["listStandingsPosts"]> = [];
   const leaderboardPosts: ReturnType<CliStore["listLeaderboardPosts"]> = [];
 
@@ -377,10 +378,32 @@ function createStoreShape(): CliStore {
         (next) => `${next.matchId}|${next.channelId}`
       );
     }),
+    listMatchStartAlerts: vi.fn(() => matchStartAlerts),
+    recordMatchStartAlert: vi.fn((alert) => {
+      upsertBy(
+        matchStartAlerts,
+        alert,
+        (stored) => `${stored.matchId}|${stored.channelId}`,
+        (next) => `${next.matchId}|${next.channelId}`
+      );
+    }),
+    markMatchStartAlertsDeleted: vi.fn((matchIds, deletedAt) => {
+      let changes = 0;
+
+      for (const alert of matchStartAlerts) {
+        if (matchIds.includes(alert.matchId)) {
+          alert.deletedAt = deletedAt;
+          changes += 1;
+        }
+      }
+
+      return changes;
+    }),
     clearPostedMatchCardsForDate: vi.fn(() => 0),
     clearPredictionsForMatches: vi.fn(() => 0),
     clearResultsForMatches: vi.fn(() => 0),
     clearPredictionRevealPostsForMatches: vi.fn(() => 0),
+    clearMatchStartAlertsForMatches: vi.fn(() => 0),
     listStandingsPosts: vi.fn(() => standingsPosts),
     recordStandingsPost: vi.fn((post) => {
       upsertBy(

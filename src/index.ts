@@ -6,6 +6,7 @@ import {
   type RuntimeInterval
 } from "./app/bot-runtime.js";
 import { formatRuntimeLogLine } from "./app/dev-log.js";
+import type { MatchStartAlertMessage } from "./app/match-start-alerts.js";
 import { loadLocalEnvFile } from "./config/env.js";
 import { createMatchDayMessage, type MatchCardMessage } from "./discord/components.js";
 import { parseCopanalhasConfig, type CopanalhasConfig } from "./discord/config.js";
@@ -15,7 +16,11 @@ import {
   type DiscordClientReadyOptions,
   type DiscordIngestionResult
 } from "./discord/ingestion.js";
-import { postDiscordMatchCards } from "./discord/posting.js";
+import {
+  deleteDiscordMatchStartAlert,
+  postDiscordMatchCards,
+  postDiscordMatchStartAlert
+} from "./discord/posting.js";
 import {
   editDiscordPredictionReveal,
   postDiscordPredictionReveal,
@@ -57,6 +62,8 @@ export interface CliDependencies {
     messageId: string;
   }>;
   editPredictionReveal?(message: PredictionResultThreadMessage): Promise<void>;
+  sendMatchStartAlert?(message: MatchStartAlertMessage): Promise<string>;
+  deleteMatchStartAlert?(messageId: string): Promise<void>;
   upsertStandingsMessage?(
     message: StandingsDashboardMessage,
     existingMessageId: string | null
@@ -281,6 +288,12 @@ async function startBot(dependencies: CliDependencies): Promise<void> {
     editPredictionReveal:
       dependencies.editPredictionReveal ??
       ((message) => editDiscordPredictionReveal(configResult.config, message)),
+    sendMatchStartAlert:
+      dependencies.sendMatchStartAlert ??
+      ((message) => postDiscordMatchStartAlert(configResult.config, message)),
+    deleteMatchStartAlert:
+      dependencies.deleteMatchStartAlert ??
+      ((messageId) => deleteDiscordMatchStartAlert(configResult.config, messageId)),
     upsertStandingsMessage:
       dependencies.upsertStandingsMessage ??
       ((message, existingMessageId) =>

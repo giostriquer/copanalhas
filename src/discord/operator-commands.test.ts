@@ -91,6 +91,7 @@ describe("handleOperatorCommand", () => {
     const clearPredictionsForMatches = vi.fn(() => 3);
     const clearResultsForMatches = vi.fn(() => 1);
     const clearPredictionRevealPostsForMatches = vi.fn(() => 4);
+    const clearMatchStartAlertsForMatches = vi.fn(() => 5);
     const updateStandingsDashboard = vi.fn(async () => ({ action: "updated" as const, posts: [] }));
     const updateLeaderboardDashboard = vi.fn(async () => ({
       action: "updated" as const,
@@ -104,6 +105,7 @@ describe("handleOperatorCommand", () => {
         clearPredictionsForMatches,
         clearResultsForMatches,
         clearPredictionRevealPostsForMatches,
+        clearMatchStartAlertsForMatches,
         updateStandingsDashboard,
         updateLeaderboardDashboard
       })
@@ -117,6 +119,7 @@ describe("handleOperatorCommand", () => {
         "Predictions: 3",
         "Results: 1",
         "Prediction reveals: 4",
+        "Match start alerts: 5",
         "Standings refreshed.",
         "Leaderboard refreshed."
       ].join("\n"),
@@ -129,6 +132,7 @@ describe("handleOperatorCommand", () => {
       "wc2026-001",
       "wc2026-002"
     ]);
+    expect(clearMatchStartAlertsForMatches).toHaveBeenCalledWith(["wc2026-001", "wc2026-002"]);
     expect(updateStandingsDashboard).toHaveBeenCalledOnce();
     expect(updateLeaderboardDashboard).toHaveBeenCalledOnce();
   });
@@ -642,6 +646,7 @@ function options(overrides: Partial<OperatorCommandOptions> = {}): OperatorComma
     clearPredictionsForMatches: vi.fn(() => 0),
     clearResultsForMatches: vi.fn(() => 0),
     clearPredictionRevealPostsForMatches: vi.fn(() => 0),
+    clearMatchStartAlertsForMatches: vi.fn(() => 0),
     listPredictions: vi.fn(() => []),
     listResults: vi.fn(() => []),
     upsertResult: vi.fn(),

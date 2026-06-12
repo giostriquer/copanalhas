@@ -5,7 +5,11 @@ import type { CopanalhasConfig } from "../discord/config.js";
 import type { DiscordIngestionResult } from "../discord/ingestion.js";
 import type { PredictionInteractionOptions } from "../discord/interactions.js";
 import type { OperatorCommandOptions } from "../discord/operator-commands.js";
-import type { StoredPredictionRevealPost, StoredResult } from "../storage/database.js";
+import type {
+  StoredMatchStartAlert,
+  StoredPredictionRevealPost,
+  StoredResult
+} from "../storage/database.js";
 import { WORLD_CUP_2026_SEED } from "../worldcup/seed.js";
 
 describe("startCopanalhasBotRuntime", () => {
@@ -187,6 +191,130 @@ describe("startCopanalhasBotRuntime", () => {
         threadId: "thread-1",
         messageId: "reveal-message-1"
       })
+    );
+  });
+
+  test("posts match start alerts during startup when the role is configured", async () => {
+    const alerts: StoredMatchStartAlert[] = [];
+    const store = {
+      ...createStore(),
+      listMatchStartAlerts: vi.fn(() => alerts),
+      recordMatchStartAlert: vi.fn((alert: StoredMatchStartAlert) => alerts.push(alert)),
+      markMatchStartAlertsDeleted: vi.fn()
+    };
+    const sendMatchStartAlert = vi.fn(async () => "match-start-message-1");
+    const writeLine = vi.fn();
+    const [firstMatch] = WORLD_CUP_2026_SEED.matches;
+
+    if (!firstMatch) {
+      throw new Error("World Cup seed needs at least one match for runtime tests");
+    }
+
+    await startCopanalhasBotRuntime({
+      config: { ...config(), matchStartRoleId: "role-canalhas" },
+      store,
+      matches: WORLD_CUP_2026_SEED.matches,
+      startDiscord: vi.fn(async () => ({ destroy: vi.fn(async () => undefined) })),
+      startInterval: vi.fn(() => ({ stop: vi.fn() })),
+      sendMatchCard: vi.fn(async () => "discord-message-1"),
+      sendPredictionReveal: vi.fn(async () => ({
+        threadId: "thread-1",
+        messageId: "reveal-message-1"
+      })),
+      sendMatchStartAlert,
+      deleteMatchStartAlert: vi.fn(async () => undefined),
+      upsertStandingsMessage: vi.fn(async (message) => `standings-${message.key}`),
+      upsertLeaderboardMessage: vi.fn(async () => "leaderboard-message-1"),
+      now: () => new Date("2026-06-11T19:00:20.000Z"),
+      writeLine
+    });
+
+    expect(sendMatchStartAlert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        content: expect.stringContaining("PARTIDA COMEÇOU"),
+        allowedMentions: { parse: [], roles: ["role-canalhas"] }
+      })
+    );
+    expect(store.recordMatchStartAlert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        matchId: "wc2026-001",
+        channelId: "channel-1",
+        messageId: "match-start-message-1"
+      })
+    );
+    expect(writeLine).toHaveBeenCalledWith(
+      "[2026-06-11T19:00:20.000Z][match-start] posted=1 deleted=0 matches=wc2026-001 messages=none"
+    );
+  });
+
+  test("deletes stored match start alerts during startup when results are present", async () => {
+    const alerts: StoredMatchStartAlert[] = [
+      {
+        matchId: "wc2026-001",
+        channelId: "channel-1",
+        messageId: "match-start-message-1",
+        postedAt: "2026-06-11T19:00:20.000Z",
+        deleteAfterUtc: "2026-06-11T22:00:00.000Z",
+        deletedAt: null
+      }
+    ];
+    const store = {
+      ...createStore(),
+      listResults: vi.fn(() => [
+        {
+          matchId: "wc2026-001",
+          homeScore: 2,
+          awayScore: 0,
+          recordedAt: "2026-06-11T21:00:00.000Z",
+          resultSource: "manual" as const,
+          externalMatchId: null,
+          fetchedAt: null
+        }
+      ]),
+      listMatchStartAlerts: vi.fn(() => alerts),
+      recordMatchStartAlert: vi.fn(),
+      markMatchStartAlertsDeleted: vi.fn((matchIds: readonly string[], deletedAt: string) => {
+        let changes = 0;
+
+        for (const alert of alerts) {
+          if (matchIds.includes(alert.matchId)) {
+            alert.deletedAt = deletedAt;
+            changes += 1;
+          }
+        }
+
+        return changes;
+      })
+    };
+    const deleteMatchStartAlert = vi.fn(async () => undefined);
+    const writeLine = vi.fn();
+
+    await startCopanalhasBotRuntime({
+      config: { ...config(), matchStartRoleId: "role-canalhas" },
+      store,
+      matches: WORLD_CUP_2026_SEED.matches,
+      startDiscord: vi.fn(async () => ({ destroy: vi.fn(async () => undefined) })),
+      startInterval: vi.fn(() => ({ stop: vi.fn() })),
+      sendMatchCard: vi.fn(async () => "discord-message-1"),
+      sendPredictionReveal: vi.fn(async () => ({
+        threadId: "thread-1",
+        messageId: "reveal-message-1"
+      })),
+      sendMatchStartAlert: vi.fn(async () => "match-start-message-2"),
+      deleteMatchStartAlert,
+      upsertStandingsMessage: vi.fn(async (message) => `standings-${message.key}`),
+      upsertLeaderboardMessage: vi.fn(async () => "leaderboard-message-1"),
+      now: () => new Date("2026-06-11T21:05:00.000Z"),
+      writeLine
+    });
+
+    expect(deleteMatchStartAlert).toHaveBeenCalledWith("match-start-message-1");
+    expect(store.markMatchStartAlertsDeleted).toHaveBeenCalledWith(
+      ["wc2026-001"],
+      "2026-06-11T21:05:00.000Z"
+    );
+    expect(writeLine).toHaveBeenCalledWith(
+      "[2026-06-11T21:05:00.000Z][match-start] posted=0 deleted=1 matches=none messages=match-start-message-1"
     );
   });
 
@@ -717,6 +845,7 @@ function config(): CopanalhasConfig {
 function createStore(): BotRuntimeStore {
   const postedMatchCards: ReturnType<BotRuntimeStore["listPostedMatchCards"]> = [];
   const predictionRevealPosts: ReturnType<BotRuntimeStore["listPredictionRevealPosts"]> = [];
+  const matchStartAlerts: ReturnType<BotRuntimeStore["listMatchStartAlerts"]> = [];
   const standingsPosts: ReturnType<BotRuntimeStore["listStandingsPosts"]> = [];
   const leaderboardPosts: ReturnType<BotRuntimeStore["listLeaderboardPosts"]> = [];
 
@@ -745,10 +874,32 @@ function createStore(): BotRuntimeStore {
         (next) => `${next.matchId}|${next.channelId}`
       );
     }),
+    listMatchStartAlerts: vi.fn(() => matchStartAlerts),
+    recordMatchStartAlert: vi.fn((alert) => {
+      upsertBy(
+        matchStartAlerts,
+        alert,
+        (stored) => `${stored.matchId}|${stored.channelId}`,
+        (next) => `${next.matchId}|${next.channelId}`
+      );
+    }),
+    markMatchStartAlertsDeleted: vi.fn((matchIds, deletedAt) => {
+      let changes = 0;
+
+      for (const alert of matchStartAlerts) {
+        if (matchIds.includes(alert.matchId)) {
+          alert.deletedAt = deletedAt;
+          changes += 1;
+        }
+      }
+
+      return changes;
+    }),
     clearPostedMatchCardsForDate: vi.fn(() => 0),
     clearPredictionsForMatches: vi.fn(() => 0),
     clearResultsForMatches: vi.fn(() => 0),
     clearPredictionRevealPostsForMatches: vi.fn(() => 0),
+    clearMatchStartAlertsForMatches: vi.fn(() => 0),
     listStandingsPosts: vi.fn(() => standingsPosts),
     recordStandingsPost: vi.fn((post) => {
       upsertBy(

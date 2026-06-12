@@ -309,6 +309,50 @@ describe("CopanalhasDatabase", () => {
     store.close();
   });
 
+  test("records match start alerts and marks them deleted by match", () => {
+    const store = openCopanalhasDatabase(":memory:");
+    store.migrate();
+
+    store.recordMatchStartAlert({
+      matchId: "wc2026-001",
+      channelId: "channel-1",
+      messageId: "match-start-message-1",
+      postedAt: "2026-06-11T19:00:20.000Z",
+      deleteAfterUtc: "2026-06-11T22:00:00.000Z",
+      deletedAt: null
+    });
+    store.recordMatchStartAlert({
+      matchId: "wc2026-002",
+      channelId: "channel-1",
+      messageId: "match-start-message-1",
+      postedAt: "2026-06-11T19:00:20.000Z",
+      deleteAfterUtc: "2026-06-11T22:00:00.000Z",
+      deletedAt: null
+    });
+
+    store.markMatchStartAlertsDeleted(["wc2026-001"], "2026-06-11T21:10:00.000Z");
+
+    expect(store.listMatchStartAlerts()).toEqual([
+      {
+        matchId: "wc2026-001",
+        channelId: "channel-1",
+        messageId: "match-start-message-1",
+        postedAt: "2026-06-11T19:00:20.000Z",
+        deleteAfterUtc: "2026-06-11T22:00:00.000Z",
+        deletedAt: "2026-06-11T21:10:00.000Z"
+      },
+      {
+        matchId: "wc2026-002",
+        channelId: "channel-1",
+        messageId: "match-start-message-1",
+        postedAt: "2026-06-11T19:00:20.000Z",
+        deleteAfterUtc: "2026-06-11T22:00:00.000Z",
+        deletedAt: null
+      }
+    ]);
+    store.close();
+  });
+
   test("records standings dashboard posts by key, guild, and channel", () => {
     const store = openCopanalhasDatabase(":memory:");
     store.migrate();
