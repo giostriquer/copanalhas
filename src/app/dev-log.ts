@@ -71,6 +71,21 @@ export function formatDiscordAsyncErrorLog(input: {
     .join(" ");
 }
 
+export function formatRuntimeAsyncErrorLog(input: {
+  scope: string;
+  error: unknown;
+}): string {
+  return [
+    "[runtime]",
+    `scope=${safeLogValue(input.scope)}`,
+    `message=${safeLogMessage(input.error)}`,
+    formatErrorField(input.error, "code"),
+    formatErrorField(input.error, "status")
+  ]
+    .filter((part): part is string => part !== null)
+    .join(" ");
+}
+
 export function formatPredictionInteractionLog(result: PredictionInteractionResult): string {
   if (result.action === "ignored") {
     return `[prediction] ignored reason=${result.reason}`;
@@ -218,13 +233,22 @@ function safeLogValue(value: string): string {
 function safeLogMessage(error: unknown): string {
   const value =
     error instanceof Error && error.message.trim() !== "" ? error.message : String(error);
-  const normalized = value.trim().replace(/\s+/gu, " ");
+  const normalized = redactSensitiveLogText(value).trim().replace(/\s+/gu, " ");
 
   if (normalized === "") {
     return "unknown";
   }
 
   return normalized.length > 240 ? `${normalized.slice(0, 237)}...` : normalized;
+}
+
+function redactSensitiveLogText(value: string): string {
+  return value
+    .replace(
+      /https:\/\/discord\.com\/api\/v\d+\/interactions\/[^/\s]+\/[^/\s]+\/callback(?:\?[^\s]*)?/gu,
+      "https://discord.com/api/v*/interactions/[redacted]/[redacted]/callback"
+    )
+    .replace(/\bBot\s+[A-Za-z0-9._-]+/gu, "Bot [redacted]");
 }
 
 function formatErrorField(error: unknown, field: "code" | "status"): string | null {

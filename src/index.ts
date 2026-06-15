@@ -5,7 +5,7 @@ import {
   type BotRuntimeStore,
   type RuntimeInterval
 } from "./app/bot-runtime.js";
-import { formatRuntimeLogLine } from "./app/dev-log.js";
+import { formatRuntimeAsyncErrorLog, formatRuntimeLogLine } from "./app/dev-log.js";
 import type { MatchStartAlertMessage } from "./app/match-start-alerts.js";
 import { loadLocalEnvFile } from "./config/env.js";
 import { createMatchDayMessage, type MatchCardMessage } from "./discord/components.js";
@@ -321,9 +321,24 @@ async function startBot(dependencies: CliDependencies): Promise<void> {
 
 export function main(): void {
   void runCli(process.argv.slice(2)).catch((error: unknown) => {
-    console.error(error);
+    logUnhandledCliError(error);
     process.exitCode = 1;
   });
+}
+
+export function logUnhandledCliError(
+  error: unknown,
+  options: { now(): Date; writeLine(line: string): void } = {
+    now: () => new Date(),
+    writeLine: (line) => console.error(line)
+  }
+): void {
+  options.writeLine(
+    formatRuntimeLogLine(
+      options.now(),
+      formatRuntimeAsyncErrorLog({ scope: "cli", error })
+    )
+  );
 }
 
 function defaultDependencies(): CliDependencies {
@@ -374,13 +389,19 @@ function firstDayPreviewResults(): StandingsResult[] {
   ];
 }
 
-function startNodeInterval(
+export function startNodeInterval(
   callback: () => void | Promise<void>,
-  intervalMs: number
+  intervalMs: number,
+  now: () => Date = () => new Date()
 ): RuntimeInterval {
   const handle = setInterval(() => {
     void Promise.resolve(callback()).catch((error: unknown) => {
-      console.error(error);
+      console.error(
+        formatRuntimeLogLine(
+          now(),
+          formatRuntimeAsyncErrorLog({ scope: "interval", error })
+        )
+      );
     });
   }, intervalMs);
 

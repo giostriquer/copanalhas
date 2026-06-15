@@ -2,11 +2,13 @@ import { describe, expect, test } from "vitest";
 
 import {
   formatAutoPostLog,
+  formatDiscordAsyncErrorLog,
   formatLeaderboardDashboardLog,
   formatOperatorAutocompleteLog,
   formatOperatorCommandLog,
   formatPredictionInteractionLog,
   formatRuntimeLogLine,
+  formatRuntimeAsyncErrorLog,
   formatResultSyncErrorLog,
   formatResultSyncLog,
   formatResultSyncStartLog,
@@ -68,6 +70,25 @@ describe("dev log formatting", () => {
       )
     ).toBe(
       "[autocomplete] subcommand=predictions option=match value=mex user=operator-1 guild=guild-1 channel=channel-1 -> responded choices=2"
+    );
+  });
+
+  test("formats async runtime errors without leaking callback tokens", () => {
+    const error = Object.assign(
+      new Error(
+        "Unknown interaction https://discord.com/api/v10/interactions/1516068372414992436/secret-token/callback?with_response=false"
+      ),
+      {
+        code: 10062,
+        status: 404
+      }
+    );
+
+    expect(formatRuntimeAsyncErrorLog({ scope: "interval", error })).toBe(
+      "[runtime] scope=interval message=Unknown interaction https://discord.com/api/v*/interactions/[redacted]/[redacted]/callback code=10062 status=404"
+    );
+    expect(formatDiscordAsyncErrorLog({ handler: "operator-command", error })).toBe(
+      "[discord] handler=operator-command message=Unknown interaction https://discord.com/api/v*/interactions/[redacted]/[redacted]/callback code=10062 status=404"
     );
   });
 

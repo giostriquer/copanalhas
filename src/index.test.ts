@@ -1,6 +1,6 @@
 import { describe, expect, test, vi } from "vitest";
 
-import { runCli } from "./index.js";
+import { logUnhandledCliError, runCli, startNodeInterval } from "./index.js";
 import type { CliDependencies, CliStore } from "./index.js";
 import type { CopanalhasConfig } from "./discord/config.js";
 import type { MatchCardMessage } from "./discord/components.js";
@@ -336,6 +336,62 @@ describe("runCli", () => {
       "DISCORD_GUILD_ID is required",
       "DISCORD_CHANNEL_ID is required"
     ]);
+  });
+
+  test("logs top-level CLI errors with timestamped sanitized output", () => {
+    const lines: string[] = [];
+
+    logUnhandledCliError(
+      Object.assign(
+        new Error(
+          "Boom https://discord.com/api/v10/interactions/1516068372414992436/secret-token/callback"
+        ),
+        {
+          code: "E_CLI"
+        }
+      ),
+      {
+        now: () => new Date("2026-06-15T13:30:00.000Z"),
+        writeLine: (line) => lines.push(line)
+      }
+    );
+
+    expect(lines).toEqual([
+      "[2026-06-15T13:30:00.000Z][runtime] scope=cli message=Boom https://discord.com/api/v*/interactions/[redacted]/[redacted]/callback code=E_CLI"
+    ]);
+  });
+
+  test("logs interval callback errors with timestamped sanitized output", async () => {
+    const errorLine = vi.spyOn(console, "error").mockImplementation(() => undefined);
+
+    vi.useFakeTimers();
+
+    try {
+      const interval = startNodeInterval(
+        async () => {
+          throw Object.assign(
+            new Error(
+              "Tick failed https://discord.com/api/v10/interactions/1516068372414992436/secret-token/callback"
+            ),
+            {
+              code: "E_TICK"
+            }
+          );
+        },
+        60_000,
+        () => new Date("2026-06-15T13:31:00.000Z")
+      );
+
+      await vi.advanceTimersByTimeAsync(60_000);
+      interval.stop();
+
+      expect(errorLine).toHaveBeenCalledWith(
+        "[2026-06-15T13:31:00.000Z][runtime] scope=interval message=Tick failed https://discord.com/api/v*/interactions/[redacted]/[redacted]/callback code=E_TICK"
+      );
+    } finally {
+      vi.useRealTimers();
+      errorLine.mockRestore();
+    }
   });
 
   test("prints usage for unknown commands", async () => {
