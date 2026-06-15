@@ -212,6 +212,41 @@ describe("createDiscordClient interactions", () => {
     expect(consoleError).not.toHaveBeenCalled();
   });
 
+  test("falls back to sanitized console logging for chat input command errors", async () => {
+    const error = Object.assign(
+      new Error(
+        "Unknown interaction https://discord.com/api/v10/interactions/interaction-id/secret-token/callback?with_response=false"
+      ),
+      {
+        code: 10062,
+        status: 404
+      }
+    );
+    const handleOperatorCommand = vi.fn(async () => {
+      throw error;
+    });
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const client = createDiscordClient(config(), vi.fn(), undefined, {
+      handleOperatorCommand,
+      operatorCommandOptions: operatorOptions()
+    });
+
+    try {
+      client.emit(Events.InteractionCreate, {
+        isAutocomplete: () => false,
+        isChatInputCommand: () => true
+      } as unknown as Interaction);
+      await new Promise((resolve) => setImmediate(resolve));
+
+      expect(consoleError).toHaveBeenCalledWith(
+        "[discord] handler=operator-command message=Unknown interaction https://discord.com/api/v*/interactions/[redacted]/[redacted]/callback code=10062 status=404"
+      );
+    } finally {
+      consoleError.mockRestore();
+      client.destroy();
+    }
+  });
+
   test("routes autocomplete interactions to the operator autocomplete handler", async () => {
     const handleOperatorAutocomplete = vi.fn(async () => ({
       action: "responded" as const,
