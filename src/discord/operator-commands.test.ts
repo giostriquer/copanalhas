@@ -569,6 +569,39 @@ describe("handleDiscordOperatorCommand", () => {
     expect(interaction.reply).not.toHaveBeenCalled();
   });
 
+  test("ignores stale private operator interactions without running command work", async () => {
+    const logOperatorCommand = vi.fn();
+    const interaction = discordCommandInteraction("post-date");
+    const staleInteractionError = Object.assign(new Error("Unknown interaction"), {
+      code: 10062,
+      status: 404
+    });
+    interaction.deferReply.mockRejectedValueOnce(staleInteractionError);
+    const postDueMatchCards = vi.fn(async () => {
+      throw new Error("must not run command work after a stale interaction");
+    });
+
+    const result = await handleDiscordOperatorCommand(
+      interaction as unknown as Interaction,
+      options({ logOperatorCommand, postDueMatchCards })
+    );
+
+    expect(result).toEqual({ action: "ignored", reason: "stale-interaction" });
+    expect(postDueMatchCards).not.toHaveBeenCalled();
+    expect(interaction.editReply).not.toHaveBeenCalled();
+    expect(interaction.reply).not.toHaveBeenCalled();
+    expect(logOperatorCommand).toHaveBeenCalledWith(
+      {
+        guildId: "guild-1",
+        channelId: "channel-1",
+        userId: "operator-1",
+        subcommand: "post-date",
+        options: { date: "2026-06-11" }
+      },
+      { action: "ignored", reason: "stale-interaction" }
+    );
+  });
+
   test("maps sync-results through a private deferred reply", async () => {
     const events: string[] = [];
     const interaction = discordCommandInteraction("sync-results", events);

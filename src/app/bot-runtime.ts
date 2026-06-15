@@ -6,6 +6,7 @@ import {
 } from "./match-start-alerts.js";
 import {
   formatAutoPostLog,
+  formatDiscordAsyncErrorLog,
   formatLeaderboardDashboardLog,
   formatOperatorAutocompleteLog,
   formatOperatorCommandLog,
@@ -192,7 +193,9 @@ export async function startCopanalhasBotRuntime(
     predictionInteractionOptions,
     {
       operatorCommandOptions,
-      registerCommands: registerCopanalhasCommands
+      registerCommands: registerCopanalhasCommands,
+      logAsyncError: (handler, error) =>
+        writeRuntimeLine(options, formatDiscordAsyncErrorLog({ handler, error }))
     }
   );
   await operatorCommandOptions.updateStandingsDashboard();

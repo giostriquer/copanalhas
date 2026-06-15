@@ -41,6 +41,7 @@ export interface DiscordIngestionOptions {
 export interface DiscordClientReadyOptions {
   registerCommands?(options: RegisterCopanalhasCommandsOptions): Promise<void>;
   operatorCommandOptions?: OperatorCommandOptions;
+  logAsyncError?(handler: DiscordAsyncErrorHandler, error: unknown): void;
   handleOperatorCommand?(
     interaction: Parameters<typeof handleDiscordOperatorCommand>[0],
     options: OperatorCommandOptions
@@ -50,6 +51,13 @@ export interface DiscordClientReadyOptions {
     options: OperatorCommandOptions
   ): Promise<OperatorAutocompleteResult>;
 }
+
+export type DiscordAsyncErrorHandler =
+  | "client-ready"
+  | "message-result"
+  | "operator-autocomplete"
+  | "operator-command"
+  | "prediction-interaction";
 
 export interface DiscordReadyClient {
   user: {
@@ -150,7 +158,7 @@ export function createDiscordClient(
 
   client.once(Events.ClientReady, (readyClient) => {
     void handleDiscordClientReady(readyClient, config, readyOptions).catch((error: unknown) => {
-      console.error(error);
+      logAsyncError(readyOptions, "client-ready", error);
     });
   });
 
@@ -162,7 +170,7 @@ export function createDiscordClient(
     });
 
     void Promise.resolve(onMessageResult(result)).catch((error: unknown) => {
-      console.error(error);
+      logAsyncError(readyOptions, "message-result", error);
     });
   });
 
@@ -173,7 +181,7 @@ export function createDiscordClient(
           interaction,
           readyOptions.operatorCommandOptions
         ).catch((error: unknown) => {
-          console.error(error);
+          logAsyncError(readyOptions, "operator-autocomplete", error);
         });
         return;
       }
@@ -183,7 +191,7 @@ export function createDiscordClient(
           interaction,
           readyOptions.operatorCommandOptions
         ).catch((error: unknown) => {
-          console.error(error);
+          logAsyncError(readyOptions, "operator-command", error);
         });
         return;
       }
@@ -194,13 +202,64 @@ export function createDiscordClient(
 
       void handleDiscordPredictionInteraction(interaction, predictionInteractionOptions).catch(
         (error: unknown) => {
-          console.error(error);
+          logAsyncError(readyOptions, "prediction-interaction", error);
         }
       );
     });
   }
 
   return client;
+}
+
+function logAsyncError(
+  options: DiscordClientReadyOptions,
+  handler: DiscordAsyncErrorHandler,
+  error: unknown
+): void {
+  if (options.logAsyncError) {
+    options.logAsyncError(handler, error);
+    return;
+  }
+
+  console.error(formatAsyncErrorForConsole(handler, error));
+}
+
+function formatAsyncErrorForConsole(handler: DiscordAsyncErrorHandler, error: unknown): string {
+  return [
+    "[discord]",
+    `handler=${handler}`,
+    `message=${safeErrorMessage(error)}`,
+    formatErrorField(error, "code"),
+    formatErrorField(error, "status")
+  ]
+    .filter((part): part is string => part !== null)
+    .join(" ");
+}
+
+function safeErrorMessage(error: unknown): string {
+  const value =
+    error instanceof Error && error.message.trim() !== "" ? error.message : String(error);
+  const normalized = value.trim().replace(/\s+/gu, " ");
+
+  if (normalized === "") {
+    return "unknown";
+  }
+
+  return normalized.length > 240 ? `${normalized.slice(0, 237)}...` : normalized;
+}
+
+function formatErrorField(error: unknown, field: "code" | "status"): string | null {
+  if (typeof error !== "object" || error === null || !(field in error)) {
+    return null;
+  }
+
+  const value = (error as Partial<Record<typeof field, unknown>>)[field];
+
+  if (typeof value !== "string" && typeof value !== "number") {
+    return null;
+  }
+
+  return `${field}=${String(value).trim().replace(/\s+/gu, "_")}`;
 }
 
 export async function startDiscordClient(

@@ -91,7 +91,10 @@ export interface OperatorCommandOptions {
 }
 
 export type OperatorCommandResult =
-  | { action: "ignored"; reason: "wrong-guild" | "wrong-channel" | "unknown-command" }
+  | {
+      action: "ignored";
+      reason: "wrong-guild" | "wrong-channel" | "unknown-command" | "stale-interaction";
+    }
   | { action: "replied"; content: string; ephemeral: boolean };
 
 export type OperatorAutocompleteResult =
@@ -429,14 +432,6 @@ export async function handleDiscordOperatorCommand(
     return { action: "ignored", reason: "unknown-command" };
   }
 
-  const shouldDeferPrivately = subcommand !== "reveal";
-
-  if (shouldDeferPrivately) {
-    await interaction.deferReply({
-      flags: MessageFlags.Ephemeral
-    });
-  }
-
   const commandInput: OperatorCommandInput = {
     guildId: interaction.guildId,
     channelId: interaction.channelId,
@@ -444,6 +439,25 @@ export async function handleDiscordOperatorCommand(
     subcommand,
     options: readCommandOptions(subcommand, interaction)
   };
+  const shouldDeferPrivately = subcommand !== "reveal";
+
+  if (shouldDeferPrivately) {
+    try {
+      await interaction.deferReply({
+        flags: MessageFlags.Ephemeral
+      });
+    } catch (error) {
+      if (!isUnknownInteractionError(error)) {
+        throw error;
+      }
+
+      const result: OperatorCommandResult = { action: "ignored", reason: "stale-interaction" };
+      options.logOperatorCommand?.(commandInput, result);
+
+      return result;
+    }
+  }
+
   const result = await handleOperatorCommand(commandInput, options);
 
   options.logOperatorCommand?.(commandInput, result);
@@ -631,6 +645,15 @@ function reply(content: string, ephemeral = true): OperatorCommandResult {
     content,
     ephemeral
   };
+}
+
+function isUnknownInteractionError(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    error.code === 10062
+  );
 }
 
 async function resolveLeaderboardDisplayNames(

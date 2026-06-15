@@ -1,7 +1,7 @@
 import { describe, expect, test, vi } from "vitest";
 
 import { runCli } from "./index.js";
-import type { CliStore } from "./index.js";
+import type { CliDependencies, CliStore } from "./index.js";
 import type { CopanalhasConfig } from "./discord/config.js";
 import type { MatchCardMessage } from "./discord/components.js";
 
@@ -235,7 +235,9 @@ describe("runCli", () => {
   test("starts the Discord bot with parsed environment config", async () => {
     const lines: string[] = [];
     const store = createStore();
-    const startDiscord = vi.fn(async () => undefined);
+    const startDiscord = vi.fn(
+      async (..._args: Parameters<CliDependencies["startDiscord"]>) => undefined
+    );
     const startInterval = vi.fn(() => ({ stop: vi.fn() }));
 
     await runCli(["bot"], {
@@ -298,6 +300,21 @@ describe("runCli", () => {
       "[2026-06-11T12:00:00.000Z][health] dashboards standings=2/2 leaderboard=present lastLeaderboard=2026-06-11T12:00:00.000Z",
       "[2026-06-11T12:00:00.000Z][bot] Autonomous operator enabled. Auto-post: on at 09:00 America/Sao_Paulo."
     ]);
+
+    const readyOptions = startDiscord.mock.calls[0]?.[3];
+    readyOptions?.logAsyncError?.(
+      "operator-command",
+      Object.assign(new Error("Unknown interaction"), {
+        code: 10062,
+        status: 404,
+        url: "https://discord.com/api/v10/interactions/1516068372414992436/secret-token/callback"
+      })
+    );
+
+    expect(lines.at(-1)).toBe(
+      "[2026-06-11T12:00:00.000Z][discord] handler=operator-command message=Unknown interaction code=10062 status=404"
+    );
+    expect(lines.at(-1)).not.toContain("secret-token");
   });
 
   test("prints config errors before starting the bot", async () => {

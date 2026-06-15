@@ -180,6 +180,38 @@ describe("createDiscordClient interactions", () => {
     client.destroy();
   });
 
+  test("routes chat input command errors to the async error logger", async () => {
+    const logAsyncError = vi.fn();
+    const error = Object.assign(new Error("Unknown interaction"), {
+      code: 10062,
+      status: 404,
+      url: "https://discord.com/api/v10/interactions/interaction-id/secret-token/callback"
+    });
+    const handleOperatorCommand = vi.fn(async () => {
+      throw error;
+    });
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const client = createDiscordClient(config(), vi.fn(), undefined, {
+      handleOperatorCommand,
+      logAsyncError,
+      operatorCommandOptions: operatorOptions()
+    });
+
+    try {
+      client.emit(Events.InteractionCreate, {
+        isAutocomplete: () => false,
+        isChatInputCommand: () => true
+      } as unknown as Interaction);
+      await new Promise((resolve) => setImmediate(resolve));
+    } finally {
+      consoleError.mockRestore();
+      client.destroy();
+    }
+
+    expect(logAsyncError).toHaveBeenCalledWith("operator-command", error);
+    expect(consoleError).not.toHaveBeenCalled();
+  });
+
   test("routes autocomplete interactions to the operator autocomplete handler", async () => {
     const handleOperatorAutocomplete = vi.fn(async () => ({
       action: "responded" as const,

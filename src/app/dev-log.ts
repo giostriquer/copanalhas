@@ -56,6 +56,21 @@ export function formatOperatorAutocompleteLog(
   ].join(" ");
 }
 
+export function formatDiscordAsyncErrorLog(input: {
+  handler: string;
+  error: unknown;
+}): string {
+  return [
+    "[discord]",
+    `handler=${safeLogValue(input.handler)}`,
+    `message=${safeLogMessage(input.error)}`,
+    formatErrorField(input.error, "code"),
+    formatErrorField(input.error, "status")
+  ]
+    .filter((part): part is string => part !== null)
+    .join(" ");
+}
+
 export function formatPredictionInteractionLog(result: PredictionInteractionResult): string {
   if (result.action === "ignored") {
     return `[prediction] ignored reason=${result.reason}`;
@@ -210,6 +225,20 @@ function safeLogMessage(error: unknown): string {
   }
 
   return normalized.length > 240 ? `${normalized.slice(0, 237)}...` : normalized;
+}
+
+function formatErrorField(error: unknown, field: "code" | "status"): string | null {
+  if (typeof error !== "object" || error === null || !(field in error)) {
+    return null;
+  }
+
+  const value = (error as Partial<Record<typeof field, unknown>>)[field];
+
+  if (typeof value !== "string" && typeof value !== "number") {
+    return null;
+  }
+
+  return `${field}=${safeLogValue(String(value))}`;
 }
 
 function formatResultSyncSkipCounts(details: ResultSyncSkippedMatch[] | undefined): string {
