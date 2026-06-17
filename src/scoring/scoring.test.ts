@@ -18,7 +18,7 @@ describe("scoreMatch", () => {
         matchId: "match-1",
         points: 3,
         distance: 0,
-        awards: ["exact"]
+        awards: ["exact", "exact-solo"]
       },
       {
         userId: "u2",
@@ -194,27 +194,40 @@ describe("scoreMatch", () => {
 });
 
 describe("buildLeaderboard", () => {
-  test("aggregates scored predictions and sorts by points then user id", () => {
+  test("aggregates scored predictions and sorts by points, scoring tie-breakers, then user id", () => {
     const leaderboard = buildLeaderboard([
-      { userId: "u2", matchId: "m1", points: 1, distance: 1, awards: ["closest"] },
-      { userId: "u1", matchId: "m1", points: 3, distance: 0, awards: ["exact"] },
-      { userId: "u4", matchId: "m1", points: 1, distance: 2, awards: ["outcome"] },
-      { userId: "u1", matchId: "m2", points: 1, distance: 1, awards: ["closest"] },
-      { userId: "u3", matchId: "m1", points: 1, distance: 2, awards: [] }
+      { userId: "u5", matchId: "m1", points: 1, distance: 2, awards: [] },
+      { userId: "u4", matchId: "m1", points: 1, distance: 1, awards: ["closest"] },
+      { userId: "u3", matchId: "m1", points: 1, distance: 2, awards: ["outcome"] },
+      { userId: "u2", matchId: "m1", points: 1, distance: 0, awards: ["exact"] },
+      { userId: "u2", matchId: "m2", points: 1, distance: 0, awards: ["exact"] },
+      { userId: "u2", matchId: "m3", points: 1, distance: 0, awards: ["exact"] },
+      { userId: "u1", matchId: "m1", points: 3, distance: 0, awards: ["exact", "exact-solo"] },
+      { userId: "u6", matchId: "m1", points: 1, distance: 2, awards: [] },
+      { userId: "u3", matchId: "m2", points: 1, distance: 2, awards: ["outcome"] },
+      { userId: "u4", matchId: "m2", points: 1, distance: 1, awards: ["closest"] },
+      { userId: "u3", matchId: "m3", points: 1, distance: 2, awards: ["outcome"] },
+      { userId: "u4", matchId: "m3", points: 1, distance: 1, awards: ["closest"] },
+      { userId: "u5", matchId: "m2", points: 1, distance: 2, awards: [] },
+      { userId: "u6", matchId: "m2", points: 1, distance: 2, awards: [] },
+      { userId: "u5", matchId: "m3", points: 1, distance: 2, awards: [] },
+      { userId: "u6", matchId: "m3", points: 1, distance: 2, awards: [] }
     ]);
 
     expect(leaderboard).toEqual([
-      { userId: "u1", points: 4, exactCount: 1, outcomeCount: 0, closestCount: 1, matchesScored: 2 },
-      { userId: "u2", points: 1, exactCount: 0, outcomeCount: 0, closestCount: 1, matchesScored: 1 },
-      { userId: "u3", points: 1, exactCount: 0, outcomeCount: 0, closestCount: 0, matchesScored: 1 },
-      { userId: "u4", points: 1, exactCount: 0, outcomeCount: 1, closestCount: 0, matchesScored: 1 }
+      { userId: "u1", points: 3, exactSoloCount: 1, exactCount: 1, outcomeCount: 0, closestCount: 0, matchesScored: 1 },
+      { userId: "u2", points: 3, exactSoloCount: 0, exactCount: 3, outcomeCount: 0, closestCount: 0, matchesScored: 3 },
+      { userId: "u3", points: 3, exactSoloCount: 0, exactCount: 0, outcomeCount: 3, closestCount: 0, matchesScored: 3 },
+      { userId: "u4", points: 3, exactSoloCount: 0, exactCount: 0, outcomeCount: 0, closestCount: 3, matchesScored: 3 },
+      { userId: "u5", points: 3, exactSoloCount: 0, exactCount: 0, outcomeCount: 0, closestCount: 0, matchesScored: 3 },
+      { userId: "u6", points: 3, exactSoloCount: 0, exactCount: 0, outcomeCount: 0, closestCount: 0, matchesScored: 3 }
     ]);
   });
 
   test("includes zero-point participants from predictions that have not been scored yet", () => {
     const leaderboard = buildLeaderboard(
       [
-        { userId: "u2", matchId: "m1", points: 3, distance: 0, awards: ["exact"] }
+        { userId: "u2", matchId: "m1", points: 3, distance: 0, awards: ["exact", "exact-solo"] }
       ],
       [
         prediction("u3", "m2", 1, 1),
@@ -224,9 +237,9 @@ describe("buildLeaderboard", () => {
     );
 
     expect(leaderboard).toEqual([
-      { userId: "u2", points: 3, exactCount: 1, outcomeCount: 0, closestCount: 0, matchesScored: 1 },
-      { userId: "u1", points: 0, exactCount: 0, outcomeCount: 0, closestCount: 0, matchesScored: 0 },
-      { userId: "u3", points: 0, exactCount: 0, outcomeCount: 0, closestCount: 0, matchesScored: 0 }
+      { userId: "u2", points: 3, exactSoloCount: 1, exactCount: 1, outcomeCount: 0, closestCount: 0, matchesScored: 1 },
+      { userId: "u1", points: 0, exactSoloCount: 0, exactCount: 0, outcomeCount: 0, closestCount: 0, matchesScored: 0 },
+      { userId: "u3", points: 0, exactSoloCount: 0, exactCount: 0, outcomeCount: 0, closestCount: 0, matchesScored: 0 }
     ]);
   });
 });

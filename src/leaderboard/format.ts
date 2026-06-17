@@ -21,6 +21,7 @@ const rulesLines = [
   "- Se ninguém acertar o placar exato, quem acertar o vencedor ou empate ganha 1 pt.",
   "- O ponto de mais próximo só vale quando ninguém acerta o placar exato nem o vencedor/empate.",
   "- Nesse caso, ganha 1 pt quem tiver a menor soma de diferenças nos gols dos dois times; empates recebem 1 pt cada.",
+  "- Em empate na pontuação, desempata por exatos solo, exatos, resultados, mais próximos e depois ID do jogador.",
   "",
   "Premiação",
   "- 1000 (da pra aumentar se alguem quiser contribuir)",
@@ -40,16 +41,21 @@ export function formatLeaderboard(
   }
 
   const lines = [leaderboardTitle];
-  let previousPoints: number | undefined;
+  let previousRow: LeaderboardRow | undefined;
   let previousRank = 0;
 
   rows.forEach((row, index) => {
-    const rank = previousPoints === row.points ? previousRank : index + 1;
-    previousPoints = row.points;
+    const rank =
+      previousRow && sameLeaderboardRank(row, previousRow) ? previousRank : index + 1;
+    previousRow = row;
     previousRank = rank;
 
     lines.push(
       `${rank}. ${displayNameForRow(row, displayNames)} - ${points(row.points)} (${count(
+        row.exactSoloCount,
+        "exato solo",
+        "exatos solo"
+      )}, ${count(
         row.exactCount,
         "exato",
         "exatos"
@@ -90,11 +96,12 @@ function formatDashboardRows(
   }
 
   return [
-    "#  Pts Exato Resul Perto Jogos  Jogador",
+    "#  Pts Solo Exato Resul Perto Jogos  Jogador",
     ...rows.map((row, index) =>
       [
         String(rankForRow(rows, index)).padEnd(2),
         row.points.toString().padStart(3),
+        row.exactSoloCount.toString().padStart(4),
         row.exactCount.toString().padStart(5),
         row.outcomeCount.toString().padStart(5),
         row.closestCount.toString().padStart(5),
@@ -105,11 +112,24 @@ function formatDashboardRows(
 }
 
 function rankForRow(rows: LeaderboardRow[], index: number): number {
-  if (index === 0 || rows[index]?.points !== rows[index - 1]?.points) {
+  const row = rows[index];
+  const previous = rows[index - 1];
+
+  if (!row || !previous || !sameLeaderboardRank(row, previous)) {
     return index + 1;
   }
 
   return rankForRow(rows, index - 1);
+}
+
+function sameLeaderboardRank(left: LeaderboardRow, right: LeaderboardRow): boolean {
+  return (
+    left.points === right.points &&
+    left.exactSoloCount === right.exactSoloCount &&
+    left.exactCount === right.exactCount &&
+    left.outcomeCount === right.outcomeCount &&
+    left.closestCount === right.closestCount
+  );
 }
 
 function playerName(row: LeaderboardRow, displayNames: ReadonlyMap<string, string>): string {

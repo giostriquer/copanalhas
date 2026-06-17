@@ -1,4 +1,4 @@
-export type ScoreAward = "exact" | "outcome" | "closest";
+export type ScoreAward = "exact" | "exact-solo" | "outcome" | "closest";
 type MatchOutcome = "home" | "away" | "draw";
 
 export interface MatchResult {
@@ -25,6 +25,7 @@ export interface ScoredPrediction {
 export interface LeaderboardRow {
   userId: string;
   points: number;
+  exactSoloCount: number;
   exactCount: number;
   outcomeCount: number;
   closestCount: number;
@@ -62,6 +63,9 @@ export function scoreMatch(
 
     if (row.isExact) {
       awards.push("exact");
+      if (exactCount === 1) {
+        awards.push("exact-solo");
+      }
       points += exactPoints;
     }
 
@@ -107,6 +111,10 @@ export function buildLeaderboard(
       row.exactCount += 1;
     }
 
+    if (scored.awards.includes("exact-solo")) {
+      row.exactSoloCount += 1;
+    }
+
     if (scored.awards.includes("outcome")) {
       row.outcomeCount += 1;
     }
@@ -118,20 +126,30 @@ export function buildLeaderboard(
     rowsByUser.set(scored.userId, row);
   }
 
-  return [...rowsByUser.values()].sort(
-    (left, right) => right.points - left.points || left.userId.localeCompare(right.userId)
-  );
+  return [...rowsByUser.values()].sort(compareLeaderboardRows);
 }
 
 function emptyLeaderboardRow(userId: string): LeaderboardRow {
   return {
     userId,
     points: 0,
+    exactSoloCount: 0,
     exactCount: 0,
     outcomeCount: 0,
     closestCount: 0,
     matchesScored: 0
   };
+}
+
+function compareLeaderboardRows(left: LeaderboardRow, right: LeaderboardRow): number {
+  return (
+    right.points - left.points ||
+    right.exactSoloCount - left.exactSoloCount ||
+    right.exactCount - left.exactCount ||
+    right.outcomeCount - left.outcomeCount ||
+    right.closestCount - left.closestCount ||
+    left.userId.localeCompare(right.userId)
+  );
 }
 
 function outcomeForScore(homeScore: number, awayScore: number): MatchOutcome {

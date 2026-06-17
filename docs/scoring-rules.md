@@ -43,6 +43,21 @@ scoring-rule change and must include migration/recompute notes.
 Leaderboard rows must be recomputable from stored predictions plus final match
 results. Do not store points as the only source of truth.
 
+## Leaderboard Tie-Breakers
+
+Leaderboard rows sort by:
+
+1. total points, descending
+2. solo exact scorelines, descending
+3. total exact scorelines, descending
+4. correct winner/draw results, descending
+5. closest-score awards, descending
+6. Discord user ID, ascending, as the deterministic final fallback
+
+Ranks are shared only when all scoring tie-breakers are also tied. The user ID
+fallback orders otherwise identical rows but does not represent a scoring
+achievement.
+
 ## Prize Display
 
 The leaderboard dashboard includes an operator-provided prize section:

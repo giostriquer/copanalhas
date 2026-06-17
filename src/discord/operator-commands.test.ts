@@ -222,10 +222,10 @@ describe("handleOperatorCommand", () => {
     expect(resolveUserDisplayNames).toHaveBeenCalledOnce();
     expect(result.content).toContain("Ranking Copanalhas");
     expect(result.content).toContain(
-      "1. Alice - 3 pts (1 exato, 0 resultados, 0 mais próximos, 1 partida)"
+      "1. Alice - 3 pts (1 exato solo, 1 exato, 0 resultados, 0 mais próximos, 1 partida)"
     );
     expect(result.content).toContain(
-      "2. Bob - 0 pts (0 exatos, 0 resultados, 0 mais próximos, 1 partida)"
+      "2. Bob - 0 pts (0 exatos solo, 0 exatos, 0 resultados, 0 mais próximos, 1 partida)"
     );
     expect(result.content).toContain("Como funciona");
   });
