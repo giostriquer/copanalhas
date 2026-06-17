@@ -64,6 +64,31 @@ describe("scoreMatch", () => {
     });
   });
 
+  test("breaks closest ties by total goals difference", () => {
+    const scored = scoreMatch(
+      { matchId: "match-1", homeScore: 1, awayScore: 1 },
+      [
+        prediction("u1", "match-1", 3, 1),
+        prediction("u2", "match-1", 2, 0),
+        prediction("u3", "match-1", 2, 0),
+        prediction("u4", "match-1", 3, 0)
+      ]
+    );
+
+    expect(pointsByUser(scored)).toEqual({
+      u1: 0,
+      u2: 1,
+      u3: 1,
+      u4: 0
+    });
+    expect(awardsByUser(scored)).toEqual({
+      u1: [],
+      u2: ["closest"],
+      u3: ["closest"],
+      u4: []
+    });
+  });
+
   test("awards all correct winner predictions when nobody lands the exact score", () => {
     const scored = scoreMatch(
       { matchId: "match-1", homeScore: 3, awayScore: 1 },

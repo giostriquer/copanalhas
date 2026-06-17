@@ -44,6 +44,9 @@ export function scoreMatch(
       distance:
         Math.abs(prediction.homeScore - result.homeScore) +
         Math.abs(prediction.awayScore - result.awayScore),
+      totalGoalsDistance: Math.abs(
+        prediction.homeScore + prediction.awayScore - result.homeScore - result.awayScore
+      ),
       outcome: outcomeForScore(prediction.homeScore, prediction.awayScore),
       isExact:
         prediction.homeScore === result.homeScore &&
@@ -54,7 +57,8 @@ export function scoreMatch(
   const exactCount = rows.filter((row) => row.isExact).length;
   const outcomeCount =
     exactCount === 0 ? rows.filter((row) => row.outcome === resultOutcome).length : 0;
-  const closestDistance = exactCount === 0 && outcomeCount === 0 ? minDistance(rows) : undefined;
+  const closestMetric =
+    exactCount === 0 && outcomeCount === 0 ? minClosestMetric(rows) : undefined;
 
   return rows.map((row) => {
     const awards: ScoreAward[] = [];
@@ -75,7 +79,7 @@ export function scoreMatch(
       points += 2;
     }
 
-    if (closestDistance !== undefined && row.distance === closestDistance) {
+    if (closestMetric && isClosest(row, closestMetric)) {
       awards.push("closest");
       points += 1;
     }
@@ -165,10 +169,26 @@ function outcomeForScore(homeScore: number, awayScore: number): MatchOutcome {
   return "draw";
 }
 
-function minDistance(rows: Array<{ distance: number }>): number | undefined {
+interface ClosestMetric {
+  distance: number;
+  totalGoalsDistance: number;
+}
+
+function minClosestMetric(rows: ClosestMetric[]): ClosestMetric | undefined {
   if (rows.length === 0) {
     return undefined;
   }
 
-  return Math.min(...rows.map((row) => row.distance));
+  return rows.reduce((best, row) => (compareClosestMetric(row, best) < 0 ? row : best));
+}
+
+function isClosest(row: ClosestMetric, closestMetric: ClosestMetric): boolean {
+  return (
+    row.distance === closestMetric.distance &&
+    row.totalGoalsDistance === closestMetric.totalGoalsDistance
+  );
+}
+
+function compareClosestMetric(left: ClosestMetric, right: ClosestMetric): number {
+  return left.distance - right.distance || left.totalGoalsDistance - right.totalGoalsDistance;
 }

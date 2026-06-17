@@ -34,10 +34,14 @@ For each completed match:
 Default closest metric:
 
 ```text
-abs(predicted_home - actual_home) + abs(predicted_away - actual_away)
+primary = abs(predicted_home - actual_home) + abs(predicted_away - actual_away)
+tie-breaker = abs((predicted_home + predicted_away) - (actual_home + actual_away))
 ```
 
-This metric is simple, deterministic, and easy to explain. Changing it later is a
+The lowest primary distance wins. If multiple predictions tie on that distance,
+the prediction with the closest total number of goals wins. If predictions are
+still tied after both checks, all tied predictions receive the closest point.
+This metric is deterministic and easy to explain. Changing it later is a
 scoring-rule change and must include migration/recompute notes.
 
 ## Recomputability

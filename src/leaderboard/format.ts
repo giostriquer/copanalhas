@@ -20,7 +20,7 @@ const rulesLines = [
   "- Se mais de uma pessoa acertar o placar exato, cada uma ganha 3 pts exato.",
   "- Se ninguém acertar o placar exato, quem acertar o vencedor ou empate ganha 2 pts resultado.",
   "- O ponto de mais próximo só vale quando ninguém acerta o placar exato nem o vencedor/empate.",
-  "- Nesse caso, ganha 1 pt quem tiver a menor soma de diferenças nos gols dos dois times; empates recebem 1 pt cada.",
+  "- Nesse caso, ganha 1 pt quem tiver a menor soma de diferenças nos gols dos dois times; se empatar, desempata pelo total de gols mais próximo.",
   "- Em empate na pontuação, desempata por solo, exatos, resultados, mais próximos e depois ID do jogador.",
   "",
   "Premiação",
