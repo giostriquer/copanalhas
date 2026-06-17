@@ -16,12 +16,12 @@ const leaderboardTitle = "Ranking Copanalhas";
 const rulesLines = [
   "Como funciona",
   "- Envie seu palpite pelo botão do jogo do dia; você pode editar até 30 min antes da partida.",
-  "- Se só uma pessoa acertar o placar exato, ela ganha 3 pts.",
-  "- Se mais de uma pessoa acertar o placar exato, cada uma ganha 1 pt.",
-  "- Se ninguém acertar o placar exato, quem acertar o vencedor ou empate ganha 1 pt.",
+  "- Se só uma pessoa acertar o placar exato, ela ganha 5 pts solo.",
+  "- Se mais de uma pessoa acertar o placar exato, cada uma ganha 3 pts exato.",
+  "- Se ninguém acertar o placar exato, quem acertar o vencedor ou empate ganha 2 pts resultado.",
   "- O ponto de mais próximo só vale quando ninguém acerta o placar exato nem o vencedor/empate.",
   "- Nesse caso, ganha 1 pt quem tiver a menor soma de diferenças nos gols dos dois times; empates recebem 1 pt cada.",
-  "- Em empate na pontuação, desempata por exatos solo, exatos, resultados, mais próximos e depois ID do jogador.",
+  "- Em empate na pontuação, desempata por solo, exatos, resultados, mais próximos e depois ID do jogador.",
   "",
   "Premiação",
   "- 1000 (da pra aumentar se alguem quiser contribuir)",
@@ -52,9 +52,9 @@ export function formatLeaderboard(
 
     lines.push(
       `${rank}. ${displayNameForRow(row, displayNames)} - ${points(row.points)} (${count(
-        row.exactSoloCount,
-        "exato solo",
-        "exatos solo"
+        row.soloCount,
+        "solo",
+        "solos"
       )}, ${count(
         row.exactCount,
         "exato",
@@ -101,7 +101,7 @@ function formatDashboardRows(
       [
         String(rankForRow(rows, index)).padEnd(2),
         row.points.toString().padStart(3),
-        row.exactSoloCount.toString().padStart(4),
+        row.soloCount.toString().padStart(4),
         row.exactCount.toString().padStart(5),
         row.outcomeCount.toString().padStart(5),
         row.closestCount.toString().padStart(5),
@@ -125,7 +125,7 @@ function rankForRow(rows: LeaderboardRow[], index: number): number {
 function sameLeaderboardRank(left: LeaderboardRow, right: LeaderboardRow): boolean {
   return (
     left.points === right.points &&
-    left.exactSoloCount === right.exactSoloCount &&
+    left.soloCount === right.soloCount &&
     left.exactCount === right.exactCount &&
     left.outcomeCount === right.outcomeCount &&
     left.closestCount === right.closestCount

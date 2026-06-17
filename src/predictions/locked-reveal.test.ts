@@ -88,7 +88,7 @@ describe("formatPredictionResultRevealBatch", () => {
         "#1 México (1) x (0) África do Sul",
         "3 palpites",
         "<@user-1>  2x1 - 0 pts",
-        "<@user-2>  1x0 - 3 pts",
+        "<@user-2>  1x0 - 5 pts",
         "<@user-3>  0x0 - 0 pts"
       ].join("\n")
     );
@@ -111,8 +111,8 @@ describe("formatPredictionResultRevealBatch", () => {
         "",
         "#1 México (2) x (0) África do Sul",
         "3 palpites",
-        "<@user-1>  3x1 - 1 pt",
-        "<@user-2>  1x0 - 1 pt",
+        "<@user-1>  3x1 - 2 pts",
+        "<@user-2>  1x0 - 2 pts",
         "<@user-3>  0x1 - 0 pts"
       ].join("\n")
     );

@@ -15,11 +15,13 @@ ambiguous input rather than guessing.
 
 For each completed match:
 
-- If exactly one member lands the exact scoreline, that member receives 3 points.
-- If multiple members land the exact scoreline, each exact predictor receives 1 point.
+- If exactly one member lands the exact scoreline, that member receives 5 solo
+  points.
+- If multiple members land the exact scoreline, each exact predictor receives 3
+  exact points.
 - Correct-outcome points are awarded only when nobody lands the exact scoreline.
 - If nobody lands the exact scoreline, each member who lands the winner or draw
-  receives 1 point.
+  receives 2 result points.
 - Closest points are awarded only when nobody lands the exact scoreline or the
   correct winner/draw.
 - If nobody lands the exact scoreline or correct winner/draw, the closest
@@ -43,13 +45,18 @@ scoring-rule change and must include migration/recompute notes.
 Leaderboard rows must be recomputable from stored predictions plus final match
 results. Do not store points as the only source of truth.
 
+The active scoring migration keeps stored predictions and stored final results
+unchanged. Existing leaderboard and reveal output is recomputed from those rows
+with the active point values: solo exact = 5, shared exact = 3, result = 2, and
+closest = 1.
+
 ## Leaderboard Tie-Breakers
 
 Leaderboard rows sort by:
 
 1. total points, descending
 2. solo exact scorelines, descending
-3. total exact scorelines, descending
+3. shared exact scorelines, descending
 4. correct winner/draw results, descending
 5. closest-score awards, descending
 6. Discord user ID, ascending, as the deterministic final fallback

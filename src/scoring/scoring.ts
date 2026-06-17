@@ -1,4 +1,4 @@
-export type ScoreAward = "exact" | "exact-solo" | "outcome" | "closest";
+export type ScoreAward = "solo" | "exact" | "outcome" | "closest";
 type MatchOutcome = "home" | "away" | "draw";
 
 export interface MatchResult {
@@ -25,7 +25,7 @@ export interface ScoredPrediction {
 export interface LeaderboardRow {
   userId: string;
   points: number;
-  exactSoloCount: number;
+  soloCount: number;
   exactCount: number;
   outcomeCount: number;
   closestCount: number;
@@ -52,7 +52,6 @@ export function scoreMatch(
 
   const resultOutcome = outcomeForScore(result.homeScore, result.awayScore);
   const exactCount = rows.filter((row) => row.isExact).length;
-  const exactPoints = exactCount === 1 ? 3 : 1;
   const outcomeCount =
     exactCount === 0 ? rows.filter((row) => row.outcome === resultOutcome).length : 0;
   const closestDistance = exactCount === 0 && outcomeCount === 0 ? minDistance(rows) : undefined;
@@ -62,16 +61,18 @@ export function scoreMatch(
     let points = 0;
 
     if (row.isExact) {
-      awards.push("exact");
       if (exactCount === 1) {
-        awards.push("exact-solo");
+        awards.push("solo");
+        points += 5;
+      } else {
+        awards.push("exact");
+        points += 3;
       }
-      points += exactPoints;
     }
 
     if (outcomeCount > 0 && row.outcome === resultOutcome) {
       awards.push("outcome");
-      points += 1;
+      points += 2;
     }
 
     if (closestDistance !== undefined && row.distance === closestDistance) {
@@ -107,12 +108,12 @@ export function buildLeaderboard(
     row.points += scored.points;
     row.matchesScored += 1;
 
-    if (scored.awards.includes("exact")) {
-      row.exactCount += 1;
+    if (scored.awards.includes("solo")) {
+      row.soloCount += 1;
     }
 
-    if (scored.awards.includes("exact-solo")) {
-      row.exactSoloCount += 1;
+    if (scored.awards.includes("exact")) {
+      row.exactCount += 1;
     }
 
     if (scored.awards.includes("outcome")) {
@@ -133,7 +134,7 @@ function emptyLeaderboardRow(userId: string): LeaderboardRow {
   return {
     userId,
     points: 0,
-    exactSoloCount: 0,
+    soloCount: 0,
     exactCount: 0,
     outcomeCount: 0,
     closestCount: 0,
@@ -144,7 +145,7 @@ function emptyLeaderboardRow(userId: string): LeaderboardRow {
 function compareLeaderboardRows(left: LeaderboardRow, right: LeaderboardRow): number {
   return (
     right.points - left.points ||
-    right.exactSoloCount - left.exactSoloCount ||
+    right.soloCount - left.soloCount ||
     right.exactCount - left.exactCount ||
     right.outcomeCount - left.outcomeCount ||
     right.closestCount - left.closestCount ||
