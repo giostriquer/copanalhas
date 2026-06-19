@@ -136,7 +136,32 @@ Use a fixed SVG layout and rasterize it with `sharp`. Do not use LLM image
 generation, screenshots as the runtime renderer, or manually edited bitmap
 assets. The same input state must produce equivalent output every time.
 
-The image should show the whole bracket skeleton:
+### Visual Amendment - 2026-06-19
+
+The first full-skeleton rendering proved too hard to read in Discord. Until
+reviewed knockout topology is imported and there is useful later-round state to
+show, the production image should focus on the Round of 32 only. Render the
+sixteen Round of 32 fixtures as two large, readable halves:
+
+- left half: fixtures whose winners feed the path toward semi-final #101
+- right half: fixtures whose winners feed the path toward semi-final #102
+
+Within each half, order fixture pairs by the reviewed FIFA winner path:
+
+```text
+Left:  #74/#77 -> #89, #73/#75 -> #90, #83/#84 -> #93, #81/#82 -> #94
+Right: #76/#78 -> #91, #79/#80 -> #92, #86/#88 -> #95, #85/#87 -> #96
+```
+
+The image should use Portuguese team display names and deterministic vector flag
+markers instead of emoji flags, because the `sharp` rasterization path does not
+reliably render emoji flag glyphs as flags.
+
+The original whole-skeleton shape remains a future extension. When implemented,
+it must be based on reviewed knockout topology and should not reintroduce
+unreadable placeholder columns.
+
+The full-bracket image, when that future extension exists, should show:
 
 - Round of 32
 - Round of 16
