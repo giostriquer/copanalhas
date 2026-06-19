@@ -57,6 +57,30 @@ describe("createBracketState", () => {
     ).toBe(true);
   });
 
+  test("uses reviewed official tiebreaker order for provisional Group C bracket slots", () => {
+    const state = createBracketState({
+      matches: WORLD_CUP_2026_SEED.matches,
+      results: [result("wc2026-006", 1, 1), result("wc2026-007", 0, 1)]
+    });
+    const roundOf32 = state.rounds.find((round) => round.key === "round_of_32");
+
+    expect(state.phase).toBe("provisional");
+    expect(
+      roundOf32?.matches.find((matchFixture) => matchFixture.label === "#75")?.away
+    ).toMatchObject({
+      sourceSlot: "2C",
+      teamCode: "MAR"
+    });
+    expect(
+      roundOf32?.matches
+        .flatMap((matchFixture) => [matchFixture.home, matchFixture.away])
+        .find((entrant) => entrant.sourceSlot === "3C")
+    ).toMatchObject({
+      sourceSlot: "3C",
+      teamCode: "BRA"
+    });
+  });
+
   test("resolves final round-of-32 entrants from reviewed current match data", () => {
     const state = createBracketState({
       matches: WORLD_CUP_2026_SEED.matches,

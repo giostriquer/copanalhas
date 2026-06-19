@@ -64,6 +64,11 @@ pure resolver and validation logic lives in `src/worldcup/fifa-qualification.ts`
 Source URL:
 `https://digitalhub.fifa.com/asset/73f73fe3-235a-4f54-b252-b53d3d580ec5/FWC2026_regulations_EN.pdf`
 
+Score-derived standings cannot infer team-conduct or FIFA-ranking tiebreakers
+without reviewed inputs. Guarded, operator-reviewed tiebreaker orders live in
+`src/worldcup/reviewed-tiebreakers.ts`; each entry must include the exact row
+statistics it applies to so a later result cannot keep using stale conduct data.
+
 ## Hardcoded Dataset Path
 
 The current seed lives in `src/worldcup/seed.ts`. It contains the reviewed full

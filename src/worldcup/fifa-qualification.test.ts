@@ -29,6 +29,43 @@ describe("computeFifaGroupStandings", () => {
     expect(standings[0]?.rows.map((row) => row.points)).toEqual([6, 6, 4, 1]);
     expect(standings[0]?.rows.map((row) => row.goalDifference)).toEqual([-2, 9, -1, -6]);
   });
+
+  test("uses reviewed official tiebreaker order for current score-identical Group C rows", () => {
+    const standings = computeFifaGroupStandings(seedGroupMatches("C"), [
+      result("wc2026-006", 1, 1),
+      result("wc2026-007", 0, 1)
+    ]);
+
+    expect(standings[0]?.status).toBe("resolved");
+    expect(standings[0]?.rows.map((row) => row.teamCode)).toEqual([
+      "SCO",
+      "MAR",
+      "BRA",
+      "HAI"
+    ]);
+    expect(standings[0]?.rows.map((row) => row.tiebreakerStatus)).toEqual([
+      "resolved",
+      "resolved",
+      "resolved",
+      "resolved"
+    ]);
+  });
+
+  test("does not reuse a reviewed tiebreaker order after the guarded row stats change", () => {
+    const standings = computeFifaGroupStandings(seedGroupMatches("C"), [
+      result("wc2026-006", 1, 1),
+      result("wc2026-007", 0, 1),
+      result("wc2026-030", 0, 0),
+      result("wc2026-031", 0, 0)
+    ]);
+    const tiedRows = standings[0]?.rows.filter((row) => ["BRA", "MAR"].includes(row.teamCode));
+
+    expect(standings[0]?.status).toBe("needs-manual-tiebreaker");
+    expect(tiedRows?.map((row) => row.tiebreakerStatus)).toEqual([
+      "needs-manual-tiebreaker",
+      "needs-manual-tiebreaker"
+    ]);
+  });
 });
 
 describe("resolveAnnexCThirdPlaceAssignments", () => {
@@ -186,6 +223,10 @@ function currentSeedRank(group: string, teamCode: string): number {
 
 function allGroupMatches(): WorldCupMatch[] {
   return "ABCDEFGHIJKL".split("").flatMap((group) => groupMatches(group));
+}
+
+function seedGroupMatches(group: string): WorldCupMatch[] {
+  return WORLD_CUP_2026_SEED.matches.filter((matchFixture) => matchFixture.group === group);
 }
 
 function groupMatches(group: string): WorldCupMatch[] {

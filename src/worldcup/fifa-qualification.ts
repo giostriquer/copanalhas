@@ -3,6 +3,7 @@ import {
   FIFA_2026_ANNEX_C_COLUMNS,
   FIFA_2026_ANNEX_C_ROWS
 } from "./fifa-annex-c.js";
+import { FIFA_2026_REVIEWED_TIEBREAKER_ORDERS } from "./reviewed-tiebreakers.js";
 import type { WorldCupMatch, WorldCupTeam } from "./types.js";
 
 export { FIFA_2026_ANNEX_C_COLUMNS, FIFA_2026_ANNEX_C_ROWS } from "./fifa-annex-c.js";
@@ -62,6 +63,28 @@ export interface ResolvedRoundOf32Fixture {
   awayTeam: WorldCupTeam;
 }
 
+export interface ComputeFifaGroupStandingsOptions {
+  reviewedTiebreakerOrders?: readonly FifaReviewedTiebreakerOrder[];
+}
+
+export interface FifaReviewedTiebreakerOrder {
+  group: FifaGroupCode;
+  orderedTeamCodes: readonly string[];
+  appliesTo: readonly FifaReviewedTiebreakerRowSnapshot[];
+  reason: "team-conduct" | "fifa-ranking" | "official-standings";
+  source: string;
+  reviewedAt: string;
+}
+
+export interface FifaReviewedTiebreakerRowSnapshot {
+  teamCode: string;
+  played: number;
+  points: number;
+  goalDifference: number;
+  goalsFor: number;
+  goalsAgainst: number;
+}
+
 const fifaGroupCodeSet = new Set<string>(FIFA_2026_GROUP_CODES);
 
 const roundOf32Templates = [
@@ -85,11 +108,14 @@ const roundOf32Templates = [
 
 export function computeFifaGroupStandings(
   matches: readonly WorldCupMatch[],
-  results: readonly StandingsResult[]
+  results: readonly StandingsResult[],
+  options: ComputeFifaGroupStandingsOptions = {}
 ): FifaGroupStandings[] {
   const groups = new Map<string, Map<string, MutableFifaGroupStandingRow>>();
   const playedMatches = new Map<string, PlayedGroupMatch[]>();
   const matchesById = new Map(matches.map((match) => [match.id, match]));
+  const reviewedTiebreakerOrders =
+    options.reviewedTiebreakerOrders ?? FIFA_2026_REVIEWED_TIEBREAKER_ORDERS;
 
   for (const match of matches) {
     ensureTeam(groups, match.group, match.homeTeam);
@@ -114,7 +140,11 @@ export function computeFifaGroupStandings(
   return [...groups.entries()]
     .sort(([leftGroup], [rightGroup]) => leftGroup.localeCompare(rightGroup))
     .map(([group, teamRows]) => {
-      const ranked = rankFifaRows([...teamRows.values()], playedMatches.get(group) ?? []);
+      const ranked = rankFifaRows(
+        [...teamRows.values()],
+        playedMatches.get(group) ?? [],
+        reviewedTiebreakerOrders.filter((order) => order.group === group)
+      );
 
       return {
         group,
@@ -336,14 +366,19 @@ function recordPlayedMatch(
 
 function rankFifaRows(
   rows: MutableFifaGroupStandingRow[],
-  playedMatches: readonly PlayedGroupMatch[]
+  playedMatches: readonly PlayedGroupMatch[],
+  reviewedTiebreakerOrders: readonly FifaReviewedTiebreakerOrder[]
 ): { status: FifaQualificationStatus; rows: FifaGroupStandingRow[] } {
   const pointGroups = splitByScore(rows, (row) => row.points);
   const rankedRows: MutableFifaGroupStandingRow[] = [];
   const unresolvedTeamCodes = new Set<string>();
 
   for (const pointGroup of pointGroups) {
-    const rankedPointGroup = rankEqualPointRows(pointGroup, playedMatches);
+    const rankedPointGroup = rankEqualPointRows(
+      pointGroup,
+      playedMatches,
+      reviewedTiebreakerOrders
+    );
 
     rankedRows.push(...rankedPointGroup.rows);
     for (const teamCode of rankedPointGroup.unresolvedTeamCodes) {
@@ -365,7 +400,8 @@ function rankFifaRows(
 
 function rankEqualPointRows(
   rows: readonly MutableFifaGroupStandingRow[],
-  playedMatches: readonly PlayedGroupMatch[]
+  playedMatches: readonly PlayedGroupMatch[],
+  reviewedTiebreakerOrders: readonly FifaReviewedTiebreakerOrder[]
 ): { rows: MutableFifaGroupStandingRow[]; unresolvedTeamCodes: Set<string> } {
   const headToHeadGroups = splitByHeadToHeadUntilStable(rows, playedMatches);
   const rankedRows: MutableFifaGroupStandingRow[] = [];
@@ -378,6 +414,16 @@ function rankEqualPointRows(
     ]);
 
     for (const allMatchGroup of allMatchGroups) {
+      const reviewedOrder = reviewedTiebreakerOrderForRows(
+        allMatchGroup,
+        reviewedTiebreakerOrders
+      );
+
+      if (reviewedOrder) {
+        rankedRows.push(...sortRowsByReviewedOrder(allMatchGroup, reviewedOrder));
+        continue;
+      }
+
       if (allMatchGroup.length > 1) {
         for (const row of allMatchGroup) {
           unresolvedTeamCodes.add(row.teamCode);
@@ -389,6 +435,70 @@ function rankEqualPointRows(
   }
 
   return { rows: rankedRows, unresolvedTeamCodes };
+}
+
+function reviewedTiebreakerOrderForRows(
+  rows: readonly MutableFifaGroupStandingRow[],
+  reviewedTiebreakerOrders: readonly FifaReviewedTiebreakerOrder[]
+): FifaReviewedTiebreakerOrder | undefined {
+  if (rows.length <= 1) {
+    return undefined;
+  }
+
+  return reviewedTiebreakerOrders.find((order) => reviewedOrderMatchesRows(order, rows));
+}
+
+function reviewedOrderMatchesRows(
+  order: FifaReviewedTiebreakerOrder,
+  rows: readonly MutableFifaGroupStandingRow[]
+): boolean {
+  if (!sameTeamCodes(rows.map((row) => row.teamCode), order.orderedTeamCodes)) {
+    return false;
+  }
+
+  if (
+    !sameTeamCodes(
+      rows.map((row) => row.teamCode),
+      order.appliesTo.map((row) => row.teamCode)
+    )
+  ) {
+    return false;
+  }
+
+  return rows.every((row) => {
+    const expected = order.appliesTo.find((candidate) => candidate.teamCode === row.teamCode);
+
+    return (
+      expected !== undefined &&
+      expected.played === row.played &&
+      expected.points === row.points &&
+      expected.goalDifference === row.goalDifference &&
+      expected.goalsFor === row.goalsFor &&
+      expected.goalsAgainst === row.goalsAgainst
+    );
+  });
+}
+
+function sameTeamCodes(left: readonly string[], right: readonly string[]): boolean {
+  return (
+    left.length === right.length &&
+    left.toSorted().join("|") === right.toSorted().join("|")
+  );
+}
+
+function sortRowsByReviewedOrder<T extends NamedTeamRow & { teamCode: string }>(
+  rows: readonly T[],
+  order: FifaReviewedTiebreakerOrder
+): T[] {
+  const orderIndexes = new Map(
+    order.orderedTeamCodes.map((teamCode, index) => [teamCode, index])
+  );
+
+  return [...rows].sort(
+    (left, right) =>
+      (orderIndexes.get(left.teamCode) ?? Number.MAX_SAFE_INTEGER) -
+      (orderIndexes.get(right.teamCode) ?? Number.MAX_SAFE_INTEGER)
+  );
 }
 
 function splitByHeadToHeadUntilStable(
