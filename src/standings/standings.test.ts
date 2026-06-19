@@ -104,6 +104,20 @@ describe("computeGroupStandings", () => {
     ]);
   });
 
+  test("uses FIFA head-to-head ordering before overall goal difference", () => {
+    const standings = computeGroupStandings(fullGroupFixtures(), [
+      result("wc2026-test-001", 1, 0),
+      result("wc2026-test-002", 0, 4),
+      result("wc2026-test-003", 1, 0),
+      result("wc2026-test-004", 5, 0),
+      result("wc2026-test-005", 5, 0),
+      result("wc2026-test-006", 0, 0)
+    ]);
+
+    expect(standings[0]?.rows.map((row) => row.teamCode)).toEqual(["MEX", "BRA", "CAN", "RSA"]);
+    expect(standings[0]?.rows.map((row) => row.goalDifference)).toEqual([-2, 9, -1, -6]);
+  });
+
   test("ignores result records that do not match a loaded fixture", () => {
     const standings = computeGroupStandings(groupAFixtures(), [
       result("wc2026-test-999", 9, 0)
@@ -117,6 +131,17 @@ function groupAFixtures(): WorldCupMatch[] {
   return [
     match("wc2026-test-001", 1, "A", team("MEX", "Mexico"), team("RSA", "South Africa")),
     match("wc2026-test-002", 2, "A", team("BRA", "Brazil"), team("CAN", "Canada"))
+  ];
+}
+
+function fullGroupFixtures(): WorldCupMatch[] {
+  return [
+    match("wc2026-test-001", 1, "A", team("MEX", "Mexico"), team("BRA", "Brazil")),
+    match("wc2026-test-002", 2, "A", team("MEX", "Mexico"), team("CAN", "Canada")),
+    match("wc2026-test-003", 3, "A", team("MEX", "Mexico"), team("RSA", "South Africa")),
+    match("wc2026-test-004", 4, "A", team("BRA", "Brazil"), team("CAN", "Canada")),
+    match("wc2026-test-005", 5, "A", team("BRA", "Brazil"), team("RSA", "South Africa")),
+    match("wc2026-test-006", 6, "A", team("CAN", "Canada"), team("RSA", "South Africa"))
   ];
 }
 
