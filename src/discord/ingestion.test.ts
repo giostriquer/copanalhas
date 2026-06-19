@@ -325,6 +325,13 @@ function operatorOptions(): OperatorCommandOptions {
       action: "updated" as const,
       post: { messageId: "leaderboard-message-1", action: "edited" as const }
     })),
+    listBracketPosts: vi.fn(() => []),
+    updateBracketDashboard: vi.fn(async () => ({
+      action: "updated" as const,
+      post: { messageId: "bracket-message-1", action: "edited" as const },
+      bracketPhase: "provisional" as const,
+      renderState: "image" as const
+    })),
     syncResultsNow: vi.fn(async () => ({
       action: "disabled" as const,
       reason: "disabled" as const

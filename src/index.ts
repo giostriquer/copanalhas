@@ -1,4 +1,5 @@
 import { pathToFileURL } from "node:url";
+import type { Buffer } from "node:buffer";
 
 import {
   startCopanalhasBotRuntime,
@@ -7,6 +8,8 @@ import {
 } from "./app/bot-runtime.js";
 import { formatRuntimeAsyncErrorLog, formatRuntimeLogLine } from "./app/dev-log.js";
 import type { MatchStartAlertMessage } from "./app/match-start-alerts.js";
+import { renderBracketPng } from "./bracket/png.js";
+import type { BracketDashboardMessage } from "./bracket/format.js";
 import { loadLocalEnvFile } from "./config/env.js";
 import { createMatchDayMessage, type MatchCardMessage } from "./discord/components.js";
 import { parseCopanalhasConfig, type CopanalhasConfig } from "./discord/config.js";
@@ -36,6 +39,7 @@ import {
 } from "./standings/format.js";
 import { computeGroupStandings, type StandingsResult } from "./standings/standings.js";
 import { upsertDiscordLeaderboardMessage } from "./discord/leaderboard-posting.js";
+import { upsertDiscordBracketMessage } from "./discord/bracket-posting.js";
 import type { LeaderboardDashboardMessage } from "./leaderboard/format.js";
 import { openCopanalhasDatabase } from "./storage/database.js";
 import { getMatchdayDateForInstant, isMatchOnMatchday } from "./worldcup/matchday.js";
@@ -72,6 +76,11 @@ export interface CliDependencies {
     message: LeaderboardDashboardMessage,
     existingMessageId: string | null
   ): Promise<string>;
+  upsertBracketMessage?(
+    message: BracketDashboardMessage,
+    existingMessageId: string | null
+  ): Promise<string>;
+  renderBracketPng?(svg: string): Promise<Buffer>;
   resolveDiscordDisplayNames?(
     config: CopanalhasConfig,
     userIds: readonly string[]
@@ -302,6 +311,11 @@ async function startBot(dependencies: CliDependencies): Promise<void> {
       dependencies.upsertLeaderboardMessage ??
       ((message, existingMessageId) =>
         upsertDiscordLeaderboardMessage(configResult.config, message, existingMessageId)),
+    upsertBracketMessage:
+      dependencies.upsertBracketMessage ??
+      ((message, existingMessageId) =>
+        upsertDiscordBracketMessage(configResult.config, message, existingMessageId)),
+    renderBracketPng: dependencies.renderBracketPng ?? renderBracketPng,
     resolveUserDisplayNames: (userIds) =>
       (dependencies.resolveDiscordDisplayNames ?? fetchDiscordDisplayNames)(
         configResult.config,

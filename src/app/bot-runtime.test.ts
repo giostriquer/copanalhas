@@ -1,4 +1,5 @@
 import { describe, expect, test, vi } from "vitest";
+import { Buffer } from "node:buffer";
 
 import { startCopanalhasBotRuntime, type BotRuntimeStore } from "./bot-runtime.js";
 import type { CopanalhasConfig } from "../discord/config.js";
@@ -24,6 +25,8 @@ describe("startCopanalhasBotRuntime", () => {
     }));
     const upsertStandingsMessage = vi.fn(async (message) => `standings-${message.key}`);
     const upsertLeaderboardMessage = vi.fn(async () => "leaderboard-message-1");
+    const upsertBracketMessage = vi.fn(async () => "bracket-message-1");
+    const renderBracketPng = vi.fn(async () => Buffer.from("png"));
     const writeLine = vi.fn();
 
     const runtime = await startCopanalhasBotRuntime({
@@ -36,6 +39,8 @@ describe("startCopanalhasBotRuntime", () => {
       sendPredictionReveal,
       upsertStandingsMessage,
       upsertLeaderboardMessage,
+      upsertBracketMessage,
+      renderBracketPng,
       now: () => new Date("2026-06-11T21:15:00.000Z"),
       writeLine
     });
@@ -57,7 +62,8 @@ describe("startCopanalhasBotRuntime", () => {
           postDueMatchCards: expect.any(Function),
           upsertResult: expect.any(Function),
           updateStandingsDashboard: expect.any(Function),
-          updateLeaderboardDashboard: expect.any(Function)
+          updateLeaderboardDashboard: expect.any(Function),
+          updateBracketDashboard: expect.any(Function)
         }),
         registerCommands: expect.any(Function)
       })
@@ -67,11 +73,16 @@ describe("startCopanalhasBotRuntime", () => {
     expect(store.recordStandingsPost).toHaveBeenCalledTimes(2);
     expect(upsertLeaderboardMessage).toHaveBeenCalledOnce();
     expect(store.recordLeaderboardPost).toHaveBeenCalledOnce();
+    expect(upsertBracketMessage).toHaveBeenCalledOnce();
+    expect(store.recordBracketPost).toHaveBeenCalledOnce();
     expect(writeLine).toHaveBeenCalledWith(
       "[2026-06-11T21:15:00.000Z][dashboard] standings posts=2 posted=2 edited=0 replaced=0"
     );
     expect(writeLine).toHaveBeenCalledWith(
       "[2026-06-11T21:15:00.000Z][dashboard] leaderboard action=posted message=leaderboard-message-1"
+    );
+    expect(writeLine).toHaveBeenCalledWith(
+      "[2026-06-11T21:15:00.000Z][dashboard] bracket action=posted message=bracket-message-1 phase=provisional render=image"
     );
     expect(writeLine).toHaveBeenCalledWith(
       "[2026-06-11T21:15:00.000Z][auto-post] date=2026-06-11 windowDays=3 posted=8 skipped=0"
@@ -83,7 +94,7 @@ describe("startCopanalhasBotRuntime", () => {
       "[2026-06-11T21:15:00.000Z][health] nextMatchday=2026-06-11 matches=2 posted=2/2"
     );
     expect(writeLine).toHaveBeenCalledWith(
-      "[2026-06-11T21:15:00.000Z][health] dashboards standings=2/2 leaderboard=present lastLeaderboard=2026-06-11T21:15:00.000Z"
+      "[2026-06-11T21:15:00.000Z][health] dashboards standings=2/2 leaderboard=present bracket=present lastLeaderboard=2026-06-11T21:15:00.000Z lastBracket=2026-06-11T21:15:00.000Z"
     );
 
     await runtime.stop();
@@ -387,6 +398,8 @@ describe("startCopanalhasBotRuntime", () => {
     });
     const upsertStandingsMessage = vi.fn(async (message) => `standings-${message.key}`);
     const upsertLeaderboardMessage = vi.fn(async () => "leaderboard-message-1");
+    const upsertBracketMessage = vi.fn(async () => "bracket-message-1");
+    const renderBracketPng = vi.fn(async () => Buffer.from("png"));
     let now = new Date("2026-06-11T21:00:00.000Z");
     const syncFinishedResults = vi.fn(async () => ({
       action: "synced" as const,
@@ -413,6 +426,8 @@ describe("startCopanalhasBotRuntime", () => {
       })),
       upsertStandingsMessage,
       upsertLeaderboardMessage,
+      upsertBracketMessage,
+      renderBracketPng,
       syncFinishedResults,
       now: () => now,
       writeLine: vi.fn()
@@ -420,6 +435,7 @@ describe("startCopanalhasBotRuntime", () => {
     expect(startInterval).toHaveBeenNthCalledWith(3, expect.any(Function), 60 * 1000);
     upsertStandingsMessage.mockClear();
     upsertLeaderboardMessage.mockClear();
+    upsertBracketMessage.mockClear();
     syncFinishedResults.mockClear();
 
     now = new Date("2026-06-11T21:15:00.000Z");
@@ -428,6 +444,70 @@ describe("startCopanalhasBotRuntime", () => {
     expect(syncFinishedResults).toHaveBeenCalledOnce();
     expect(upsertStandingsMessage).toHaveBeenCalledTimes(2);
     expect(upsertLeaderboardMessage).toHaveBeenCalledOnce();
+    expect(upsertBracketMessage).toHaveBeenCalledOnce();
+  });
+
+  test("isolates bracket refresh failures from standings and leaderboard refreshes", async () => {
+    const store = createStore();
+    const intervalCallbacks: Array<() => void | Promise<void>> = [];
+    const startInterval = vi.fn((callback) => {
+      intervalCallbacks.push(callback);
+      return { stop: vi.fn() };
+    });
+    const upsertStandingsMessage = vi.fn(async (message) => `standings-${message.key}`);
+    const upsertLeaderboardMessage = vi.fn(async () => "leaderboard-message-1");
+    const upsertBracketMessage = vi.fn(async () => {
+      throw new Error("Discord upload failed");
+    });
+    const writeLine = vi.fn();
+    let now = new Date("2026-06-11T21:00:00.000Z");
+    const syncFinishedResults = vi.fn(async () => ({
+      action: "synced" as const,
+      storedResults: ["wc2026-001"],
+      skipped: []
+    }));
+
+    await startCopanalhasBotRuntime({
+      config: {
+        ...config(),
+        footballDataToken: "token-value",
+        resultSyncEnabled: true,
+        resultSyncFirstCheckMinutes: 110,
+        resultSyncRetryMinutes: 1
+      },
+      store,
+      matches: WORLD_CUP_2026_SEED.matches,
+      startDiscord: vi.fn(async () => ({ destroy: vi.fn(async () => undefined) })),
+      startInterval,
+      sendMatchCard: vi.fn(async () => "discord-message-1"),
+      sendPredictionReveal: vi.fn(async () => ({
+        threadId: "thread-1",
+        messageId: "reveal-message-1"
+      })),
+      upsertStandingsMessage,
+      upsertLeaderboardMessage,
+      upsertBracketMessage,
+      renderBracketPng: vi.fn(async () => Buffer.from("png")),
+      syncFinishedResults,
+      now: () => now,
+      writeLine
+    });
+    upsertStandingsMessage.mockClear();
+    upsertLeaderboardMessage.mockClear();
+    upsertBracketMessage.mockClear();
+    writeLine.mockClear();
+    syncFinishedResults.mockClear();
+
+    now = new Date("2026-06-11T21:15:00.000Z");
+    await intervalCallbacks[2]?.();
+
+    expect(syncFinishedResults).toHaveBeenCalledOnce();
+    expect(upsertStandingsMessage).toHaveBeenCalledTimes(2);
+    expect(upsertLeaderboardMessage).toHaveBeenCalledOnce();
+    expect(upsertBracketMessage).toHaveBeenCalledOnce();
+    expect(writeLine).toHaveBeenCalledWith(
+      "[2026-06-11T21:15:00.000Z][runtime] scope=bracket-dashboard message=Discord upload failed"
+    );
   });
 
   test("does not repeat unchanged result sync not-due logs every minute", async () => {
@@ -477,6 +557,8 @@ describe("startCopanalhasBotRuntime", () => {
     const startInterval = vi.fn(() => ({ stop: vi.fn() }));
     const upsertStandingsMessage = vi.fn(async (message) => `standings-${message.key}`);
     const upsertLeaderboardMessage = vi.fn(async () => "leaderboard-message-1");
+    const upsertBracketMessage = vi.fn(async () => "bracket-message-1");
+    const renderBracketPng = vi.fn(async () => Buffer.from("png"));
     const writeLine = vi.fn();
     const syncFinishedResults = vi.fn(async () => ({
       action: "synced" as const,
@@ -497,6 +579,8 @@ describe("startCopanalhasBotRuntime", () => {
       })),
       upsertStandingsMessage,
       upsertLeaderboardMessage,
+      upsertBracketMessage,
+      renderBracketPng,
       syncFinishedResults,
       now: () => new Date("2026-06-11T21:15:00.000Z"),
       writeLine
@@ -522,8 +606,12 @@ describe("startCopanalhasBotRuntime", () => {
     expect(writeLine).toHaveBeenCalledWith(
       "[2026-06-11T21:15:00.000Z][dashboard] leaderboard action=posted message=leaderboard-message-1"
     );
+    expect(writeLine).toHaveBeenCalledWith(
+      "[2026-06-11T21:15:00.000Z][dashboard] bracket action=posted message=bracket-message-1 phase=provisional render=image"
+    );
     expect(upsertStandingsMessage).toHaveBeenCalledTimes(4);
     expect(upsertLeaderboardMessage).toHaveBeenCalledTimes(2);
+    expect(upsertBracketMessage).toHaveBeenCalledTimes(2);
   });
 
   test("logs thrown result sync errors without aborting startup", async () => {
@@ -573,6 +661,8 @@ describe("startCopanalhasBotRuntime", () => {
     });
     const upsertStandingsMessage = vi.fn(async (message) => `standings-${message.key}`);
     const upsertLeaderboardMessage = vi.fn(async () => "leaderboard-message-1");
+    const upsertBracketMessage = vi.fn(async () => "bracket-message-1");
+    const renderBracketPng = vi.fn(async () => Buffer.from("png"));
     const writeLine = vi.fn();
     const syncFinishedResults = vi.fn(async () => ({
       action: "synced" as const,
@@ -593,12 +683,15 @@ describe("startCopanalhasBotRuntime", () => {
       })),
       upsertStandingsMessage,
       upsertLeaderboardMessage,
+      upsertBracketMessage,
+      renderBracketPng,
       syncFinishedResults,
       now: () => new Date("2026-06-11T21:00:00.000Z"),
       writeLine
     });
     upsertStandingsMessage.mockClear();
     upsertLeaderboardMessage.mockClear();
+    upsertBracketMessage.mockClear();
     syncFinishedResults.mockClear();
 
     await expect(operatorOptions?.syncResultsNow?.()).resolves.toEqual({
@@ -619,6 +712,7 @@ describe("startCopanalhasBotRuntime", () => {
     );
     expect(upsertStandingsMessage).toHaveBeenCalledTimes(2);
     expect(upsertLeaderboardMessage).toHaveBeenCalledOnce();
+    expect(upsertBracketMessage).toHaveBeenCalledOnce();
     expect(writeLine).toHaveBeenCalledWith(
       "[2026-06-11T21:00:00.000Z][result-sync] start mode=forced range=2026-06-11..2026-06-11 pending=1"
     );
@@ -822,6 +916,9 @@ describe("startCopanalhasBotRuntime", () => {
       },
       leaderboardPost: {
         present: true
+      },
+      bracketPost: {
+        present: false
       }
     });
   });
@@ -896,6 +993,7 @@ function createStore(): BotRuntimeStore {
   const matchStartAlerts: ReturnType<BotRuntimeStore["listMatchStartAlerts"]> = [];
   const standingsPosts: ReturnType<BotRuntimeStore["listStandingsPosts"]> = [];
   const leaderboardPosts: ReturnType<BotRuntimeStore["listLeaderboardPosts"]> = [];
+  const bracketPosts: ReturnType<BotRuntimeStore["listBracketPosts"]> = [];
 
   return {
     migrate: vi.fn(),
@@ -961,6 +1059,15 @@ function createStore(): BotRuntimeStore {
     recordLeaderboardPost: vi.fn((post) => {
       upsertBy(
         leaderboardPosts,
+        post,
+        (stored) => `${stored.guildId}|${stored.channelId}`,
+        (next) => `${next.guildId}|${next.channelId}`
+      );
+    }),
+    listBracketPosts: vi.fn(() => bracketPosts),
+    recordBracketPost: vi.fn((post) => {
+      upsertBy(
+        bracketPosts,
         post,
         (stored) => `${stored.guildId}|${stored.channelId}`,
         (next) => `${next.guildId}|${next.channelId}`

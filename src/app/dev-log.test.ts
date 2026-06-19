@@ -2,6 +2,7 @@ import { describe, expect, test } from "vitest";
 
 import {
   formatAutoPostLog,
+  formatBracketDashboardLog,
   formatDiscordAsyncErrorLog,
   formatLeaderboardDashboardLog,
   formatOperatorAutocompleteLog,
@@ -187,5 +188,28 @@ describe("dev log formatting", () => {
         post: { messageId: "leaderboard-message-1", action: "posted" }
       })
     ).toBe("[dashboard] leaderboard action=posted message=leaderboard-message-1");
+
+    expect(
+      formatBracketDashboardLog({
+        action: "updated",
+        post: { messageId: "bracket-message-1", action: "edited" },
+        bracketPhase: "provisional",
+        renderState: "image"
+      })
+    ).toBe(
+      "[dashboard] bracket action=edited message=bracket-message-1 phase=provisional render=image"
+    );
+
+    expect(
+      formatBracketDashboardLog({
+        action: "updated",
+        post: { messageId: "bracket-message-1", action: "edited" },
+        bracketPhase: "blocked",
+        renderState: "text-fallback",
+        renderError: "sharp failed badly"
+      })
+    ).toBe(
+      "[dashboard] bracket action=edited message=bracket-message-1 phase=blocked render=text-fallback error=sharp failed badly"
+    );
   });
 });

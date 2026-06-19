@@ -97,6 +97,12 @@ describe("handleOperatorCommand", () => {
       action: "updated" as const,
       post: { messageId: "leaderboard-message-1", action: "edited" as const }
     }));
+    const updateBracketDashboard = vi.fn(async () => ({
+      action: "updated" as const,
+      post: { messageId: "bracket-message-1", action: "edited" as const },
+      bracketPhase: "provisional" as const,
+      renderState: "image" as const
+    }));
 
     const result = await handleOperatorCommand(
       command("reset-test-date", { date: "2026-06-11" }),
@@ -107,7 +113,8 @@ describe("handleOperatorCommand", () => {
         clearPredictionRevealPostsForMatches,
         clearMatchStartAlertsForMatches,
         updateStandingsDashboard,
-        updateLeaderboardDashboard
+        updateLeaderboardDashboard,
+        updateBracketDashboard
       })
     );
 
@@ -121,7 +128,8 @@ describe("handleOperatorCommand", () => {
         "Prediction reveals: 4",
         "Match start alerts: 5",
         "Standings refreshed.",
-        "Leaderboard refreshed."
+        "Leaderboard refreshed.",
+        "Bracket refreshed."
       ].join("\n"),
       ephemeral: true
     });
@@ -135,6 +143,7 @@ describe("handleOperatorCommand", () => {
     expect(clearMatchStartAlertsForMatches).toHaveBeenCalledWith(["wc2026-001", "wc2026-002"]);
     expect(updateStandingsDashboard).toHaveBeenCalledOnce();
     expect(updateLeaderboardDashboard).toHaveBeenCalledOnce();
+    expect(updateBracketDashboard).toHaveBeenCalledOnce();
   });
 
   test("status reports today's automation state and recent catch-up results", async () => {
@@ -160,8 +169,9 @@ describe("handleOperatorCommand", () => {
         "Next result-sync check: 2026-06-11T20:50:00.000Z (2 pending)",
         "Last auto-post: posted 1, skipped 1 across 3 days from 2026-06-11",
         "Last result sync: waiting for 2 pending matches; next check 2026-06-11T20:50:00.000Z",
-        "Dashboards: standings 1/2, leaderboard present",
+        "Dashboards: standings 1/2, leaderboard present, bracket present",
         "Last leaderboard update: 2026-06-11T18:00:00.000Z",
+        "Last bracket update: 2026-06-11T18:05:00.000Z",
         "Data: 72 matches loaded, 0 missing kickoff times"
       ].join("\n"),
       ephemeral: true
@@ -228,6 +238,44 @@ describe("handleOperatorCommand", () => {
       "2. Bob - 0 pts (0 solos, 0 exatos, 0 resultados, 0 mais próximos, 1 partida)"
     );
     expect(result.content).toContain("Como funciona");
+  });
+
+  test("bracket posts or updates the bracket dashboard", async () => {
+    const updateBracketDashboard = vi.fn(async () => ({
+      action: "updated" as const,
+      post: { messageId: "bracket-message-1", action: "edited" as const },
+      bracketPhase: "provisional" as const,
+      renderState: "image" as const
+    }));
+
+    const result = await handleOperatorCommand(
+      command("bracket"),
+      options({ updateBracketDashboard })
+    );
+
+    expect(result).toEqual({
+      action: "replied",
+      content: "Updated bracket dashboard: edited (provisional, image).",
+      ephemeral: true
+    });
+    expect(updateBracketDashboard).toHaveBeenCalledOnce();
+  });
+
+  test("bracket returns a private failure reply when refresh fails", async () => {
+    const result = await handleOperatorCommand(
+      command("bracket"),
+      options({
+        updateBracketDashboard: vi.fn(async () => {
+          throw new Error("Discord upload failed");
+        })
+      })
+    );
+
+    expect(result).toEqual({
+      action: "replied",
+      content: "Failed to update bracket dashboard: Discord upload failed.",
+      ephemeral: true
+    });
   });
 
   test("sync-results forces an immediate provider result sync", async () => {
@@ -396,18 +444,26 @@ describe("handleOperatorCommand", () => {
       post: { messageId: "leaderboard-message-1", action: "edited" as const }
     }));
     const updatePredictionResultReveals = vi.fn(async () => undefined);
+    const updateBracketDashboard = vi.fn(async () => ({
+      action: "updated" as const,
+      post: { messageId: "bracket-message-1", action: "edited" as const },
+      bracketPhase: "provisional" as const,
+      renderState: "image" as const
+    }));
 
     await handleOperatorCommand(
       command("result", { match: "wc2026-001", score: "2-1" }),
       options({
         updateStandingsDashboard,
         updateLeaderboardDashboard,
+        updateBracketDashboard,
         updatePredictionResultReveals
       })
     );
 
     expect(updateStandingsDashboard).toHaveBeenCalledOnce();
     expect(updateLeaderboardDashboard).toHaveBeenCalledOnce();
+    expect(updateBracketDashboard).toHaveBeenCalledOnce();
     expect(updatePredictionResultReveals).toHaveBeenCalledOnce();
   });
 
@@ -651,7 +707,7 @@ describe("handleDiscordOperatorCommand", () => {
 });
 
 function command(
-  subcommand: OperatorCommandInput["subcommand"] | "predictions" | "reveal",
+  subcommand: OperatorCommandInput["subcommand"] | "predictions" | "reveal" | "bracket",
   commandOptions: Record<string, string> = {},
   overrides: Partial<OperatorCommandInput> = {}
 ): OperatorCommandInput {
@@ -690,6 +746,13 @@ function options(overrides: Partial<OperatorCommandOptions> = {}): OperatorComma
       action: "updated" as const,
       post: { messageId: "leaderboard-message-1", action: "edited" as const }
     })),
+    listBracketPosts: vi.fn(() => []),
+    updateBracketDashboard: vi.fn(async () => ({
+      action: "updated" as const,
+      post: { messageId: "bracket-message-1", action: "edited" as const },
+      bracketPhase: "provisional" as const,
+      renderState: "image" as const
+    })),
     syncResultsNow: vi.fn(async () => ({
       action: "disabled" as const,
       reason: "disabled" as const
@@ -699,7 +762,7 @@ function options(overrides: Partial<OperatorCommandOptions> = {}): OperatorComma
 }
 
 function discordCommandInteraction(
-  subcommand: OperatorCommandInput["subcommand"] | "predictions" | "reveal",
+  subcommand: OperatorCommandInput["subcommand"] | "predictions" | "reveal" | "bracket",
   events: string[] = []
 ) {
   return {
@@ -842,6 +905,10 @@ function operatorHealthSnapshot(): OperatorHealthSnapshot {
     leaderboardPost: {
       present: true,
       lastUpdatedAt: "2026-06-11T18:00:00.000Z"
+    },
+    bracketPost: {
+      present: true,
+      lastUpdatedAt: "2026-06-11T18:05:00.000Z"
     },
     data: {
       matchesLoaded: 72,

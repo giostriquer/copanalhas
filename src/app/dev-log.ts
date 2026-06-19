@@ -1,4 +1,5 @@
 import type { UpdateLeaderboardDashboardResult } from "./leaderboard-posting.js";
+import type { UpdateBracketDashboardResult } from "./bracket-posting.js";
 import type { UpdateStandingsDashboardResult } from "./standings-posting.js";
 import type {
   OperatorAutocompleteInput,
@@ -188,6 +189,19 @@ export function formatStandingsDashboardLog(result: UpdateStandingsDashboardResu
 
 export function formatLeaderboardDashboardLog(result: UpdateLeaderboardDashboardResult): string {
   return `[dashboard] leaderboard action=${result.post.action} message=${result.post.messageId}`;
+}
+
+export function formatBracketDashboardLog(result: UpdateBracketDashboardResult): string {
+  return [
+    "[dashboard] bracket",
+    `action=${result.post.action}`,
+    `message=${result.post.messageId}`,
+    `phase=${result.bracketPhase}`,
+    `render=${result.renderState}`,
+    result.renderError ? `error=${safeLogMessage(result.renderError)}` : null
+  ]
+    .filter((part): part is string => part !== null)
+    .join(" ");
 }
 
 function formatOperatorCommandResult(result: OperatorCommandResult): string {

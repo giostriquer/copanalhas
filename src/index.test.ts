@@ -1,4 +1,5 @@
 import { describe, expect, test, vi } from "vitest";
+import { Buffer } from "node:buffer";
 
 import { logUnhandledCliError, runCli, startNodeInterval } from "./index.js";
 import type { CliDependencies, CliStore } from "./index.js";
@@ -239,6 +240,7 @@ describe("runCli", () => {
       async (..._args: Parameters<CliDependencies["startDiscord"]>) => undefined
     );
     const startInterval = vi.fn(() => ({ stop: vi.fn() }));
+    const upsertBracketMessage = vi.fn(async () => "bracket-message-1");
 
     await runCli(["bot"], {
       openDatabase: () => store,
@@ -254,6 +256,8 @@ describe("runCli", () => {
       sendMatchCard: vi.fn(async () => "discord-message-1"),
       upsertStandingsMessage: vi.fn(async (message) => `standings-${message.key}`),
       upsertLeaderboardMessage: vi.fn(async () => "leaderboard-message-1"),
+      upsertBracketMessage,
+      renderBracketPng: vi.fn(async () => Buffer.from("png")),
       now: () => new Date("2026-06-11T12:00:00.000Z")
     });
 
@@ -290,6 +294,7 @@ describe("runCli", () => {
       "[2026-06-11T12:00:00.000Z][bot] Starting Discord collector for configured channel.",
       "[2026-06-11T12:00:00.000Z][dashboard] standings posts=2 posted=2 edited=0 replaced=0",
       "[2026-06-11T12:00:00.000Z][dashboard] leaderboard action=posted message=leaderboard-message-1",
+      "[2026-06-11T12:00:00.000Z][dashboard] bracket action=posted message=bracket-message-1 phase=provisional render=image",
       "[2026-06-11T12:00:00.000Z][auto-post] date=2026-06-11 windowDays=3 posted=8 skipped=0",
       "[2026-06-11T12:00:00.000Z][result-sync] disabled reason=disabled",
       "[2026-06-11T12:00:00.000Z][health] discord=online guild=guild-1 channel=channel-1",
@@ -297,7 +302,7 @@ describe("runCli", () => {
       "[2026-06-11T12:00:00.000Z][health] nextMatchday=2026-06-11 matches=2 posted=2/2",
       "[2026-06-11T12:00:00.000Z][health] predictions open=2 closed=0 missingKickoff=0 pendingReveals=0",
       "[2026-06-11T12:00:00.000Z][health] footballData=missing-token resultSync=off nextResultCheck=disabled reason=disabled pendingResults=0",
-      "[2026-06-11T12:00:00.000Z][health] dashboards standings=2/2 leaderboard=present lastLeaderboard=2026-06-11T12:00:00.000Z",
+      "[2026-06-11T12:00:00.000Z][health] dashboards standings=2/2 leaderboard=present bracket=present lastLeaderboard=2026-06-11T12:00:00.000Z lastBracket=2026-06-11T12:00:00.000Z",
       "[2026-06-11T12:00:00.000Z][bot] Autonomous operator enabled. Auto-post: on at 09:00 America/Sao_Paulo."
     ]);
 
@@ -425,6 +430,7 @@ function createStoreShape(): CliStore {
   const matchStartAlerts: ReturnType<CliStore["listMatchStartAlerts"]> = [];
   const standingsPosts: ReturnType<CliStore["listStandingsPosts"]> = [];
   const leaderboardPosts: ReturnType<CliStore["listLeaderboardPosts"]> = [];
+  const bracketPosts: ReturnType<CliStore["listBracketPosts"]> = [];
 
   return {
     migrate: vi.fn(),
@@ -490,6 +496,15 @@ function createStoreShape(): CliStore {
     recordLeaderboardPost: vi.fn((post) => {
       upsertBy(
         leaderboardPosts,
+        post,
+        (stored) => `${stored.guildId}|${stored.channelId}`,
+        (next) => `${next.guildId}|${next.channelId}`
+      );
+    }),
+    listBracketPosts: vi.fn(() => bracketPosts),
+    recordBracketPost: vi.fn((post) => {
+      upsertBy(
+        bracketPosts,
         post,
         (stored) => `${stored.guildId}|${stored.channelId}`,
         (next) => `${next.guildId}|${next.channelId}`

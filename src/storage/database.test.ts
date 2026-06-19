@@ -418,6 +418,37 @@ describe("CopanalhasDatabase", () => {
     store.close();
   });
 
+  test("records bracket dashboard posts by guild and channel", () => {
+    const store = openCopanalhasDatabase(":memory:");
+    store.migrate();
+
+    store.recordBracketPost({
+      guildId: "guild-1",
+      channelId: "channel-1",
+      messageId: "bracket-message-1",
+      createdAt: "2026-06-11T12:00:00.000Z",
+      updatedAt: "2026-06-11T12:00:00.000Z"
+    });
+    store.recordBracketPost({
+      guildId: "guild-1",
+      channelId: "channel-1",
+      messageId: "bracket-message-2",
+      createdAt: "2026-06-11T12:00:00.000Z",
+      updatedAt: "2026-06-11T12:05:00.000Z"
+    });
+
+    expect(store.listBracketPosts()).toEqual([
+      {
+        guildId: "guild-1",
+        channelId: "channel-1",
+        messageId: "bracket-message-2",
+        createdAt: "2026-06-11T12:00:00.000Z",
+        updatedAt: "2026-06-11T12:05:00.000Z"
+      }
+    ]);
+    store.close();
+  });
+
   test("records scoring runs with JSON summaries", () => {
     const store = openCopanalhasDatabase(":memory:");
     store.migrate();

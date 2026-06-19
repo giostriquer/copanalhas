@@ -1,0 +1,208 @@
+import { describe, expect, test } from "vitest";
+
+import { createBracketState } from "./state.js";
+import type { StandingsResult } from "../standings/standings.js";
+import { WORLD_CUP_2026_SEED } from "../worldcup/seed.js";
+import type { WorldCupMatch } from "../worldcup/types.js";
+
+describe("createBracketState", () => {
+  test("creates a whole bracket skeleton with provisional round-of-32 entrants from incomplete group results", () => {
+    const state = createBracketState({
+      matches: groupMatches(["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L"]),
+      results: [
+        result("A-AB", 1, 0),
+        result("B-AB", 2, 0),
+        result("C-AB", 3, 0)
+      ]
+    });
+
+    expect(state.phase).toBe("provisional");
+    expect(state.rounds.map((round) => round.key)).toEqual([
+      "round_of_32",
+      "round_of_16",
+      "quarter_finals",
+      "semi_finals",
+      "final"
+    ]);
+    expect(state.rounds[0]?.matches).toHaveLength(16);
+    expect(state.rounds[0]?.matches[0]?.label).toBe("#73");
+    expect(state.rounds[0]?.matches[0]?.home.sourceSlot).toBe("2A");
+    expect(state.rounds[0]?.matches[0]?.away.sourceSlot).toBe("2B");
+    expect(state.rounds[1]?.matches[0]?.home.label).toBe("W-32-1");
+    expect(state.rounds[0]?.matches.some((match) => match.state === "provisional")).toBe(true);
+    expect(
+      state.rounds[0]?.matches.some(
+        (match) =>
+          match.home.warning === "tie-order-provisional" ||
+          match.away.warning === "tie-order-provisional"
+      )
+    ).toBe(true);
+  });
+
+  test("marks third-place entrants provisional when the eighth and ninth third-place rows are tied", () => {
+    const state = createBracketState({
+      matches: groupMatches(["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L"]),
+      results: thirdPlaceCutoffTieResults()
+    });
+    const roundOf32 = state.rounds.find((round) => round.key === "round_of_32");
+    const entrants = roundOf32?.matches.flatMap((match) => [match.home, match.away]) ?? [];
+
+    expect(state.phase).toBe("provisional");
+    expect(
+      entrants.some(
+        (entrant) =>
+          entrant.sourceSlot?.startsWith("3") &&
+          entrant.warning === "tie-order-provisional"
+      )
+    ).toBe(true);
+  });
+
+  test("resolves final round-of-32 entrants from reviewed current match data", () => {
+    const state = createBracketState({
+      matches: WORLD_CUP_2026_SEED.matches,
+      results: currentSeedProofResults()
+    });
+    const roundOf32 = state.rounds.find((round) => round.key === "round_of_32");
+
+    expect(state.phase).toBe("final");
+    expect(roundOf32?.matches.map((match) => match.state)).toEqual(
+      Array.from({ length: 16 }, () => "final")
+    );
+    expect(
+      roundOf32?.matches.map((match) => [
+        match.label,
+        match.home.sourceSlot,
+        match.home.teamCode,
+        match.away.sourceSlot,
+        match.away.teamCode
+      ])
+    ).toEqual([
+      ["#73", "2A", "RSA", "2B", "BIH"],
+      ["#74", "1E", "GER", "3F", "SWE"],
+      ["#75", "1F", "NED", "2C", "MAR"],
+      ["#76", "1C", "BRA", "2F", "JPN"],
+      ["#77", "1I", "FRA", "3G", "IRN"],
+      ["#78", "2E", "CUW", "2I", "SEN"],
+      ["#79", "1A", "MEX", "3E", "CIV"],
+      ["#80", "1L", "ENG", "3K", "UZB"],
+      ["#81", "1D", "USA", "3I", "IRQ"],
+      ["#82", "1G", "BEL", "3H", "KSA"],
+      ["#83", "2K", "COD", "2L", "CRO"],
+      ["#84", "1H", "ESP", "2J", "ALG"],
+      ["#85", "1B", "CAN", "3J", "AUT"],
+      ["#86", "1J", "ARG", "2H", "CPV"],
+      ["#87", "1K", "POR", "3L", "GHA"],
+      ["#88", "2D", "PAR", "2G", "EGY"]
+    ]);
+  });
+
+  test("reports blocked state instead of guessing when complete results still need manual tiebreakers", () => {
+    const matches = groupMatches(["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L"]);
+    const state = createBracketState({
+      matches,
+      results: matches.map((matchFixture) => result(matchFixture.id, 0, 0))
+    });
+    const roundOf32 = state.rounds.find((round) => round.key === "round_of_32");
+
+    expect(state.phase).toBe("blocked");
+    expect(state.notes.some((note) => note.includes("manual tiebreaker"))).toBe(true);
+    expect(roundOf32?.matches.some((matchFixture) => matchFixture.state === "blocked")).toBe(
+      true
+    );
+  });
+});
+
+const currentSeedRankOrderByGroup = {
+  A: ["MEX", "RSA", "KOR", "CZE"],
+  B: ["CAN", "BIH", "QAT", "SUI"],
+  C: ["BRA", "MAR", "HAI", "SCO"],
+  D: ["USA", "PAR", "AUS", "TUR"],
+  E: ["GER", "CUW", "CIV", "ECU"],
+  F: ["NED", "JPN", "SWE", "TUN"],
+  G: ["BEL", "EGY", "IRN", "NZL"],
+  H: ["ESP", "CPV", "KSA", "URU"],
+  I: ["FRA", "SEN", "IRQ", "NOR"],
+  J: ["ARG", "ALG", "AUT", "JOR"],
+  K: ["POR", "COD", "UZB", "COL"],
+  L: ["ENG", "CRO", "GHA", "PAN"]
+} as const satisfies Record<string, readonly string[]>;
+const currentSeedRankOrders: Readonly<Record<string, readonly string[]>> =
+  currentSeedRankOrderByGroup;
+
+function currentSeedProofResults(): StandingsResult[] {
+  return WORLD_CUP_2026_SEED.matches.map((matchFixture) => {
+    const homeRank = currentSeedRank(matchFixture.group, matchFixture.homeTeam.code);
+    const awayRank = currentSeedRank(matchFixture.group, matchFixture.awayTeam.code);
+    const winnerIsHome = homeRank < awayRank;
+    const winnerRank = Math.min(homeRank, awayRank);
+    const loserRank = Math.max(homeRank, awayRank);
+    const winnerGoals =
+      winnerRank === 3 && loserRank === 4 && matchFixture.group >= "E" ? 5 : 3;
+
+    return result(
+      matchFixture.id,
+      winnerIsHome ? winnerGoals : 0,
+      winnerIsHome ? 0 : winnerGoals
+    );
+  });
+}
+
+function currentSeedRank(group: string, teamCode: string): number {
+  const order = currentSeedRankOrders[group];
+  const index = order?.indexOf(teamCode) ?? -1;
+
+  if (index < 0) {
+    throw new Error(`Missing proof-test rank for Group ${group} team ${teamCode}.`);
+  }
+
+  return index + 1;
+}
+
+function thirdPlaceCutoffTieResults(): StandingsResult[] {
+  return "ABCDEFGHI".split("").flatMap((group) => [
+    result(`${group}-AB`, 3, 0),
+    result(`${group}-AC`, 3, 0),
+    result(`${group}-AD`, 3, 0),
+    result(`${group}-BC`, 2, 0),
+    result(`${group}-BD`, 2, 0),
+    result(`${group}-CD`, 1, 0)
+  ]);
+}
+
+function result(matchId: string, homeScore: number, awayScore: number): StandingsResult {
+  return { matchId, homeScore, awayScore };
+}
+
+function groupMatches(groups: readonly string[]): WorldCupMatch[] {
+  return groups.flatMap((group) => [
+    match(`${group}-AB`, group, `${group}1`, `${group}2`, 1),
+    match(`${group}-AC`, group, `${group}1`, `${group}3`, 2),
+    match(`${group}-AD`, group, `${group}1`, `${group}4`, 3),
+    match(`${group}-BC`, group, `${group}2`, `${group}3`, 4),
+    match(`${group}-BD`, group, `${group}2`, `${group}4`, 5),
+    match(`${group}-CD`, group, `${group}3`, `${group}4`, 6)
+  ]);
+}
+
+function match(
+  id: string,
+  group: string,
+  homeCode: string,
+  awayCode: string,
+  offset: number
+): WorldCupMatch {
+  return {
+    id,
+    matchNumber: group.charCodeAt(0) * 10 + offset,
+    phase: "group",
+    group,
+    homeTeam: { code: homeCode, name: `${homeCode} Name` },
+    awayTeam: { code: awayCode, name: `${awayCode} Name` },
+    localDate: "2026-06-11",
+    kickoffTimeLocal: "13:00",
+    kickoffAtUtc: "2026-06-11T19:00:00.000Z",
+    venue: "Test Stadium",
+    sourceId: "test-source",
+    externalIds: {}
+  };
+}

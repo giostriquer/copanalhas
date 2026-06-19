@@ -1,3 +1,5 @@
+import type { Buffer } from "node:buffer";
+
 import { createPredictionPersistenceHandler } from "./collector.js";
 import { runAutoPostTick } from "./auto-posting.js";
 import {
@@ -5,6 +7,7 @@ import {
   type MatchStartAlertMessage
 } from "./match-start-alerts.js";
 import {
+  formatBracketDashboardLog,
   formatAutoPostLog,
   formatDiscordAsyncErrorLog,
   formatLeaderboardDashboardLog,
@@ -12,6 +15,7 @@ import {
   formatOperatorCommandLog,
   formatPredictionInteractionLog,
   formatRuntimeLogLine,
+  formatRuntimeAsyncErrorLog,
   formatResultSyncErrorLog,
   formatResultSyncLog,
   formatResultSyncStartLog,
@@ -23,6 +27,7 @@ import {
   type OperatorHealthSnapshot
 } from "./operator-health.js";
 import { updateLeaderboardDashboard } from "./leaderboard-posting.js";
+import { updateBracketDashboard } from "./bracket-posting.js";
 import { postDueMatchCards } from "./match-card-posting.js";
 import {
   postDuePredictionReveals,
@@ -50,9 +55,11 @@ import type {
   RuntimeStatusSnapshot
 } from "../discord/operator-commands.js";
 import type { LeaderboardDashboardMessage } from "../leaderboard/format.js";
+import type { BracketDashboardMessage } from "../bracket/format.js";
 import type { StandingsDashboardMessage } from "../standings/format.js";
 import type {
   NewScoringRun,
+  StoredBracketPost,
   StoredMatchStartAlert,
   StoredLeaderboardPost,
   StoredPostedMatchCard,
@@ -104,6 +111,8 @@ export interface BotRuntimeStore {
   recordStandingsPost(post: StoredStandingsPost): void;
   listLeaderboardPosts(): StoredLeaderboardPost[];
   recordLeaderboardPost(post: StoredLeaderboardPost): void;
+  listBracketPosts(): StoredBracketPost[];
+  recordBracketPost(post: StoredBracketPost): void;
   insertScoringRun(run: NewScoringRun): unknown;
 }
 
@@ -149,6 +158,11 @@ export interface StartCopanalhasBotRuntimeOptions {
     message: LeaderboardDashboardMessage,
     existingMessageId: string | null
   ): Promise<string>;
+  upsertBracketMessage?(
+    message: BracketDashboardMessage,
+    existingMessageId: string | null
+  ): Promise<string>;
+  renderBracketPng?(svg: string): Promise<Buffer>;
   syncFinishedResults?(
     options: SyncFinishedResultsOptions
   ): Promise<SyncFinishedResultsResult>;
@@ -200,6 +214,9 @@ export async function startCopanalhasBotRuntime(
   );
   await operatorCommandOptions.updateStandingsDashboard();
   await operatorCommandOptions.updateLeaderboardDashboard();
+  if (hasBracketDashboardDependencies(options)) {
+    await runBracketDashboardRefresh(options, operatorCommandOptions.updateBracketDashboard);
+  }
   await runAutoPost(options, operatorCommandOptions, autoPostState);
   await runPredictionReveals(options);
   await runResultSync(options, operatorCommandOptions, resultSyncState);
@@ -232,6 +249,30 @@ export async function startCopanalhasBotRuntime(
 
 function writeRuntimeLine(options: StartCopanalhasBotRuntimeOptions, line: string): void {
   options.writeLine(formatRuntimeLogLine(options.now(), line));
+}
+
+async function runBracketDashboardRefresh(
+  options: StartCopanalhasBotRuntimeOptions,
+  updateBracketDashboardForRuntime: () => Promise<unknown>
+): Promise<void> {
+  try {
+    await updateBracketDashboardForRuntime();
+  } catch (error) {
+    writeRuntimeLine(
+      options,
+      formatRuntimeAsyncErrorLog({ scope: "bracket-dashboard", error })
+    );
+  }
+}
+
+function hasBracketDashboardDependencies(
+  options: StartCopanalhasBotRuntimeOptions
+): options is StartCopanalhasBotRuntimeOptions &
+  Required<Pick<StartCopanalhasBotRuntimeOptions, "upsertBracketMessage" | "renderBracketPng">> {
+  return (
+    typeof options.upsertBracketMessage === "function" &&
+    typeof options.renderBracketPng === "function"
+  );
 }
 
 function createPredictionInteractionOptions(
@@ -297,9 +338,32 @@ function createOperatorCommandOptions(
 
     return result;
   };
+  const updateBracketDashboardForRuntime = async () => {
+    if (!hasBracketDashboardDependencies(options)) {
+      throw new Error("Bracket dashboard dependencies are not configured.");
+    }
+
+    const result = await updateBracketDashboard({
+      guildId: options.config.guildId,
+      channelId: options.config.channelId,
+      matches: options.matches,
+      results: options.store.listResults(),
+      timeZone: options.config.timezone,
+      now: options.now,
+      listBracketPosts: () => options.store.listBracketPosts(),
+      recordBracketPost: (post) => options.store.recordBracketPost(post),
+      renderPng: options.renderBracketPng,
+      upsertBracketMessage: options.upsertBracketMessage
+    });
+
+    writeRuntimeLine(options, formatBracketDashboardLog(result));
+
+    return result;
+  };
   const resultSyncRefreshers = {
     updateStandingsDashboard: updateStandingsDashboardForRuntime,
-    updateLeaderboardDashboard: updateLeaderboardDashboardForRuntime
+    updateLeaderboardDashboard: updateLeaderboardDashboardForRuntime,
+    updateBracketDashboard: updateBracketDashboardForRuntime
   };
 
   return {
@@ -340,6 +404,8 @@ function createOperatorCommandOptions(
     updateStandingsDashboard: updateStandingsDashboardForRuntime,
     listLeaderboardPosts: () => options.store.listLeaderboardPosts(),
     updateLeaderboardDashboard: updateLeaderboardDashboardForRuntime,
+    listBracketPosts: () => options.store.listBracketPosts(),
+    updateBracketDashboard: updateBracketDashboardForRuntime,
     updatePredictionResultReveals: async () => runPredictionResultReveals(options),
     syncResultsNow: async () =>
       runResultSync(options, resultSyncRefreshers, resultSyncState, { force: true }),
@@ -514,7 +580,7 @@ async function runResultSync(
   options: StartCopanalhasBotRuntimeOptions,
   operatorCommandOptions: Pick<
     OperatorCommandOptions,
-    "updateStandingsDashboard" | "updateLeaderboardDashboard"
+    "updateStandingsDashboard" | "updateLeaderboardDashboard" | "updateBracketDashboard"
   >,
   state: ResultSyncRuntimeState,
   runOptions: { force?: boolean } = {}
@@ -605,6 +671,9 @@ async function runResultSync(
   if (syncResult.action === "synced" && syncResult.storedResults.length > 0) {
     await operatorCommandOptions.updateStandingsDashboard();
     await operatorCommandOptions.updateLeaderboardDashboard();
+    if (hasBracketDashboardDependencies(options)) {
+      await runBracketDashboardRefresh(options, operatorCommandOptions.updateBracketDashboard);
+    }
     await runPredictionResultReveals(options);
     await runMatchStartAlerts(options);
   }
@@ -717,6 +786,12 @@ function createOperatorHealthSnapshot(
       (post) =>
         post.guildId === options.config.guildId && post.channelId === options.config.channelId
     );
+  const bracketPost = options.store
+    .listBracketPosts()
+    .find(
+      (post) =>
+        post.guildId === options.config.guildId && post.channelId === options.config.channelId
+    );
 
   return {
     discord: {
@@ -761,6 +836,10 @@ function createOperatorHealthSnapshot(
     leaderboardPost: {
       present: leaderboardPost !== undefined,
       lastUpdatedAt: leaderboardPost?.updatedAt ?? null
+    },
+    bracketPost: {
+      present: bracketPost !== undefined,
+      lastUpdatedAt: bracketPost?.updatedAt ?? null
     },
     data: {
       matchesLoaded: options.matches.length,

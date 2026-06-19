@@ -73,6 +73,10 @@ export interface OperatorHealthSnapshot {
     present: boolean;
     lastUpdatedAt: string | null;
   };
+  bracketPost: {
+    present: boolean;
+    lastUpdatedAt: string | null;
+  };
   data: {
     matchesLoaded: number;
     missingKickoffTimes: number;
@@ -99,8 +103,9 @@ export function formatOperatorHealthReport(snapshot: OperatorHealthSnapshot): st
     `Last result sync: ${formatLastResultSync(snapshot.lastResultSync)}`,
     `Dashboards: standings ${snapshot.standingsPosts.present}/${snapshot.standingsPosts.expected}, leaderboard ${
       snapshot.leaderboardPost.present ? "present" : "missing"
-    }`,
+    }, bracket ${snapshot.bracketPost.present ? "present" : "missing"}`,
     `Last leaderboard update: ${snapshot.leaderboardPost.lastUpdatedAt ?? "never"}`,
+    `Last bracket update: ${snapshot.bracketPost.lastUpdatedAt ?? "never"}`,
     `Data: ${snapshot.data.matchesLoaded} matches loaded, ${snapshot.data.missingKickoffTimes} missing kickoff times`
   ];
 }
@@ -128,9 +133,11 @@ export function formatOperatorHealthLogLines(snapshot: OperatorHealthSnapshot): 
     )}`,
     `[health] dashboards standings=${snapshot.standingsPosts.present}/${
       snapshot.standingsPosts.expected
-    } leaderboard=${snapshot.leaderboardPost.present ? "present" : "missing"} lastLeaderboard=${
+    } leaderboard=${snapshot.leaderboardPost.present ? "present" : "missing"} bracket=${
+      snapshot.bracketPost.present ? "present" : "missing"
+    } lastLeaderboard=${
       snapshot.leaderboardPost.lastUpdatedAt ?? "never"
-    }`
+    } lastBracket=${snapshot.bracketPost.lastUpdatedAt ?? "never"}`
   ];
 }
 

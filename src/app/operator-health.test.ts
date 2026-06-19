@@ -21,8 +21,9 @@ describe("operator health formatting", () => {
       "Next result-sync check: 2026-06-11T20:50:00.000Z (2 pending)",
       "Last auto-post: posted 1, skipped 1 across 3 days from 2026-06-11",
       "Last result sync: waiting for 2 pending matches; next check 2026-06-11T20:50:00.000Z",
-      "Dashboards: standings 1/2, leaderboard present",
+      "Dashboards: standings 1/2, leaderboard present, bracket present",
       "Last leaderboard update: 2026-06-11T18:00:00.000Z",
+      "Last bracket update: 2026-06-11T18:05:00.000Z",
       "Data: 72 matches loaded, 0 missing kickoff times"
     ]);
   });
@@ -34,7 +35,7 @@ describe("operator health formatting", () => {
       "[health] nextMatchday=2026-06-11 matches=2 posted=1/2",
       "[health] predictions open=1 closed=1 missingKickoff=0 pendingReveals=1",
       "[health] footballData=configured resultSync=on nextResultCheck=2026-06-11T20:50:00.000Z pendingResults=2",
-      "[health] dashboards standings=1/2 leaderboard=present lastLeaderboard=2026-06-11T18:00:00.000Z"
+      "[health] dashboards standings=1/2 leaderboard=present bracket=present lastLeaderboard=2026-06-11T18:00:00.000Z lastBracket=2026-06-11T18:05:00.000Z"
     ]);
   });
 });
@@ -103,6 +104,10 @@ function healthSnapshot(): OperatorHealthSnapshot {
     leaderboardPost: {
       present: true,
       lastUpdatedAt: "2026-06-11T18:00:00.000Z"
+    },
+    bracketPost: {
+      present: true,
+      lastUpdatedAt: "2026-06-11T18:05:00.000Z"
     },
     data: {
       matchesLoaded: 72,

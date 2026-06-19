@@ -9,6 +9,7 @@ import { formatPredictionAudit, formatPredictionReveal } from "../predictions/vi
 import { buildLeaderboard, scoreMatch, type MatchResult } from "../scoring/scoring.js";
 import type {
   PostedMatchCardSource,
+  StoredBracketPost,
   StoredLeaderboardPost,
   StoredPrediction,
   StoredResult,
@@ -23,6 +24,7 @@ import {
 import { formatTeamName } from "../worldcup/team-display.js";
 import type { UpdateStandingsDashboardResult } from "../app/standings-posting.js";
 import type { UpdateLeaderboardDashboardResult } from "../app/leaderboard-posting.js";
+import type { UpdateBracketDashboardResult } from "../app/bracket-posting.js";
 import type { ResultSyncSkippedMatch } from "../results/sync.js";
 import { copanalhasCommandName } from "./commands.js";
 
@@ -34,6 +36,7 @@ export type OperatorSubcommand =
   | "status"
   | "standings"
   | "leaderboard"
+  | "bracket"
   | "sync-results"
   | "meus-palpites"
   | "predictions"
@@ -80,6 +83,8 @@ export interface OperatorCommandOptions {
   updateStandingsDashboard(): Promise<UpdateStandingsDashboardResult>;
   listLeaderboardPosts(): StoredLeaderboardPost[];
   updateLeaderboardDashboard(): Promise<UpdateLeaderboardDashboardResult>;
+  listBracketPosts(): StoredBracketPost[];
+  updateBracketDashboard(): Promise<UpdateBracketDashboardResult>;
   syncResultsNow(): Promise<RuntimeResultSyncStatus>;
   updatePredictionResultReveals?(): Promise<unknown>;
   resolveUserDisplayNames?(userIds: readonly string[]): Promise<ReadonlyMap<string, string>>;
@@ -224,6 +229,7 @@ export async function handleOperatorCommand(
     const matchStartAlerts = options.clearMatchStartAlertsForMatches(matchIds);
     await options.updateStandingsDashboard();
     await options.updateLeaderboardDashboard();
+    await options.updateBracketDashboard();
 
     return reply(
       [
@@ -234,7 +240,8 @@ export async function handleOperatorCommand(
         `Prediction reveals: ${predictionReveals}`,
         `Match start alerts: ${matchStartAlerts}`,
         "Standings refreshed.",
-        "Leaderboard refreshed."
+        "Leaderboard refreshed.",
+        "Bracket refreshed."
       ].join("\n")
     );
   }
@@ -263,7 +270,8 @@ export async function handleOperatorCommand(
           options.listLeaderboardPosts(),
           options.guildId,
           options.channelId
-        )
+        ),
+        ...formatBracketStatus(options.listBracketPosts(), options.guildId, options.channelId)
       ].join("\n")
     );
   }
@@ -286,6 +294,18 @@ export async function handleOperatorCommand(
     );
 
     return reply(formatLeaderboard(rows, displayNames));
+  }
+
+  if (command.subcommand === "bracket") {
+    try {
+      const result = await options.updateBracketDashboard();
+
+      return reply(
+        `Updated bracket dashboard: ${result.post.action} (${result.bracketPhase}, ${result.renderState}).`
+      );
+    } catch (error) {
+      return reply(`Failed to update bracket dashboard: ${errorMessage(error)}.`);
+    }
   }
 
   if (command.subcommand === "sync-results") {
@@ -370,6 +390,7 @@ export async function handleOperatorCommand(
     });
     await options.updateStandingsDashboard();
     await options.updateLeaderboardDashboard();
+    await options.updateBracketDashboard();
     await options.updatePredictionResultReveals?.();
 
     return reply(`Recorded result ${match.id} ${parsedScore.score.normalizedText}.`);
@@ -591,6 +612,7 @@ function parseOperatorSubcommand(value: string): OperatorSubcommand | undefined 
     value === "status" ||
     value === "standings" ||
     value === "leaderboard" ||
+    value === "bracket" ||
     value === "sync-results" ||
     value === "meus-palpites" ||
     value === "predictions" ||
@@ -720,6 +742,21 @@ function formatLeaderboardStatus(
   ];
 }
 
+function formatBracketStatus(
+  posts: StoredBracketPost[],
+  guildId: string,
+  channelId: string
+): string[] {
+  const matchingPost = posts.find(
+    (post) => post.guildId === guildId && post.channelId === channelId
+  );
+
+  return [
+    `Bracket post: ${matchingPost ? "present" : "missing"}`,
+    `Bracket last updated: ${matchingPost?.updatedAt ?? "never"}`
+  ];
+}
+
 function formatRuntimeStatus(status: RuntimeStatusSnapshot | undefined): string[] {
   if (!status) {
     return [];
@@ -821,4 +858,8 @@ function formatSyncResultsNowReply(status: RuntimeResultSyncStatus): string {
   }
 
   return `Synced results now: stored ${status.storedResults.length}, skipped ${status.skipped.length} (${status.dateFrom} to ${status.dateTo}).`;
+}
+
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
 }

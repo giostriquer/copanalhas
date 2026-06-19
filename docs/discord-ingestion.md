@@ -111,6 +111,7 @@ While `bot` is running, use `/copanalhas` for normal operator work:
 - `/copanalhas reset-test-date date:2026-06-11`
 - `/copanalhas status`
 - `/copanalhas leaderboard`
+- `/copanalhas bracket`
 - `/copanalhas meus-palpites`
 - `/copanalhas predictions match:wc2026-001`
 - `/copanalhas reveal match:wc2026-001`
@@ -130,21 +131,30 @@ the daily catch-up tries to post.
 `status` is the operator health check. It reports the active matchday, current
 local time, auto-post setting, reviewed matches, posted/unposted card state,
 prediction-window counts, the last auto-post action, result-sync state, the last
-result-sync action, standings post health, and leaderboard post health. Use it
-after starting the bot to confirm that catch-up ran and the process is ready for
-members.
+result-sync action, standings post health, leaderboard post health, and bracket
+post health. Use it after starting the bot to confirm that catch-up ran and the
+process is ready for members.
 
-The main public dashboard is three persistent messages in the configured
+The main public dashboard is four persistent messages in the configured
 channel:
 
 - World Cup 2026 Group Standings, Groups A-F
 - World Cup 2026 Group Standings, Groups G-L
 - Copanalhas Leaderboard
+- World Cup 2026 Bracket
 
-The standings and leaderboard messages are edited in place. Startup posts or
-repairs missing dashboard messages. Automatic result sync, manual result entry,
-forced result sync, and `reset-test-date` refresh the affected dashboards so the
-channel does not fill with new scoreboard messages.
+The standings, leaderboard, and bracket dashboard messages are edited in place.
+Startup posts or repairs missing dashboard messages. Automatic result sync,
+manual result entry, forced result sync, and `reset-test-date` refresh the
+affected dashboards so the channel does not fill with new scoreboard messages.
+The bracket dashboard is a deterministic PNG generated from reviewed match data
+and stored final results, with visible Football-Data attribution when API-backed
+sync may be used. During the group stage, Round of 32 entrants are shown as
+provisional `as it stands` slots; once all group results are complete, final
+Round of 32 slots use the reviewed FIFA qualification resolver. If FIFA
+tiebreakers still need manual review, the bracket reports that blocked state
+instead of guessing. Operators can run `/copanalhas bracket` to refresh only the
+bracket dashboard.
 
 Prediction reveal posts are automatic. Every minute, the bot checks for matches
 whose prediction cutoff has passed, groups matches that share the same cutoff
@@ -169,8 +179,9 @@ late result sync. If the bot misses the early window, it can still catch up for
 
 `reset-test-date` is the broader smoke-test reset. It clears posted-card dedupe
 records, predictions, prediction reveal records, match-start alert records, and
-results for matches on the selected date, then refreshes standings so temporary
-manual results do not keep affecting group tables.
+results for matches on the selected date, then refreshes standings, leaderboard,
+and bracket dashboards so temporary manual results do not keep affecting public
+tables or the bracket image.
 
 `meus-palpites` is member-facing and private. It defaults to the active
 operational matchday and shows only that matchday's predictions for the caller.

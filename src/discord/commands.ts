@@ -64,6 +64,9 @@ export function createCopanalhasCommand() {
       subcommand.setName("leaderboard").setDescription("Show the current leaderboard")
     )
     .addSubcommand((subcommand) =>
+      subcommand.setName("bracket").setDescription("Post or update the World Cup bracket")
+    )
+    .addSubcommand((subcommand) =>
       subcommand
         .setName("sync-results")
         .setDescription("Force an immediate Football Data result sync")
