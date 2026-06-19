@@ -4,7 +4,7 @@ import { renderBracketSvg } from "./svg.js";
 import type { BracketState } from "./types.js";
 
 describe("renderBracketSvg", () => {
-  test("renders a round-of-32-only split view with pt-BR names, flags, and warnings", () => {
+  test("renders a reference-style split bracket with pt-BR names, real flag assets, and warnings", () => {
     const svg = renderBracketSvg(bracketState());
 
     expect(svg).toContain("<svg");
@@ -14,15 +14,27 @@ describe("renderBracketSvg", () => {
     expect(svg).toContain("Lado direito");
     expect(svg).toContain("Team &amp; One");
     expect(svg).toContain("Team &lt;Two&gt;");
-    expect(svg).toContain('data-flag-code="GER"');
+    expect(svg).toContain('data-bracket-column="round-of-32"');
+    expect(svg).toContain('data-bracket-column="round-of-16"');
+    expect(svg).toContain('data-bracket-column="quarter-finals"');
+    expect(svg).toContain('data-connector-match="89"');
+    expect(svg).toContain('data-connector-match="97"');
+    expect(svg).toContain('data-flag-team-code="GER"');
+    expect(svg).toContain('data-flag-asset="de.svg"');
+    expect(svg).toContain("data:image/svg+xml;base64,");
     expect(svg).toContain("Alemanha");
-    expect(svg).toContain('data-flag-code="MAR"');
+    expect(svg).toContain('data-flag-team-code="MAR"');
+    expect(svg).toContain('data-flag-asset="ma.svg"');
     expect(svg).toContain("Marrocos");
-    expect(svg).toContain('data-flag-code="NED"');
+    expect(svg).toContain('data-flag-team-code="NED"');
+    expect(svg).toContain('data-flag-asset="nl.svg"');
     expect(svg).toContain("Holanda");
     expect(svg).toContain("Como está");
+    expect(svg).toContain("Oitavas");
+    expect(svg).toContain("Quartas");
     expect(svg).toContain("ordem provisória");
     expect(svg).toContain("Football data provided by the Football-Data.org API.");
+    expect(svg).not.toContain("data-flag-code=");
     expect(svg).not.toContain("Round of 16");
     expect(svg).not.toContain("W-32-1");
     expect(svg.indexOf('data-match-id="r32-74"')).toBeLessThan(

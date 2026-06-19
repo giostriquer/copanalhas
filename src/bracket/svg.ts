@@ -1,4 +1,5 @@
 import type { BracketEntrant, BracketMatch, BracketState } from "./types.js";
+import { renderReferenceBracketSvg } from "./svg-renderer.js";
 import { formatTeamName } from "../worldcup/team-display.js";
 
 export interface RenderBracketSvgOptions {
@@ -46,6 +47,13 @@ const bracketSides: readonly BracketSide[] = [
 ];
 
 export function renderBracketSvg(
+  state: BracketState,
+  options: RenderBracketSvgOptions = {}
+): string {
+  return renderReferenceBracketSvg(state, options);
+}
+
+function renderLegacyBracketSvg(
   state: BracketState,
   options: RenderBracketSvgOptions = {}
 ): string {

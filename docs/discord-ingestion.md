@@ -151,13 +151,16 @@ The bracket dashboard is a deterministic PNG generated from reviewed match data
 and stored final results, with visible Football-Data attribution when API-backed
 sync may be used. The current image focuses on the Round of 32 only, split into
 left and right halves by the reviewed FIFA winner path so each half shows the 16
-teams that can converge toward the same semi-final. Team names are rendered with
-Portuguese display names and compact vector flag markers. During the group
-stage, Round of 32 entrants are shown as provisional `as it stands` slots; once
-all group results are complete, final Round of 32 slots use the reviewed FIFA
-qualification resolver. If FIFA tiebreakers still need manual review, the
-bracket reports that blocked state instead of guessing. Operators can run
-`/copanalhas bracket` to refresh only the bracket dashboard.
+teams that can converge toward the same semi-final. Each half uses a compact
+reference-style bracket grid: Round of 32 team cards feed into Oitavas and
+Quartas path placeholders through connector lines. Team names are rendered with
+Portuguese display names and local SVG flag assets from the installed
+`flag-icons` package, so the runtime renderer does not fetch media from the
+network. During the group stage, Round of 32 entrants are shown as provisional
+`as it stands` slots; once all group results are complete, final Round of 32
+slots use the reviewed FIFA qualification resolver. If FIFA tiebreakers still
+need manual review, the bracket reports that blocked state instead of guessing.
+Operators can run `/copanalhas bracket` to refresh only the bracket dashboard.
 
 Prediction reveal posts are automatic. Every minute, the bot checks for matches
 whose prediction cutoff has passed, groups matches that share the same cutoff

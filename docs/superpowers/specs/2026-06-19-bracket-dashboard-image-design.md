@@ -140,8 +140,9 @@ assets. The same input state must produce equivalent output every time.
 
 The first full-skeleton rendering proved too hard to read in Discord. Until
 reviewed knockout topology is imported and there is useful later-round state to
-show, the production image should focus on the Round of 32 only. Render the
-sixteen Round of 32 fixtures as two large, readable halves:
+show, the production image should focus on the Round of 32 entrants while still
+showing enough path context to make the split understandable. Render the sixteen
+Round of 32 fixtures as two readable halves:
 
 - left half: fixtures whose winners feed the path toward semi-final #101
 - right half: fixtures whose winners feed the path toward semi-final #102
@@ -153,9 +154,12 @@ Left:  #74/#77 -> #89, #73/#75 -> #90, #83/#84 -> #93, #81/#82 -> #94
 Right: #76/#78 -> #91, #79/#80 -> #92, #86/#88 -> #95, #85/#87 -> #96
 ```
 
-The image should use Portuguese team display names and deterministic vector flag
-markers instead of emoji flags, because the `sharp` rasterization path does not
-reliably render emoji flag glyphs as flags.
+The image should use Portuguese team display names and local SVG flag assets
+from the installed `flag-icons` package instead of emoji flags, because the
+`sharp` rasterization path does not reliably render emoji flag glyphs as flags.
+Each half should follow the compact reference-source shape: Round of 32 team
+cards on the outside, Oitavas and Quartas path placeholders to the inside, and
+green connector lines aligning each pair.
 
 The original whole-skeleton shape remains a future extension. When implemented,
 it must be based on reviewed knockout topology and should not reintroduce
