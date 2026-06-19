@@ -12,7 +12,7 @@ export interface RenderReferenceBracketSvgOptions {
 const require = createRequire(import.meta.url);
 const FOOTBALL_DATA_ATTRIBUTION = "Football data provided by the Football-Data.org API.";
 const marginX = 44;
-const headerHeight = 112;
+const headerHeight = 96;
 const footerHeight = 52;
 const sideWidth = 634;
 const sideGap = 46;
@@ -35,7 +35,6 @@ const bracketSides: readonly BracketSide[] = [
   {
     key: "left",
     label: "Lado esquerdo",
-    subtitle: "caminho para a semifinal #101",
     pairs: [
       { nextMatchNumber: 89, matchNumbers: [74, 77] },
       { nextMatchNumber: 90, matchNumbers: [73, 75] },
@@ -50,7 +49,6 @@ const bracketSides: readonly BracketSide[] = [
   {
     key: "right",
     label: "Lado direito",
-    subtitle: "caminho para a semifinal #102",
     pairs: [
       { nextMatchNumber: 91, matchNumbers: [76, 78] },
       { nextMatchNumber: 92, matchNumbers: [79, 80] },
@@ -81,8 +79,7 @@ export function renderReferenceBracketSvg(
     `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" role="img" aria-label="${escapeAttribute(title)}">`,
     '<rect width="100%" height="100%" fill="#f7f7f5"/>',
     `<text x="${marginX}" y="42" font-family="Inter, Arial, sans-serif" font-size="30" font-weight="850" fill="#141b2b">${escapeText(title)}</text>`,
-    `<text x="${marginX}" y="72" font-family="Inter, Arial, sans-serif" font-size="15" fill="#4e596a">${escapeText(phaseLabel(state))}</text>`,
-    `<text x="${marginX}" y="96" font-family="Inter, Arial, sans-serif" font-size="12" fill="#798394">${escapeText("Rodada de 32 com caminhos oficiais para oitavas e quartas.")}</text>`
+    `<text x="${marginX}" y="72" font-family="Inter, Arial, sans-serif" font-size="15" fill="#4e596a">${escapeText(phaseLabel(state))}</text>`
   ];
 
   if (state.generatedAtLabel) {
@@ -121,7 +118,6 @@ function renderSide(
   const parts = [
     `<g data-bracket-side="${escapeAttribute(side.key)}" transform="translate(${x}, ${y})">`,
     `<text x="0" y="0" font-family="Inter, Arial, sans-serif" font-size="20" font-weight="850" fill="#141b2b">${escapeText(side.label)}</text>`,
-    `<text x="0" y="22" font-family="Inter, Arial, sans-serif" font-size="11" fill="#6f7b8d">${escapeText(side.subtitle)}</text>`,
     `<g data-bracket-column="round-of-32"><text x="${r32X + r32Width / 2}" y="44" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="800" fill="#141b2b">Rodada de 32</text></g>`,
     `<g data-bracket-column="round-of-16"><text x="${r16X + r16Width / 2}" y="44" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="800" fill="#141b2b">Oitavas</text></g>`,
     `<g data-bracket-column="quarter-finals"><text x="${qfX + qfWidth / 2}" y="44" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="800" fill="#141b2b">Quartas</text></g>`
@@ -356,7 +352,7 @@ function flagIconsRoot(): string {
 
 function matchStatusLabel(match: BracketMatch): string {
   if (match.state === "provisional") {
-    return "Como está";
+    return "Como está ficando";
   }
 
   if (match.state === "blocked") {
@@ -452,7 +448,6 @@ function escapeAttribute(value: string): string {
 interface BracketSide {
   key: "left" | "right";
   label: string;
-  subtitle: string;
   pairs: readonly BracketPathPair[];
   quarterFinals: readonly BracketPathPairResult[];
 }

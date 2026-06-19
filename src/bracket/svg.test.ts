@@ -29,11 +29,14 @@ describe("renderBracketSvg", () => {
     expect(svg).toContain('data-flag-team-code="NED"');
     expect(svg).toContain('data-flag-asset="nl.svg"');
     expect(svg).toContain("Holanda");
-    expect(svg).toContain("Como está");
+    expect(svg).toContain("Como está ficando");
     expect(svg).toContain("Oitavas");
     expect(svg).toContain("Quartas");
     expect(svg).toContain("ordem provisória");
     expect(svg).toContain("Football data provided by the Football-Data.org API.");
+    expect(svg).not.toContain(">Como está</text>");
+    expect(svg).not.toContain("caminho para a semifinal");
+    expect(svg).not.toContain("Rodada de 32 com caminhos oficiais para oitavas e quartas.");
     expect(svg).not.toContain("data-flag-code=");
     expect(svg).not.toContain("Round of 16");
     expect(svg).not.toContain("W-32-1");
