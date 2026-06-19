@@ -8,6 +8,7 @@ import {
   resolveWorldCup2026RoundOf32,
   computeFifaGroupStandings
 } from "./fifa-qualification.js";
+import { WORLD_CUP_2026_SEED } from "./seed.js";
 import type { StandingsResult } from "../standings/standings.js";
 import type { WorldCupMatch, WorldCupTeam } from "./types.js";
 
@@ -102,7 +103,86 @@ describe("resolveWorldCup2026RoundOf32", () => {
       [88, "2D", "2G"]
     ]);
   });
+
+  test("resolves a golden round-of-32 bracket from the reviewed current match seed", () => {
+    const fixtures = resolveWorldCup2026RoundOf32(
+      WORLD_CUP_2026_SEED.matches,
+      currentSeedProofResults()
+    );
+
+    expect(
+      fixtures.map((fixture) => [
+        fixture.matchNumber,
+        fixture.homeSlot,
+        fixture.homeTeam.code,
+        fixture.awaySlot,
+        fixture.awayTeam.code
+      ])
+    ).toEqual([
+      [73, "2A", "RSA", "2B", "BIH"],
+      [74, "1E", "GER", "3F", "SWE"],
+      [75, "1F", "NED", "2C", "MAR"],
+      [76, "1C", "BRA", "2F", "JPN"],
+      [77, "1I", "FRA", "3G", "IRN"],
+      [78, "2E", "CUW", "2I", "SEN"],
+      [79, "1A", "MEX", "3E", "CIV"],
+      [80, "1L", "ENG", "3K", "UZB"],
+      [81, "1D", "USA", "3I", "IRQ"],
+      [82, "1G", "BEL", "3H", "KSA"],
+      [83, "2K", "COD", "2L", "CRO"],
+      [84, "1H", "ESP", "2J", "ALG"],
+      [85, "1B", "CAN", "3J", "AUT"],
+      [86, "1J", "ARG", "2H", "CPV"],
+      [87, "1K", "POR", "3L", "GHA"],
+      [88, "2D", "PAR", "2G", "EGY"]
+    ]);
+  });
 });
+
+const currentSeedRankOrderByGroup = {
+  A: ["MEX", "RSA", "KOR", "CZE"],
+  B: ["CAN", "BIH", "QAT", "SUI"],
+  C: ["BRA", "MAR", "HAI", "SCO"],
+  D: ["USA", "PAR", "AUS", "TUR"],
+  E: ["GER", "CUW", "CIV", "ECU"],
+  F: ["NED", "JPN", "SWE", "TUN"],
+  G: ["BEL", "EGY", "IRN", "NZL"],
+  H: ["ESP", "CPV", "KSA", "URU"],
+  I: ["FRA", "SEN", "IRQ", "NOR"],
+  J: ["ARG", "ALG", "AUT", "JOR"],
+  K: ["POR", "COD", "UZB", "COL"],
+  L: ["ENG", "CRO", "GHA", "PAN"]
+} as const satisfies Record<string, readonly string[]>;
+const currentSeedRankOrders: Readonly<Record<string, readonly string[]>> =
+  currentSeedRankOrderByGroup;
+
+function currentSeedProofResults(): StandingsResult[] {
+  return WORLD_CUP_2026_SEED.matches.map((match) => {
+    const homeRank = currentSeedRank(match.group, match.homeTeam.code);
+    const awayRank = currentSeedRank(match.group, match.awayTeam.code);
+    const winnerIsHome = homeRank < awayRank;
+    const winnerRank = Math.min(homeRank, awayRank);
+    const loserRank = Math.max(homeRank, awayRank);
+    const winnerGoals = winnerRank === 3 && loserRank === 4 && match.group >= "E" ? 5 : 3;
+
+    return result(
+      match.id,
+      winnerIsHome ? winnerGoals : 0,
+      winnerIsHome ? 0 : winnerGoals
+    );
+  });
+}
+
+function currentSeedRank(group: string, teamCode: string): number {
+  const order = currentSeedRankOrders[group];
+  const index = order?.indexOf(teamCode) ?? -1;
+
+  if (index < 0) {
+    throw new Error(`Missing proof-test rank for Group ${group} team ${teamCode}.`);
+  }
+
+  return index + 1;
+}
 
 function allGroupMatches(): WorldCupMatch[] {
   return "ABCDEFGHIJKL".split("").flatMap((group) => groupMatches(group));
