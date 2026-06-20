@@ -24,6 +24,7 @@ describe("Copanalhas slash command definition", () => {
         expect.objectContaining({ name: "meus-palpites" }),
         expect.objectContaining({ name: "predictions" }),
         expect.objectContaining({ name: "reveal" }),
+        expect.objectContaining({ name: "repost-reveal" }),
         expect.objectContaining({ name: "result" })
       ])
     });
@@ -33,10 +34,10 @@ describe("Copanalhas slash command definition", () => {
   test("enables autocomplete for match-based operator commands", () => {
     const command = createCopanalhasCommand().toJSON();
     const matchSubcommands = command.options?.filter((option) =>
-      ["predictions", "reveal", "result"].includes(option.name)
+      ["predictions", "reveal", "repost-reveal", "result"].includes(option.name)
     );
 
-    expect(matchSubcommands).toHaveLength(3);
+    expect(matchSubcommands).toHaveLength(4);
     for (const subcommand of matchSubcommands ?? []) {
       expect((subcommand as { options?: unknown[] }).options).toEqual(
         expect.arrayContaining([

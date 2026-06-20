@@ -40,6 +40,18 @@ export interface PostDuePredictionRevealsResult {
   skipped: string[];
 }
 
+export interface RepostPredictionRevealOptions extends PostDuePredictionRevealsOptions {
+  matchId: string;
+  clearPredictionRevealPostsForMatches(matchIds: readonly string[]): number;
+}
+
+export interface RepostPredictionRevealResult {
+  cleared: number;
+  repostedMatchIds: string[];
+  posted: PostedPredictionRevealBatch[];
+  skipped: string[];
+}
+
 interface DueRevealMatch {
   match: WorldCupMatch;
   postedCard: StoredPostedMatchCard;
@@ -120,6 +132,44 @@ export async function postDuePredictionReveals(
   }
 
   return { posted, skipped };
+}
+
+export async function repostPredictionReveal(
+  options: RepostPredictionRevealOptions
+): Promise<RepostPredictionRevealResult> {
+  const channelRevealPosts = options
+    .listPredictionRevealPosts()
+    .filter((post) => post.channelId === options.channelId);
+  const existingPost = channelRevealPosts.find((post) => post.matchId === options.matchId);
+  const repostedMatchIds = existingPost
+    ? channelRevealPosts
+        .filter(
+          (post) =>
+            post.threadId === existingPost.threadId && post.messageId === existingPost.messageId
+        )
+        .map((post) => post.matchId)
+    : [options.matchId];
+  const uniqueRepostedMatchIds = [...new Set(repostedMatchIds)];
+  const repostedMatchIdSet = new Set(uniqueRepostedMatchIds);
+  const cleared = options.clearPredictionRevealPostsForMatches(uniqueRepostedMatchIds);
+  const result = await postDuePredictionReveals({
+    ...options,
+    matches: options.matches.filter((match) => repostedMatchIdSet.has(match.id)),
+    listPredictionRevealPosts: () =>
+      options
+        .listPredictionRevealPosts()
+        .filter(
+          (post) =>
+            post.channelId !== options.channelId || !repostedMatchIdSet.has(post.matchId)
+        )
+  });
+
+  return {
+    cleared,
+    repostedMatchIds: uniqueRepostedMatchIds,
+    posted: result.posted,
+    skipped: result.skipped
+  };
 }
 
 function groupDueMatches(matches: DueRevealMatch[]): Array<{

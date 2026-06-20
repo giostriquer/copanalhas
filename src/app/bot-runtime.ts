@@ -31,6 +31,7 @@ import { updateBracketDashboard } from "./bracket-posting.js";
 import { postDueMatchCards } from "./match-card-posting.js";
 import {
   postDuePredictionReveals,
+  repostPredictionReveal,
   type PredictionRevealSendResult,
   type PredictionRevealThreadMessage
 } from "./prediction-reveal-posting.js";
@@ -407,6 +408,20 @@ function createOperatorCommandOptions(
     listBracketPosts: () => options.store.listBracketPosts(),
     updateBracketDashboard: updateBracketDashboardForRuntime,
     updatePredictionResultReveals: async () => runPredictionResultReveals(options),
+    repostPredictionReveal: (matchId) =>
+      repostPredictionReveal({
+        channelId: options.config.channelId,
+        matchId,
+        matches: options.matches,
+        predictions: options.store.listPredictions(),
+        now: options.now,
+        listPostedMatchCards: () => options.store.listPostedMatchCards(),
+        listPredictionRevealPosts: () => options.store.listPredictionRevealPosts(),
+        clearPredictionRevealPostsForMatches: (matchIds) =>
+          options.store.clearPredictionRevealPostsForMatches(matchIds),
+        sendPredictionReveal: options.sendPredictionReveal,
+        recordPredictionRevealPost: (post) => options.store.recordPredictionRevealPost(post)
+      }),
     syncResultsNow: async () =>
       runResultSync(options, resultSyncRefreshers, resultSyncState, { force: true }),
     logOperatorCommand: (input, result) =>

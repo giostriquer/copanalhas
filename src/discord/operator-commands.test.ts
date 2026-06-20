@@ -407,6 +407,37 @@ describe("handleOperatorCommand", () => {
     });
   });
 
+  test("repost-reveal clears stale reveal state and reposts locked predictions", async () => {
+    const repostPredictionReveal = vi.fn(async () => ({
+      cleared: 1,
+      repostedMatchIds: ["wc2026-001"],
+      posted: [
+        {
+          matchIds: ["wc2026-001"],
+          threadId: "thread-2",
+          messageId: "reveal-message-2"
+        }
+      ],
+      skipped: []
+    }));
+
+    const result = await handleOperatorCommand(
+      command("repost-reveal", { match: "wc2026-001" }),
+      options({ repostPredictionReveal })
+    );
+
+    expect(result).toEqual({
+      action: "replied",
+      content: [
+        "Reposted prediction reveal for #1 México x África do Sul.",
+        "Cleared reveal records: 1",
+        "Reposted matches: wc2026-001"
+      ].join("\n"),
+      ephemeral: true
+    });
+    expect(repostPredictionReveal).toHaveBeenCalledWith("wc2026-001");
+  });
+
   test("result records a manual result for a known match", async () => {
     const upsertResult = vi.fn();
 
@@ -523,6 +554,38 @@ describe("handleOperatorAutocomplete", () => {
       throw new Error("expected autocomplete choices");
     }
     expect(result.choices).toHaveLength(25);
+  });
+
+  test("returns match choices for repost-reveal", () => {
+    const result = handleOperatorAutocomplete(
+      {
+        guildId: "guild-1",
+        channelId: "channel-1",
+        userId: "operator-1",
+        subcommand: "repost-reveal",
+        focusedOptionName: "match",
+        focusedValue: "mex"
+      },
+      options()
+    );
+
+    expect(result).toEqual({
+      action: "responded",
+      choices: [
+        {
+          name: "#1 · México x África do Sul · 2026-06-11 13:00",
+          value: "wc2026-001"
+        },
+        {
+          name: "#28 · México x Coreia do Sul · 2026-06-18 19:00",
+          value: "wc2026-028"
+        },
+        {
+          name: "#53 · Tchéquia x México · 2026-06-24 19:00",
+          value: "wc2026-053"
+        }
+      ]
+    });
   });
 });
 
@@ -707,7 +770,12 @@ describe("handleDiscordOperatorCommand", () => {
 });
 
 function command(
-  subcommand: OperatorCommandInput["subcommand"] | "predictions" | "reveal" | "bracket",
+  subcommand:
+    | OperatorCommandInput["subcommand"]
+    | "predictions"
+    | "reveal"
+    | "repost-reveal"
+    | "bracket",
   commandOptions: Record<string, string> = {},
   overrides: Partial<OperatorCommandInput> = {}
 ): OperatorCommandInput {
@@ -757,12 +825,23 @@ function options(overrides: Partial<OperatorCommandOptions> = {}): OperatorComma
       action: "disabled" as const,
       reason: "disabled" as const
     })),
+    repostPredictionReveal: vi.fn(async () => ({
+      cleared: 0,
+      repostedMatchIds: [],
+      posted: [],
+      skipped: []
+    })),
     ...overrides
   };
 }
 
 function discordCommandInteraction(
-  subcommand: OperatorCommandInput["subcommand"] | "predictions" | "reveal" | "bracket",
+  subcommand:
+    | OperatorCommandInput["subcommand"]
+    | "predictions"
+    | "reveal"
+    | "repost-reveal"
+    | "bracket",
   events: string[] = []
 ) {
   return {

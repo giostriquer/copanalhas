@@ -108,6 +108,18 @@ export function createCopanalhasCommand() {
     )
     .addSubcommand((subcommand) =>
       subcommand
+        .setName("repost-reveal")
+        .setDescription("Repost a locked prediction reveal after deleting a stale thread message")
+        .addStringOption((option) =>
+          option
+            .setName("match")
+            .setDescription("Search by match number or team")
+            .setRequired(true)
+            .setAutocomplete(true)
+        )
+    )
+    .addSubcommand((subcommand) =>
+      subcommand
         .setName("result")
         .setDescription("Record or override a match result")
         .addStringOption((option) =>

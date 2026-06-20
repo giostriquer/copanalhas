@@ -335,6 +335,12 @@ function operatorOptions(): OperatorCommandOptions {
     syncResultsNow: vi.fn(async () => ({
       action: "disabled" as const,
       reason: "disabled" as const
+    })),
+    repostPredictionReveal: vi.fn(async () => ({
+      cleared: 0,
+      repostedMatchIds: [],
+      posted: [],
+      skipped: []
     }))
   };
 }

@@ -25,6 +25,7 @@ import { formatTeamName } from "../worldcup/team-display.js";
 import type { UpdateStandingsDashboardResult } from "../app/standings-posting.js";
 import type { UpdateLeaderboardDashboardResult } from "../app/leaderboard-posting.js";
 import type { UpdateBracketDashboardResult } from "../app/bracket-posting.js";
+import type { RepostPredictionRevealResult } from "../app/prediction-reveal-posting.js";
 import type { ResultSyncSkippedMatch } from "../results/sync.js";
 import { copanalhasCommandName } from "./commands.js";
 
@@ -41,6 +42,7 @@ export type OperatorSubcommand =
   | "meus-palpites"
   | "predictions"
   | "reveal"
+  | "repost-reveal"
   | "result";
 
 export interface OperatorCommandInput {
@@ -86,6 +88,7 @@ export interface OperatorCommandOptions {
   listBracketPosts(): StoredBracketPost[];
   updateBracketDashboard(): Promise<UpdateBracketDashboardResult>;
   syncResultsNow(): Promise<RuntimeResultSyncStatus>;
+  repostPredictionReveal(matchId: string): Promise<RepostPredictionRevealResult>;
   updatePredictionResultReveals?(): Promise<unknown>;
   resolveUserDisplayNames?(userIds: readonly string[]): Promise<ReadonlyMap<string, string>>;
   logOperatorCommand?(input: OperatorCommandInput, result: OperatorCommandResult): void;
@@ -365,6 +368,18 @@ export async function handleOperatorCommand(
     return reply(reveal.content, !reveal.ok);
   }
 
+  if (command.subcommand === "repost-reveal") {
+    const match = matchFromCommand(command, options);
+
+    if (!match) {
+      return reply(`Unknown match ${command.options.match}.`);
+    }
+
+    return reply(
+      formatRepostPredictionRevealReply(match, await options.repostPredictionReveal(match.id))
+    );
+  }
+
   if (command.subcommand === "result") {
     const matchId = command.options.match;
     const match = options.matches.find((candidate) => candidate.id === matchId);
@@ -413,7 +428,7 @@ export function handleOperatorAutocomplete(
 
   if (
     interaction.focusedOptionName !== "match" ||
-    !["predictions", "reveal", "result"].includes(interaction.subcommand)
+    !["predictions", "reveal", "repost-reveal", "result"].includes(interaction.subcommand)
   ) {
     return { action: "ignored", reason: "unsupported-option" };
   }
@@ -587,7 +602,7 @@ function readCommandOptions(
     return date ? { date } : {};
   }
 
-  if (subcommand === "predictions" || subcommand === "reveal") {
+  if (subcommand === "predictions" || subcommand === "reveal" || subcommand === "repost-reveal") {
     return {
       match: interaction.options.getString("match", true)
     };
@@ -617,6 +632,7 @@ function parseOperatorSubcommand(value: string): OperatorSubcommand | undefined 
     value === "meus-palpites" ||
     value === "predictions" ||
     value === "reveal" ||
+    value === "repost-reveal" ||
     value === "result"
   ) {
     return value;
@@ -667,6 +683,30 @@ function reply(content: string, ephemeral = true): OperatorCommandResult {
     content,
     ephemeral
   };
+}
+
+function formatRepostPredictionRevealReply(
+  match: WorldCupMatch,
+  result: RepostPredictionRevealResult
+): string {
+  const matchLabel = `#${match.matchNumber} ${formatTeamName(match.homeTeam)} x ${formatTeamName(
+    match.awayTeam
+  )}`;
+
+  if (result.posted.length === 0) {
+    return [
+      `No prediction reveal was reposted for ${matchLabel}.`,
+      `Cleared reveal records: ${result.cleared}`,
+      `Skipped matches: ${result.skipped.length > 0 ? result.skipped.join(",") : "none"}`,
+      "Make sure the match card exists and predictions are already closed."
+    ].join("\n");
+  }
+
+  return [
+    `Reposted prediction reveal for ${matchLabel}.`,
+    `Cleared reveal records: ${result.cleared}`,
+    `Reposted matches: ${result.repostedMatchIds.join(",")}`
+  ].join("\n");
 }
 
 function isUnknownInteractionError(error: unknown): boolean {
