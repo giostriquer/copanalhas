@@ -24,11 +24,15 @@ describe("formatLockedPredictionRevealBatch", () => {
         "",
         "#53 Tchéquia x México",
         "2 palpites",
+        "",
+        "==== México ====",
         "<@user-1>  1x2",
         "<@user-2>  0x2",
         "",
         "#54 África do Sul x Coreia do Sul",
         "1 palpite",
+        "",
+        "==== Coreia do Sul ====",
         "<@user-1>  0x1"
       ].join("\n")
     );
@@ -60,10 +64,51 @@ describe("formatLockedPredictionRevealBatch", () => {
         "",
         "#1 México x África do Sul",
         "4 palpites",
-        "<@user-2>  3x1",
-        "<@user-4>  2x1",
+        "",
+        "==== México ====",
         "<@user-1>  2x0",
-        "<@user-3>  2x0"
+        "<@user-3>  2x0",
+        "------ Solo",
+        "<@user-2>  3x1",
+        "<@user-4>  2x1"
+      ].join("\n")
+    );
+  });
+
+  test("groups locked predictions by predicted outcome with solo score callouts", () => {
+    expect(
+      formatLockedPredictionRevealBatch({
+        matches: [match("wc2026-001", 1, "GER", "Germany", "CIV", "Cote d'Ivoire")],
+        predictions: [
+          prediction("user-1", "wc2026-001", 5, 1, "2026-06-11T10:00:00.000Z"),
+          prediction("user-2", "wc2026-001", 5, 1, "2026-06-11T10:01:00.000Z"),
+          prediction("user-3", "wc2026-001", 4, 1, "2026-06-11T10:02:00.000Z"),
+          prediction("user-4", "wc2026-001", 4, 1, "2026-06-11T10:03:00.000Z"),
+          prediction("user-5", "wc2026-001", 4, 0, "2026-06-11T10:04:00.000Z"),
+          prediction("user-6", "wc2026-001", 0, 2, "2026-06-11T10:05:00.000Z"),
+          prediction("user-7", "wc2026-001", 1, 1, "2026-06-11T10:06:00.000Z")
+        ]
+      })
+    ).toBe(
+      [
+        "Palpites encerrados",
+        "",
+        "#1 Alemanha x Costa do Marfim",
+        "7 palpites",
+        "",
+        "==== Alemanha ====",
+        "<@user-1>  5x1",
+        "<@user-2>  5x1",
+        "<@user-3>  4x1",
+        "<@user-4>  4x1",
+        "------ Solo",
+        "<@user-5>  4x0",
+        "",
+        "==== Costa do Marfim ====",
+        "<@user-6>  0x2",
+        "",
+        "==== Empate ====",
+        "<@user-7>  1x1"
       ].join("\n")
     );
   });
