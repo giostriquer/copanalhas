@@ -81,6 +81,42 @@ describe("createBracketState", () => {
     });
   });
 
+  test("uses reviewed official tiebreaker order for current provisional round-of-32 slots", () => {
+    const state = createBracketState({
+      matches: WORLD_CUP_2026_SEED.matches,
+      results: currentStoredResults()
+    });
+    const roundOf32 = state.rounds.find((round) => round.key === "round_of_32");
+
+    expect(state.phase).toBe("provisional");
+    expect(
+      roundOf32?.matches.map((match) => [
+        match.label,
+        match.home.sourceSlot,
+        match.home.teamCode,
+        match.away.sourceSlot,
+        match.away.teamCode
+      ])
+    ).toEqual([
+      ["#73", "2A", "KOR", "2B", "SUI"],
+      ["#74", "1E", "GER", "3C", "SCO"],
+      ["#75", "1F", "SWE", "2C", "MAR"],
+      ["#76", "1C", "BRA", "2F", "JPN"],
+      ["#77", "1I", "NOR", "3F", "NED"],
+      ["#78", "2E", "CIV", "2I", "FRA"],
+      ["#79", "1A", "MEX", "3H", "ESP"],
+      ["#80", "1L", "ENG", "3K", "POR"],
+      ["#81", "1D", "USA", "3B", "BIH"],
+      ["#82", "1G", "NZL", "3A", "CZE"],
+      ["#83", "2K", "COD", "2L", "GHA"],
+      ["#84", "1H", "URU", "2J", "AUT"],
+      ["#85", "1B", "CAN", "3G", "BEL"],
+      ["#86", "1J", "ARG", "2H", "KSA"],
+      ["#87", "1K", "COL", "3D", "PAR"],
+      ["#88", "2D", "AUS", "2G", "IRN"]
+    ]);
+  });
+
   test("resolves final round-of-32 entrants from reviewed current match data", () => {
     const state = createBracketState({
       matches: WORLD_CUP_2026_SEED.matches,
@@ -135,6 +171,43 @@ describe("createBracketState", () => {
     );
   });
 });
+
+function currentStoredResults(): StandingsResult[] {
+  return [
+    result("wc2026-001", 2, 0),
+    result("wc2026-002", 2, 1),
+    result("wc2026-003", 1, 1),
+    result("wc2026-004", 4, 1),
+    result("wc2026-005", 1, 1),
+    result("wc2026-006", 1, 1),
+    result("wc2026-007", 0, 1),
+    result("wc2026-008", 2, 0),
+    result("wc2026-009", 7, 1),
+    result("wc2026-010", 2, 2),
+    result("wc2026-011", 1, 0),
+    result("wc2026-012", 5, 1),
+    result("wc2026-013", 0, 0),
+    result("wc2026-014", 1, 1),
+    result("wc2026-015", 1, 1),
+    result("wc2026-016", 2, 2),
+    result("wc2026-017", 3, 1),
+    result("wc2026-018", 1, 4),
+    result("wc2026-019", 3, 0),
+    result("wc2026-020", 3, 1),
+    result("wc2026-021", 1, 1),
+    result("wc2026-022", 4, 2),
+    result("wc2026-023", 1, 0),
+    result("wc2026-024", 1, 3),
+    result("wc2026-025", 1, 1),
+    result("wc2026-026", 4, 1),
+    result("wc2026-027", 6, 0),
+    result("wc2026-028", 1, 0),
+    result("wc2026-029", 2, 0),
+    result("wc2026-030", 0, 1),
+    result("wc2026-031", 3, 0),
+    result("wc2026-032", 0, 1)
+  ];
+}
 
 const currentSeedRankOrderByGroup = {
   A: ["MEX", "RSA", "KOR", "CZE"],

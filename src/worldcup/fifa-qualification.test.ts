@@ -51,6 +51,48 @@ describe("computeFifaGroupStandings", () => {
     ]);
   });
 
+  test("uses reviewed official tiebreaker order for current score-identical Group G rows", () => {
+    const standings = computeFifaGroupStandings(seedGroupMatches("G"), [
+      result("wc2026-014", 1, 1),
+      result("wc2026-016", 2, 2)
+    ]);
+
+    expect(standings[0]?.status).toBe("resolved");
+    expect(standings[0]?.rows.map((row) => row.teamCode)).toEqual([
+      "NZL",
+      "IRN",
+      "BEL",
+      "EGY"
+    ]);
+    expect(standings[0]?.rows.map((row) => row.tiebreakerStatus)).toEqual([
+      "resolved",
+      "resolved",
+      "resolved",
+      "resolved"
+    ]);
+  });
+
+  test("uses reviewed official tiebreaker order for current score-identical Group H rows", () => {
+    const standings = computeFifaGroupStandings(seedGroupMatches("H"), [
+      result("wc2026-013", 0, 0),
+      result("wc2026-015", 1, 1)
+    ]);
+
+    expect(standings[0]?.status).toBe("resolved");
+    expect(standings[0]?.rows.map((row) => row.teamCode)).toEqual([
+      "URU",
+      "KSA",
+      "ESP",
+      "CPV"
+    ]);
+    expect(standings[0]?.rows.map((row) => row.tiebreakerStatus)).toEqual([
+      "resolved",
+      "resolved",
+      "resolved",
+      "resolved"
+    ]);
+  });
+
   test("does not reuse a reviewed tiebreaker order after the guarded row stats change", () => {
     const standings = computeFifaGroupStandings(seedGroupMatches("C"), [
       result("wc2026-006", 1, 1),
