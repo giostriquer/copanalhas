@@ -132,8 +132,12 @@ describe("formatPredictionResultRevealBatch", () => {
         "",
         "#1 México (1) x (0) África do Sul",
         "3 palpites",
+        "",
+        "==== México ====",
         "<@user-1>  2x1 - 0 pts",
         "<@user-2>  1x0 - 5 pts",
+        "",
+        "==== Empate ====",
         "<@user-3>  0x0 - 0 pts"
       ].join("\n")
     );
@@ -156,9 +160,54 @@ describe("formatPredictionResultRevealBatch", () => {
         "",
         "#1 México (2) x (0) África do Sul",
         "3 palpites",
+        "",
+        "==== México ====",
         "<@user-1>  3x1 - 2 pts",
         "<@user-2>  1x0 - 2 pts",
+        "",
+        "==== África do Sul ====",
         "<@user-3>  0x1 - 0 pts"
+      ].join("\n")
+    );
+  });
+
+  test("groups final result predictions by outcome with points and solo callouts", () => {
+    expect(
+      formatPredictionResultRevealBatch({
+        matches: [match("wc2026-035", 35, "ECU", "Ecuador", "CUW", "Curacao")],
+        predictions: [
+          prediction("user-1", "wc2026-035", 4, 0, "2026-06-11T10:00:00.000Z"),
+          prediction("user-2", "wc2026-035", 4, 0, "2026-06-11T10:01:00.000Z"),
+          prediction("user-3", "wc2026-035", 3, 0, "2026-06-11T10:02:00.000Z"),
+          prediction("user-4", "wc2026-035", 1, 0, "2026-06-11T10:03:00.000Z"),
+          prediction("user-5", "wc2026-035", 1, 0, "2026-06-11T10:04:00.000Z"),
+          prediction("user-6", "wc2026-035", 0, 2, "2026-06-11T10:05:00.000Z"),
+          prediction("user-7", "wc2026-035", 0, 0, "2026-06-11T10:06:00.000Z"),
+          prediction("user-8", "wc2026-035", 0, 0, "2026-06-11T10:07:00.000Z")
+        ],
+        results: [{ matchId: "wc2026-035", homeScore: 0, awayScore: 0 }]
+      })
+    ).toBe(
+      [
+        "Resultado",
+        "",
+        "#35 Equador (0) x (0) Curaçao",
+        "8 palpites",
+        "",
+        "==== Equador ====",
+        "<@user-1>  4x0 - 0 pts",
+        "<@user-2>  4x0 - 0 pts",
+        "<@user-4>  1x0 - 0 pts",
+        "<@user-5>  1x0 - 0 pts",
+        "------ Solo",
+        "<@user-3>  3x0 - 0 pts",
+        "",
+        "==== Curaçao ====",
+        "<@user-6>  0x2 - 0 pts",
+        "",
+        "==== Empate ====",
+        "<@user-7>  0x0 - 3 pts",
+        "<@user-8>  0x0 - 3 pts"
       ].join("\n")
     );
   });

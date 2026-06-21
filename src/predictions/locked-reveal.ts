@@ -59,7 +59,7 @@ export function formatPredictionResultRevealBatch(
           result.awayScore
         }) ${formatTeamName(match.awayTeam)}`,
         countLabel(predictions.length),
-        ...formatPredictionResultLines(predictions, scoredByUserId)
+        ...formatPredictionResultLines(match, predictions, scoredByUserId)
       ];
     })
   ].join("\n");
@@ -96,6 +96,14 @@ function formatLockedPredictionLines(
   match: WorldCupMatch,
   predictions: readonly StoredPrediction[]
 ): string[] {
+  return formatPredictionLinesByOutcome(match, predictions, formatPredictionLine);
+}
+
+function formatPredictionLinesByOutcome(
+  match: WorldCupMatch,
+  predictions: readonly StoredPrediction[],
+  formatLine: PredictionLineFormatter
+): string[] {
   if (predictions.length === 0) {
     return ["Nenhum palpite enviado."];
   }
@@ -112,25 +120,28 @@ function formatLockedPredictionLines(
     ...outcomeSections.flatMap((section, index) => [
       ...(index === 0 ? [] : [""]),
       outcomeHeading(match, section.outcome),
-      ...formatOutcomePredictionLines(section.predictions)
+      ...formatOutcomePredictionLines(section.predictions, formatLine)
     ])
   ];
 }
 
-function formatOutcomePredictionLines(predictions: readonly StoredPrediction[]): string[] {
+function formatOutcomePredictionLines(
+  predictions: readonly StoredPrediction[],
+  formatLine: PredictionLineFormatter
+): string[] {
   const groups = scoreGroups(predictions);
   const sharedGroups = groups.filter((group) => group.length > 1);
   const soloGroups = groups.filter((group) => group.length === 1);
   const shouldCallOutSolo = sharedGroups.length > 0 && soloGroups.length > 0;
 
   if (!shouldCallOutSolo) {
-    return groups.flatMap(formatPredictionGroup);
+    return groups.flatMap((group) => formatPredictionGroup(group, formatLine));
   }
 
   return [
-    ...sharedGroups.flatMap(formatPredictionGroup),
+    ...sharedGroups.flatMap((group) => formatPredictionGroup(group, formatLine)),
     "------ Solo",
-    ...soloGroups.flatMap(formatPredictionGroup)
+    ...soloGroups.flatMap((group) => formatPredictionGroup(group, formatLine))
   ];
 }
 
@@ -150,10 +161,15 @@ function scoreGroups(predictions: readonly StoredPrediction[]): StoredPrediction
   );
 }
 
-function formatPredictionGroup(predictions: readonly StoredPrediction[]): string[] {
-  return predictions.map(
-    (prediction) => `<@${prediction.userId}>  ${prediction.homeScore}x${prediction.awayScore}`
-  );
+function formatPredictionGroup(
+  predictions: readonly StoredPrediction[],
+  formatLine: PredictionLineFormatter
+): string[] {
+  return predictions.map(formatLine);
+}
+
+function formatPredictionLine(prediction: StoredPrediction): string {
+  return `<@${prediction.userId}>  ${prediction.homeScore}x${prediction.awayScore}`;
 }
 
 function outcomeHeading(match: WorldCupMatch, outcome: PredictionOutcome): string {
@@ -181,14 +197,11 @@ function predictionOutcome(prediction: StoredPrediction): PredictionOutcome {
 }
 
 function formatPredictionResultLines(
+  match: WorldCupMatch,
   predictions: readonly StoredPrediction[],
   scoredByUserId: ReadonlyMap<string, { points: number }>
 ): string[] {
-  if (predictions.length === 0) {
-    return ["Nenhum palpite enviado."];
-  }
-
-  return predictions.map((prediction) => {
+  return formatPredictionLinesByOutcome(match, predictions, (prediction) => {
     const points = scoredByUserId.get(prediction.userId)?.points ?? 0;
 
     return `<@${prediction.userId}>  ${prediction.homeScore}x${
@@ -206,3 +219,4 @@ function pointsLabel(value: number): string {
 }
 
 type PredictionOutcome = "home" | "away" | "draw";
+type PredictionLineFormatter = (prediction: StoredPrediction) => string;
