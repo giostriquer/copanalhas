@@ -5,6 +5,7 @@ export type BracketRoundKey =
   | "round_of_16"
   | "quarter_finals"
   | "semi_finals"
+  | "third_place"
   | "final";
 
 export type BracketMatchState = "provisional" | "scheduled" | "final" | "blocked";

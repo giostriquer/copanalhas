@@ -22,6 +22,7 @@ describe("createBracketState", () => {
       "round_of_16",
       "quarter_finals",
       "semi_finals",
+      "third_place",
       "final"
     ]);
     expect(state.rounds[0]?.matches).toHaveLength(16);
@@ -29,6 +30,12 @@ describe("createBracketState", () => {
     expect(state.rounds[0]?.matches[0]?.home.sourceSlot).toBe("2A");
     expect(state.rounds[0]?.matches[0]?.away.sourceSlot).toBe("2B");
     expect(state.rounds[1]?.matches[0]?.home.label).toBe("W-32-1");
+    expect(state.rounds.find((round) => round.key === "third_place")?.matches[0]).toMatchObject({
+      id: "third_place-1",
+      label: "Third-place play-off",
+      home: { label: "L-SF-1" },
+      away: { label: "L-SF-2" }
+    });
     expect(state.rounds[0]?.matches.some((match) => match.state === "provisional")).toBe(true);
     expect(
       state.rounds[0]?.matches.some(

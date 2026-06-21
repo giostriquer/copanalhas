@@ -39,5 +39,6 @@ export const VISUAL_SKELETON_ROUNDS: readonly VisualSkeletonRoundTemplate[] = [
   { key: "round_of_16", label: "Round of 16", matchCount: 8, sourcePrefix: "W-32" },
   { key: "quarter_finals", label: "Quarter-finals", matchCount: 4, sourcePrefix: "W-16" },
   { key: "semi_finals", label: "Semi-finals", matchCount: 2, sourcePrefix: "W-QF" },
+  { key: "third_place", label: "Third-place play-off", matchCount: 1, sourcePrefix: "L-SF" },
   { key: "final", label: "Final", matchCount: 1, sourcePrefix: "W-SF" }
 ];

@@ -165,7 +165,16 @@ The original whole-skeleton shape remains a future extension. When implemented,
 it must be based on reviewed knockout topology and should not reintroduce
 unreadable placeholder columns.
 
-The full-bracket image, when that future extension exists, should show:
+### Visual Amendment - 2026-06-21
+
+The production image now renders the whole visible knockout path instead of
+stopping at quarter-final placeholders. Keep the readable outside-in structure:
+Round of 32 cards stay on the left and right edges, Oitavas and Quartas move
+toward the middle, each side feeds one Semifinal, and the center shows Final plus
+`Decisão do 3º lugar`. Later rounds remain explicit winner/loser placeholders
+until knockout fixtures and results are modeled as reviewed tournament data.
+
+The full-bracket image should show:
 
 - Round of 32
 - Round of 16

@@ -4,7 +4,7 @@ import { renderBracketSvg } from "./svg.js";
 import type { BracketState } from "./types.js";
 
 describe("renderBracketSvg", () => {
-  test("renders a reference-style split bracket with pt-BR names, real flag assets, and warnings", () => {
+  test("renders a full-path bracket with pt-BR names, real flag assets, and warnings", () => {
     const svg = renderBracketSvg(bracketState());
 
     expect(svg).toContain("<svg");
@@ -17,8 +17,16 @@ describe("renderBracketSvg", () => {
     expect(svg).toContain('data-bracket-column="round-of-32"');
     expect(svg).toContain('data-bracket-column="round-of-16"');
     expect(svg).toContain('data-bracket-column="quarter-finals"');
+    expect(svg).toContain('data-bracket-column="semi-finals"');
+    expect(svg).toContain('data-bracket-column="finals"');
     expect(svg).toContain('data-connector-match="89"');
     expect(svg).toContain('data-connector-match="97"');
+    expect(svg).toContain('data-connector-match="101"');
+    expect(svg).toContain('data-connector-match="104"');
+    expect(svg).toContain('data-path-match="101"');
+    expect(svg).toContain('data-path-match="102"');
+    expect(svg).toContain('data-path-match="103"');
+    expect(svg).toContain('data-path-match="104"');
     expect(svg).toContain('data-flag-team-code="GER"');
     expect(svg).toContain('data-flag-asset="de.svg"');
     expect(svg).toContain("data:image/svg+xml;base64,");
@@ -32,6 +40,13 @@ describe("renderBracketSvg", () => {
     expect(svg).toContain("Como está ficando");
     expect(svg).toContain("Oitavas");
     expect(svg).toContain("Quartas");
+    expect(svg).toContain("Semifinal");
+    expect(svg).toContain("Final");
+    expect(svg).toContain("Decisão do 3º lugar");
+    expect(svg).toContain("Vencedor #101");
+    expect(svg).toContain("Vencedor #102");
+    expect(svg).toContain("Perdedor #101");
+    expect(svg).toContain("Perdedor #102");
     expect(svg).toContain("ordem provisória");
     expect(svg).toContain("Football data provided by the Football-Data.org API.");
     expect(svg).not.toContain(">Como está</text>");
@@ -39,7 +54,6 @@ describe("renderBracketSvg", () => {
     expect(svg).not.toContain("Rodada de 32 com caminhos oficiais para oitavas e quartas.");
     expect(svg).not.toContain("data-flag-code=");
     expect(svg).not.toContain("Round of 16");
-    expect(svg).not.toContain("W-32-1");
     expect(svg.indexOf('data-match-id="r32-74"')).toBeLessThan(
       svg.indexOf('data-match-id="r32-77"')
     );
@@ -129,6 +143,69 @@ function bracketState(): BracketState {
             state: "provisional",
             home: { label: "MEX", teamCode: "MEX", teamName: "Mexico", sourceSlot: "1A" },
             away: { label: "3E", sourceSlot: "3E" }
+          },
+          {
+            id: "r32-80",
+            label: "#80",
+            state: "provisional",
+            home: { label: "ENG", teamCode: "ENG", teamName: "England", sourceSlot: "1L" },
+            away: { label: "3K", sourceSlot: "3K" }
+          },
+          {
+            id: "r32-81",
+            label: "#81",
+            state: "provisional",
+            home: { label: "USA", teamCode: "USA", teamName: "United States", sourceSlot: "1D" },
+            away: { label: "3B", sourceSlot: "3B" }
+          },
+          {
+            id: "r32-82",
+            label: "#82",
+            state: "provisional",
+            home: { label: "NZL", teamCode: "NZL", teamName: "New Zealand", sourceSlot: "1G" },
+            away: { label: "3A", sourceSlot: "3A" }
+          },
+          {
+            id: "r32-83",
+            label: "#83",
+            state: "provisional",
+            home: { label: "COD", teamCode: "COD", teamName: "DR Congo", sourceSlot: "2K" },
+            away: { label: "GHA", teamCode: "GHA", teamName: "Ghana", sourceSlot: "2L" }
+          },
+          {
+            id: "r32-84",
+            label: "#84",
+            state: "provisional",
+            home: { label: "URU", teamCode: "URU", teamName: "Uruguay", sourceSlot: "1H" },
+            away: { label: "2J", sourceSlot: "2J" }
+          },
+          {
+            id: "r32-85",
+            label: "#85",
+            state: "provisional",
+            home: { label: "CAN", teamCode: "CAN", teamName: "Canada", sourceSlot: "1B" },
+            away: { label: "3G", sourceSlot: "3G" }
+          },
+          {
+            id: "r32-86",
+            label: "#86",
+            state: "provisional",
+            home: { label: "ARG", teamCode: "ARG", teamName: "Argentina", sourceSlot: "1J" },
+            away: { label: "2H", sourceSlot: "2H" }
+          },
+          {
+            id: "r32-87",
+            label: "#87",
+            state: "provisional",
+            home: { label: "COL", teamCode: "COL", teamName: "Colombia", sourceSlot: "1K" },
+            away: { label: "3D", sourceSlot: "3D" }
+          },
+          {
+            id: "r32-88",
+            label: "#88",
+            state: "provisional",
+            home: { label: "AUS", teamCode: "AUS", teamName: "Australia", sourceSlot: "2D" },
+            away: { label: "2G", sourceSlot: "2G" }
           }
         ]
       },
@@ -147,6 +224,7 @@ function bracketState(): BracketState {
       },
       { key: "quarter_finals", label: "Quarter-finals", matches: [] },
       { key: "semi_finals", label: "Semi-finals", matches: [] },
+      { key: "third_place", label: "Third-place play-off", matches: [] },
       { key: "final", label: "Final", matches: [] }
     ]
   };

@@ -150,18 +150,19 @@ manual result entry, forced result sync, and `reset-test-date` refresh the
 affected dashboards so the channel does not fill with new scoreboard messages.
 The bracket dashboard is a deterministic PNG generated from reviewed match data
 and stored final results, with visible Football-Data attribution when API-backed
-sync may be used. The current image focuses on the Round of 32 only, split into
-left and right halves by the reviewed FIFA winner path so each half shows the 16
-teams that can converge toward the same semi-final. Each half uses a compact
-reference-style bracket grid: Round of 32 team cards feed into Oitavas and
-Quartas path placeholders through connector lines. Team names are rendered with
-Portuguese display names and local SVG flag assets from the installed
-`flag-icons` package, so the runtime renderer does not fetch media from the
-network. During the group stage, Round of 32 entrants are shown as provisional
-`as it stands` slots; once all group results are complete, final Round of 32
-slots use the reviewed FIFA qualification resolver. If FIFA tiebreakers still
-need manual review, the bracket reports that blocked state instead of guessing.
-Operators can run `/copanalhas bracket` to refresh only the bracket dashboard.
+sync may be used. The image renders the knockout path from the Round of 32 edges
+through Oitavas, Quartas, Semifinal, Final, and the third-place decision in the
+center. The Round of 32 teams are split by the reviewed FIFA winner path so each
+outside half converges toward its semifinal, while later rounds use explicit
+winner/loser placeholders until knockout teams and results are reviewed. Team
+names are rendered with Portuguese display names and local SVG flag assets from
+the installed `flag-icons` package, so the runtime renderer does not fetch media
+from the network. During the group stage, Round of 32 entrants are shown as
+provisional `as it stands` slots; once all group results are complete, final
+Round of 32 slots use the reviewed FIFA qualification resolver. If FIFA
+tiebreakers still need manual review, the bracket reports that blocked state
+instead of guessing. Operators can run `/copanalhas bracket` to refresh only the
+bracket dashboard.
 
 Prediction reveal posts are automatic. Every minute, the bot checks for matches
 whose prediction cutoff has passed, groups matches that share the same cutoff
