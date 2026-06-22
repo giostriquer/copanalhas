@@ -21,9 +21,7 @@ export function createChaosDashboardMessage(
       `Atualizado: ${model.generatedAtLabel}`,
       `Periodo: ${model.period.label}`,
       `Jogos pontuados: ${model.totals.scoredMatches} | Palpites: ${model.totals.predictions}`,
-      png ? "Imagem atualizada." : "Imagem indisponivel no momento; usando fallback de texto.",
-      "",
-      model.footer
+      png ? "Imagem atualizada." : "Imagem indisponivel no momento; usando fallback de texto."
     ].join("\n"),
     embeds: [],
     files: png ? [{ attachment: png, name: CHAOS_ATTACHMENT_NAME }] : []

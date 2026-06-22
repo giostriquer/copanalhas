@@ -33,6 +33,16 @@ export function sampleChaosDashboardModel(
         matchesScored: 12
       }
     ],
+    leaderOfWeek: {
+      userId: "user-a",
+      displayName: "Guibexa",
+      points: 23,
+      soloCount: 1,
+      exactCount: 4,
+      outcomeCount: 3,
+      closestCount: 0,
+      avatarDataUri: "data:image/png;base64,leader-avatar"
+    },
     weeklyMovement: {
       status: "ready",
       climbers: [
@@ -75,7 +85,6 @@ export function sampleChaosDashboardModel(
         subtitle: "A democracia produziu uma derrota coletiva."
       }
     ],
-    footer: "Zoeira estatistica. Sem apostas, sem dinheiro, so vergonha publica.",
     ...overrides
   };
 }

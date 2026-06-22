@@ -29,6 +29,10 @@ Avoid retaining raw private message content. Avoid collecting display names,
 profile data, unrelated channel messages, attachments, reactions, or member lists
 unless a later documented feature truly needs them.
 
+Dashboard rendering may fetch current Discord display names and the period
+leader's display avatar for readability. These are used only to render the
+outgoing Discord image/message and are not stored as durable profile records.
+
 Optional provider sync stores only result provenance needed for auditability:
 provider name, provider match ID, final score, and fetch timestamp. It must not
 store raw provider responses.

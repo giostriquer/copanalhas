@@ -6,6 +6,7 @@ import type { WorldCupMatch } from "../worldcup/types.js";
 
 describe("chaos dashboard stats", () => {
   test("builds people awards, match chaos, and top rows from scored results", () => {
+    const avatarDataUri = "data:image/png;base64,leader-avatar";
     const model = buildChaosDashboardModel({
       matches: fixtureMatches,
       predictions: fixturePredictions,
@@ -15,6 +16,7 @@ describe("chaos dashboard stats", () => {
         ["user-b", "SEVERAO DO HEXA"],
         ["user-c", "Anghexa"]
       ]),
+      avatarDataUris: new Map([["user-a", avatarDataUri]]),
       previousWeekRows: [],
       now: new Date("2026-06-24T15:30:00.000Z"),
       timeZone: "America/Sao_Paulo"
@@ -36,6 +38,12 @@ describe("chaos dashboard stats", () => {
       displayName: "Guibexa",
       points: 5,
       soloCount: 1
+    });
+    expect(model.leaderOfWeek).toMatchObject({
+      userId: "user-a",
+      displayName: "Guibexa",
+      points: 5,
+      avatarDataUri
     });
     expect(model.peopleAwards.map((award) => award.key)).toContain("profeta-isolado");
     expect(model.matchAwards.map((award) => award.key)).toContain("consenso-burro");

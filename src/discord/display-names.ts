@@ -1,3 +1,5 @@
+import { Buffer } from "node:buffer";
+
 import { Client, GatewayIntentBits } from "discord.js";
 
 import type { CopanalhasConfig } from "./config.js";
@@ -18,13 +20,27 @@ export interface DiscordDisplayNameGuild {
 
 export interface DiscordDisplayNameGuildMember {
   displayName?: string | null;
+  displayAvatarURL?(options?: DiscordAvatarUrlOptions): string;
   user?: {
     displayName?: string | null;
     globalName?: string | null;
     username?: string | null;
     tag?: string | null;
+    displayAvatarURL?(options?: DiscordAvatarUrlOptions): string;
   };
 }
+
+export interface DiscordAvatarUrlOptions {
+  extension?: "png";
+  size?: 256;
+}
+
+export interface DiscordAvatarImage {
+  data: Buffer;
+  contentType: string;
+}
+
+export type DiscordAvatarImageFetcher = (url: string) => Promise<DiscordAvatarImage>;
 
 export async function fetchDiscordDisplayNames(
   config: CopanalhasConfig,
@@ -37,6 +53,63 @@ export async function fetchDiscordDisplayNames(
       intents: [GatewayIntentBits.Guilds]
     })
   );
+}
+
+export async function fetchDiscordUserAvatarDataUris(
+  config: CopanalhasConfig,
+  userIds: readonly string[]
+): Promise<ReadonlyMap<string, string>> {
+  return fetchDiscordUserAvatarDataUrisWithClient(
+    config,
+    userIds,
+    new Client({
+      intents: [GatewayIntentBits.Guilds]
+    }),
+    fetchAvatarImage
+  );
+}
+
+export async function fetchDiscordUserAvatarDataUrisWithClient(
+  config: CopanalhasConfig,
+  userIds: readonly string[],
+  client: DiscordDisplayNameClient,
+  fetchAvatar: DiscordAvatarImageFetcher = fetchAvatarImage
+): Promise<ReadonlyMap<string, string>> {
+  const avatarDataUris = new Map<string, string>();
+  const uniqueIds = uniqueUserIds(userIds);
+
+  if (uniqueIds.length === 0) {
+    return avatarDataUris;
+  }
+
+  try {
+    await client.login(config.discordToken);
+    const guild = await client.guilds.fetch(config.guildId);
+
+    if (!guild) {
+      return avatarDataUris;
+    }
+
+    for (const userId of uniqueIds) {
+      try {
+        const member = await guild.members.fetch(userId);
+        const avatarUrl = avatarUrlForMember(member);
+
+        if (!avatarUrl) {
+          continue;
+        }
+
+        const avatar = await fetchAvatar(avatarUrl);
+        avatarDataUris.set(userId, avatarDataUri(avatar));
+      } catch {
+        // Missing members or avatar fetch failures should not block recap rendering.
+      }
+    }
+
+    return avatarDataUris;
+  } finally {
+    await client.destroy();
+  }
 }
 
 export async function fetchDiscordDisplayNamesWithClient(
@@ -83,6 +156,33 @@ function displayNameForMember(member: DiscordDisplayNameGuildMember, userId: str
       member.user?.tag
     ]) ?? userId
   );
+}
+
+function avatarUrlForMember(member: DiscordDisplayNameGuildMember): string | null {
+  return (
+    member.displayAvatarURL?.({ extension: "png", size: 256 }) ??
+    member.user?.displayAvatarURL?.({ extension: "png", size: 256 }) ??
+    null
+  );
+}
+
+async function fetchAvatarImage(url: string): Promise<DiscordAvatarImage> {
+  const response = await fetch(url);
+
+  if (!response.ok) {
+    throw new Error(`Discord avatar fetch failed with HTTP ${response.status}.`);
+  }
+
+  const contentType = response.headers.get("content-type")?.split(";")[0]?.trim() || "image/png";
+
+  return {
+    data: Buffer.from(await response.arrayBuffer()),
+    contentType: contentType.startsWith("image/") ? contentType : "image/png"
+  };
+}
+
+function avatarDataUri(image: DiscordAvatarImage): string {
+  return `data:${image.contentType};base64,${image.data.toString("base64")}`;
 }
 
 function firstPresent(values: Array<string | null | undefined>): string | undefined {

@@ -9,12 +9,18 @@ describe("chaos dashboard SVG renderer", () => {
 
     expect(svg).toContain("<svg");
     expect(svg).toContain("Copanalhas Recap");
-    expect(svg).toContain("Premios da Zoacao");
-    expect(svg).toContain("Caos dos Jogos");
+    expect(svg).toContain('fill="#002776"');
+    expect(svg).toContain('fill="#FFDF00"');
+    expect(svg).toContain("Genios e Copazus");
+    expect(svg).toContain("Highlights");
+    expect(svg).toContain("Lider da Semana");
     expect(svg).toContain("Guibexa");
+    expect(svg).toContain('href="data:image/png;base64,leader-avatar"');
     expect(svg).toContain("Profeta isolado");
     expect(svg).toContain("Consenso burro");
-    expect(svg).toContain("Zoeira estatistica");
+    expect(svg).not.toContain("Premios da Zoacao");
+    expect(svg).not.toContain("Caos dos Jogos");
+    expect(svg).not.toContain("Zoeira estatistica");
   });
 
   test("escapes user and match text before writing SVG", () => {

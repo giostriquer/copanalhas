@@ -15,7 +15,10 @@ import type { ChaosDashboardMessage } from "./chaos-dashboard/format.js";
 import { loadLocalEnvFile } from "./config/env.js";
 import { createMatchDayMessage, type MatchCardMessage } from "./discord/components.js";
 import { parseCopanalhasConfig, type CopanalhasConfig } from "./discord/config.js";
-import { fetchDiscordDisplayNames } from "./discord/display-names.js";
+import {
+  fetchDiscordDisplayNames,
+  fetchDiscordUserAvatarDataUris
+} from "./discord/display-names.js";
 import {
   startDiscordClient,
   type DiscordClientReadyOptions,
@@ -90,6 +93,10 @@ export interface CliDependencies {
   ): Promise<string>;
   renderChaosDashboardPng?(svg: string): Promise<Buffer>;
   resolveDiscordDisplayNames?(
+    config: CopanalhasConfig,
+    userIds: readonly string[]
+  ): Promise<ReadonlyMap<string, string>>;
+  resolveDiscordAvatarDataUris?(
     config: CopanalhasConfig,
     userIds: readonly string[]
   ): Promise<ReadonlyMap<string, string>>;
@@ -332,6 +339,11 @@ async function startBot(dependencies: CliDependencies): Promise<void> {
       dependencies.renderChaosDashboardPng ?? renderChaosDashboardPng,
     resolveUserDisplayNames: (userIds) =>
       (dependencies.resolveDiscordDisplayNames ?? fetchDiscordDisplayNames)(
+        configResult.config,
+        userIds
+      ),
+    resolveUserAvatarDataUris: (userIds) =>
+      (dependencies.resolveDiscordAvatarDataUris ?? fetchDiscordUserAvatarDataUris)(
         configResult.config,
         userIds
       ),

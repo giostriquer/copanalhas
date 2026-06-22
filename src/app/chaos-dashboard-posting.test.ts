@@ -184,6 +184,32 @@ describe("updateChaosRecaps", () => {
     expect(resolveUserDisplayNames).toHaveBeenCalledOnce();
     expect(postedContent).toContain("Copanalhas Recap");
   });
+
+  test("resolves an avatar only for the period leader", async () => {
+    const resolveUserAvatarDataUris = vi.fn(async (userIds: readonly string[]) => {
+      expect(userIds).toEqual(["user-a"]);
+      return new Map([["user-a", "data:image/png;base64,leader-avatar"]]);
+    });
+    let renderedSvg = "";
+
+    await updateChaosRecaps({
+      ...baseOptionsWithCompletedGroupWeekOne(),
+      listChaosDashboardPosts: () => [],
+      recordChaosDashboardPost: vi.fn(),
+      listChaosWeeklySnapshotRows: () => existingSnapshotRows(),
+      recordChaosWeeklySnapshotRows: vi.fn(),
+      resolveUserAvatarDataUris,
+      renderPng: vi.fn(async (svg) => {
+        renderedSvg = svg;
+        return Buffer.from("png");
+      }),
+      upsertChaosDashboardMessage: vi.fn(async () => "chaos-message-1")
+    });
+
+    expect(resolveUserAvatarDataUris).toHaveBeenCalledOnce();
+    expect(renderedSvg).toContain("Lider da Semana");
+    expect(renderedSvg).toContain('href="data:image/png;base64,leader-avatar"');
+  });
 });
 
 function baseOptionsWithCompletedGroupWeekOne(now = new Date("2026-06-24T15:30:00.000Z")) {

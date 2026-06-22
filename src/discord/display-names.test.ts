@@ -1,6 +1,9 @@
+import { Buffer } from "node:buffer";
+
 import { describe, expect, test, vi } from "vitest";
 
 import {
+  fetchDiscordUserAvatarDataUrisWithClient,
   fetchDiscordDisplayNamesWithClient,
   type DiscordDisplayNameClient,
   type DiscordDisplayNameGuildMember
@@ -54,6 +57,48 @@ describe("fetchDiscordDisplayNamesWithClient", () => {
     expect(client.guilds.fetch).toHaveBeenCalledWith("guild-1");
     expect(fetchMember).toHaveBeenCalledWith("user-1");
     expect(fetchMember).toHaveBeenCalledWith("user-2");
+    expect(fetchMember).toHaveBeenCalledWith("missing-user");
+    expect(client.destroy).toHaveBeenCalledOnce();
+  });
+
+  test("fetches guild member avatar data only for resolvable members", async () => {
+    const displayAvatarURL = vi.fn(() => "https://cdn.discordapp.test/avatar.png");
+    const fetchMember = vi.fn(async (userId: string): Promise<DiscordDisplayNameGuildMember> => {
+      if (userId === "user-1") {
+        return { displayName: "Giova", displayAvatarURL };
+      }
+
+      throw new Error("member not found");
+    });
+    const client: DiscordDisplayNameClient = {
+      login: vi.fn(async () => undefined),
+      guilds: {
+        fetch: vi.fn(async () => ({
+          members: {
+            fetch: fetchMember
+          }
+        }))
+      },
+      destroy: vi.fn(async () => undefined)
+    };
+    const fetchAvatarImage = vi.fn(async () => ({
+      data: Buffer.from("avatar-bytes"),
+      contentType: "image/png"
+    }));
+
+    await expect(
+      fetchDiscordUserAvatarDataUrisWithClient(
+        config(),
+        ["user-1", "missing-user"],
+        client,
+        fetchAvatarImage
+      )
+    ).resolves.toEqual(
+      new Map([["user-1", "data:image/png;base64,YXZhdGFyLWJ5dGVz"]])
+    );
+
+    expect(displayAvatarURL).toHaveBeenCalledWith({ extension: "png", size: 256 });
+    expect(fetchAvatarImage).toHaveBeenCalledWith("https://cdn.discordapp.test/avatar.png");
     expect(fetchMember).toHaveBeenCalledWith("missing-user");
     expect(client.destroy).toHaveBeenCalledOnce();
   });

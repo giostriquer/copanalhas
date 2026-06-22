@@ -195,6 +195,7 @@ export interface StartCopanalhasBotRuntimeOptions {
     options: SyncFinishedResultsOptions
   ): Promise<SyncFinishedResultsResult>;
   resolveUserDisplayNames?(userIds: readonly string[]): Promise<ReadonlyMap<string, string>>;
+  resolveUserAvatarDataUris?(userIds: readonly string[]): Promise<ReadonlyMap<string, string>>;
   now(): Date;
   writeLine(line: string): void;
 }
@@ -445,6 +446,9 @@ function createOperatorCommandOptions(
         ),
       ...(options.resolveUserDisplayNames
         ? { resolveUserDisplayNames: options.resolveUserDisplayNames }
+        : {}),
+      ...(options.resolveUserAvatarDataUris
+        ? { resolveUserAvatarDataUris: options.resolveUserAvatarDataUris }
         : {}),
       renderPng: options.renderChaosDashboardPng,
       upsertChaosDashboardMessage: options.upsertChaosDashboardMessage

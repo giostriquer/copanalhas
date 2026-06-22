@@ -48,6 +48,7 @@ export interface UpdateChaosDashboardOptions {
     createdAt: string
   ): void;
   resolveUserDisplayNames?(userIds: readonly string[]): Promise<ReadonlyMap<string, string>>;
+  resolveUserAvatarDataUris?(userIds: readonly string[]): Promise<ReadonlyMap<string, string>>;
   renderPng(svg: string): Promise<Buffer>;
   upsertChaosDashboardMessage(
     message: ChaosDashboardMessage,
@@ -147,6 +148,10 @@ async function updateChaosRecapPeriod(input: {
   const leaderboardRows = buildLeaderboard(scoredPredictions, input.periodPredictions);
   const userIds = leaderboardRows.map((row) => row.userId);
   const displayNames = await resolveDisplayNames(input.options, userIds);
+  const avatarDataUris = await resolveAvatarDataUris(
+    input.options,
+    leaderboardRows[0] ? [leaderboardRows[0].userId] : []
+  );
   const previousWeekRows = input.options.listChaosWeeklySnapshotRows(
     input.period.key,
     input.options.guildId,
@@ -172,6 +177,7 @@ async function updateChaosRecapPeriod(input: {
       label: input.period.label
     },
     displayNames,
+    avatarDataUris,
     previousWeekRows,
     now: input.updatedAt,
     timeZone: input.options.timeZone
@@ -212,6 +218,21 @@ async function updateChaosRecapPeriod(input: {
     renderState,
     ...(renderError ? { renderError } : {})
   };
+}
+
+async function resolveAvatarDataUris(
+  options: Pick<UpdateChaosDashboardOptions, "resolveUserAvatarDataUris">,
+  userIds: readonly string[]
+): Promise<ReadonlyMap<string, string>> {
+  if (!options.resolveUserAvatarDataUris || userIds.length === 0) {
+    return new Map();
+  }
+
+  try {
+    return await options.resolveUserAvatarDataUris(userIds);
+  } catch {
+    return new Map();
+  }
 }
 
 async function resolveDisplayNames(

@@ -7,10 +7,10 @@ export interface ChaosDashboardModel {
   week: ChaosWeek;
   totals: ChaosTotals;
   leaderboardTop: ChaosLeaderboardRow[];
+  leaderOfWeek?: ChaosLeaderOfWeek;
   weeklyMovement: ChaosWeeklyMovement;
   peopleAwards: ChaosPeopleAward[];
   matchAwards: ChaosMatchAward[];
-  footer: string;
 }
 
 export interface ChaosRecapPeriodSummary {
@@ -33,6 +33,17 @@ export interface ChaosTotals {
 export interface ChaosLeaderboardRow extends LeaderboardRow {
   rank: number;
   displayName: string;
+}
+
+export interface ChaosLeaderOfWeek {
+  userId: string;
+  displayName: string;
+  points: number;
+  soloCount: number;
+  exactCount: number;
+  outcomeCount: number;
+  closestCount: number;
+  avatarDataUri?: string;
 }
 
 export interface ChaosWeeklySnapshotRow {

@@ -24,6 +24,7 @@ export interface BuildChaosDashboardModelOptions {
   results: readonly MatchResult[];
   period?: { key: string; label: string };
   displayNames?: ReadonlyMap<string, string>;
+  avatarDataUris?: ReadonlyMap<string, string>;
   previousWeekRows: readonly ChaosWeeklySnapshotRow[];
   now: Date;
   timeZone: string;
@@ -44,7 +45,6 @@ interface MatchStats {
   predictions: ScorePrediction[];
 }
 
-const footer = "Zoeira estatistica. Sem apostas, sem dinheiro, so vergonha publica.";
 const negativeAwardMinimumFinishedPredictions = 5;
 
 export function buildChaosDashboardModel(
@@ -67,6 +67,7 @@ export function buildChaosDashboardModel(
     };
   });
   const week = weekForDate(options.now, options.timeZone);
+  const leaderOfWeek = buildLeaderOfWeek(rankedRows, options.avatarDataUris ?? new Map());
 
   return {
     title: "Copanalhas Recap",
@@ -80,6 +81,7 @@ export function buildChaosDashboardModel(
         .length
     },
     leaderboardTop: rankedRows.slice(0, 5),
+    ...(leaderOfWeek ? { leaderOfWeek } : {}),
     weeklyMovement: buildWeeklyMovement({
       currentRows: currentSnapshotRows,
       leaderboardRows: rankedRows,
@@ -93,8 +95,31 @@ export function buildChaosDashboardModel(
       scoredPredictions,
       displayNames: options.displayNames ?? new Map()
     }),
-    matchAwards: buildMatchAwards(matchStats),
-    footer
+    matchAwards: buildMatchAwards(matchStats)
+  };
+}
+
+function buildLeaderOfWeek(
+  rankedRows: readonly ChaosLeaderboardRow[],
+  avatarDataUris: ReadonlyMap<string, string>
+): ChaosDashboardModel["leaderOfWeek"] {
+  const leader = rankedRows[0];
+
+  if (!leader) {
+    return undefined;
+  }
+
+  const avatarDataUri = avatarDataUris.get(leader.userId);
+
+  return {
+    userId: leader.userId,
+    displayName: leader.displayName,
+    points: leader.points,
+    soloCount: leader.soloCount,
+    exactCount: leader.exactCount,
+    outcomeCount: leader.outcomeCount,
+    closestCount: leader.closestCount,
+    ...(avatarDataUri ? { avatarDataUri } : {})
   };
 }
 
