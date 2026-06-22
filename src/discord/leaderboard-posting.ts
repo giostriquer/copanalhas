@@ -21,7 +21,7 @@ export interface DiscordLeaderboardChannel {
 
 export interface DiscordEditableLeaderboardMessage {
   id: string;
-  edit(message: DiscordLeaderboardMessagePayload): Promise<DiscordLeaderboardSentMessage>;
+  edit(message: DiscordLeaderboardEditPayload): Promise<DiscordLeaderboardSentMessage>;
 }
 
 export interface DiscordLeaderboardSentMessage {
@@ -31,6 +31,11 @@ export interface DiscordLeaderboardSentMessage {
 export interface DiscordLeaderboardMessagePayload {
   content: string;
   embeds: LeaderboardDashboardMessage["embeds"];
+  files: LeaderboardDashboardMessage["files"];
+}
+
+export interface DiscordLeaderboardEditPayload extends DiscordLeaderboardMessagePayload {
+  attachments: [];
 }
 
 export async function upsertDiscordLeaderboardMessage(
@@ -67,7 +72,7 @@ export async function upsertDiscordLeaderboardMessageWithClient(
     if (existingMessageId && channel.messages) {
       try {
         const existingMessage = await channel.messages.fetch(existingMessageId);
-        const editedMessage = await existingMessage.edit(payload);
+        const editedMessage = await existingMessage.edit(toDiscordEditPayload(payload));
 
         return editedMessage.id;
       } catch {
@@ -84,7 +89,17 @@ export async function upsertDiscordLeaderboardMessageWithClient(
 function toDiscordPayload(message: LeaderboardDashboardMessage): DiscordLeaderboardMessagePayload {
   return {
     content: message.content,
-    embeds: message.embeds
+    embeds: message.embeds,
+    files: message.files
+  };
+}
+
+function toDiscordEditPayload(
+  payload: DiscordLeaderboardMessagePayload
+): DiscordLeaderboardEditPayload {
+  return {
+    ...payload,
+    attachments: []
   };
 }
 

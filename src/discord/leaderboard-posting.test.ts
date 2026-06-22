@@ -1,3 +1,5 @@
+import { Buffer } from "node:buffer";
+
 import { describe, expect, test, vi } from "vitest";
 
 import {
@@ -48,7 +50,9 @@ describe("upsertDiscordLeaderboardMessageWithClient", () => {
     expect(client.channels.fetch).toHaveBeenCalledWith("channel-1");
     expect(edit).toHaveBeenCalledWith({
       content: message().content,
-      embeds: message().embeds
+      embeds: message().embeds,
+      files: message().files,
+      attachments: []
     });
     expect(send).not.toHaveBeenCalled();
     expect(client.destroy).toHaveBeenCalledOnce();
@@ -80,7 +84,8 @@ describe("upsertDiscordLeaderboardMessageWithClient", () => {
 
     expect(send).toHaveBeenCalledWith({
       content: message().content,
-      embeds: message().embeds
+      embeds: message().embeds,
+      files: message().files
     });
     expect(client.destroy).toHaveBeenCalledOnce();
   });
@@ -109,7 +114,8 @@ describe("upsertDiscordLeaderboardMessageWithClient", () => {
     expect(fetch).not.toHaveBeenCalled();
     expect(send).toHaveBeenCalledWith({
       content: message().content,
-      embeds: message().embeds
+      embeds: message().embeds,
+      files: message().files
     });
   });
 });
@@ -136,7 +142,8 @@ function clientWithChannel(channel: {
 function message(): LeaderboardDashboardMessage {
   return {
     content: "Copanalhas Leaderboard\n```text\nNo scored matches yet.\n```",
-    embeds: []
+    embeds: [],
+    files: [{ attachment: Buffer.from("png"), name: "copanalhas-leaderboard.png" }]
   };
 }
 

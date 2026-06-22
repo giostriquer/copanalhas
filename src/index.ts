@@ -37,6 +37,7 @@ import {
 import type { PredictionResultThreadMessage } from "./app/prediction-result-posting.js";
 import { upsertDiscordStandingsMessage } from "./discord/standings-posting.js";
 import { formatLeaderboard } from "./leaderboard/format.js";
+import { renderLeaderboardPng } from "./leaderboard/png.js";
 import { buildLeaderboard, scoreMatch } from "./scoring/scoring.js";
 import {
   createStandingsDashboardMessages,
@@ -82,6 +83,7 @@ export interface CliDependencies {
     message: LeaderboardDashboardMessage,
     existingMessageId: string | null
   ): Promise<string>;
+  renderLeaderboardPng?(svg: string): Promise<Buffer>;
   upsertBracketMessage?(
     message: BracketDashboardMessage,
     existingMessageId: string | null
@@ -326,6 +328,7 @@ async function startBot(dependencies: CliDependencies): Promise<void> {
       dependencies.upsertLeaderboardMessage ??
       ((message, existingMessageId) =>
         upsertDiscordLeaderboardMessage(configResult.config, message, existingMessageId)),
+    renderLeaderboardPng: dependencies.renderLeaderboardPng ?? renderLeaderboardPng,
     upsertBracketMessage:
       dependencies.upsertBracketMessage ??
       ((message, existingMessageId) =>

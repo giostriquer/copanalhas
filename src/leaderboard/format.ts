@@ -1,3 +1,5 @@
+import type { Buffer } from "node:buffer";
+
 import type { LeaderboardRow } from "../scoring/scoring.js";
 
 export interface CreateLeaderboardDashboardMessageOptions {
@@ -5,14 +7,19 @@ export interface CreateLeaderboardDashboardMessageOptions {
   displayNames?: ReadonlyMap<string, string>;
   updatedAt: Date;
   timeZone: string;
+  renderError?: string;
 }
 
 export interface LeaderboardDashboardMessage {
   content: string;
   embeds: [];
+  files: Array<{ attachment: Buffer; name: string }>;
 }
 
-const leaderboardTitle = "Ranking Copanalhas";
+export const LEADERBOARD_DASHBOARD_TITLE = "Ranking Copanalhas";
+export const LEADERBOARD_ATTACHMENT_NAME = "copanalhas-leaderboard.png";
+export const FOOTBALL_DATA_ATTRIBUTION = "Football data provided by the Football-Data.org API.";
+
 const rulesLines = [
   "Como funciona",
   "- Envie seu palpite pelo botão do jogo do dia; você pode editar até 30 min antes da partida.",
@@ -29,7 +36,7 @@ const rulesLines = [
   "- Segundo lugar = 30%",
   "- Terceiro lugar = 10%",
   "",
-  "Football data provided by the Football-Data.org API."
+  FOOTBALL_DATA_ATTRIBUTION
 ];
 
 export function formatLeaderboard(
@@ -37,10 +44,10 @@ export function formatLeaderboard(
   displayNames: ReadonlyMap<string, string> = new Map()
 ): string {
   if (rows.length === 0) {
-    return [leaderboardTitle, "Ainda não há resultados pontuados.", "", ...rulesLines].join("\n");
+    return [LEADERBOARD_DASHBOARD_TITLE, "Ainda não há resultados pontuados.", "", ...rulesLines].join("\n");
   }
 
-  const lines = [leaderboardTitle];
+  const lines = [LEADERBOARD_DASHBOARD_TITLE];
   let previousRow: LeaderboardRow | undefined;
   let previousRank = 0;
 
@@ -71,19 +78,39 @@ export function formatLeaderboard(
 }
 
 export function createLeaderboardDashboardMessage(
-  options: CreateLeaderboardDashboardMessageOptions
+  options: CreateLeaderboardDashboardMessageOptions,
+  png: Buffer | null
 ): LeaderboardDashboardMessage {
+  const timestamp = formatLeaderboardDashboardTimestamp(options.updatedAt, options.timeZone);
+
+  if (png) {
+    return {
+      content: [
+        `**${LEADERBOARD_DASHBOARD_TITLE}**`,
+        `Atualizado: ${timestamp}`,
+        "Imagem atualizada.",
+        FOOTBALL_DATA_ATTRIBUTION
+      ].join("\n"),
+      embeds: [],
+      files: [{ attachment: png, name: LEADERBOARD_ATTACHMENT_NAME }]
+    };
+  }
+
   return {
     content: [
-      leaderboardTitle,
-      `Atualizado: ${formatDashboardTimestamp(options.updatedAt, options.timeZone)}`,
+      `**${LEADERBOARD_DASHBOARD_TITLE}**`,
+      `Atualizado: ${timestamp}`,
+      options.renderError
+        ? `Dashboard image render failed: ${options.renderError}`
+        : "Imagem indisponivel no momento; usando fallback de texto.",
       "```text",
       ...formatDashboardRows(options.rows, options.displayNames ?? new Map()),
       "```",
       "",
       ...rulesLines
     ].join("\n"),
-    embeds: []
+    embeds: [],
+    files: []
   };
 }
 
@@ -155,7 +182,7 @@ function count(value: number, singular: string, plural: string): string {
   return `${value} ${value === 1 ? singular : plural}`;
 }
 
-function formatDashboardTimestamp(date: Date, timeZone: string): string {
+export function formatLeaderboardDashboardTimestamp(date: Date, timeZone: string): string {
   const parts = new Intl.DateTimeFormat("en-CA", {
     timeZone,
     year: "numeric",

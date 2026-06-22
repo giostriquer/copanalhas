@@ -1,3 +1,5 @@
+import { Buffer } from "node:buffer";
+
 import { describe, expect, test } from "vitest";
 
 import { createLeaderboardDashboardMessage, formatLeaderboard } from "./format.js";
@@ -131,86 +133,81 @@ describe("formatLeaderboard", () => {
 });
 
 describe("createLeaderboardDashboardMessage", () => {
-  test("renders an empty public dashboard message", () => {
+  test("renders a public dashboard image message", () => {
+    const png = Buffer.from("png");
+
     expect(
-      createLeaderboardDashboardMessage({
-        rows: [],
-        updatedAt: new Date("2026-06-11T23:30:00.000Z"),
-        timeZone: "UTC"
-      })
+      createLeaderboardDashboardMessage(
+        {
+          rows: [],
+          updatedAt: new Date("2026-06-11T23:30:00.000Z"),
+          timeZone: "UTC"
+        },
+        png
+      )
     ).toEqual({
       content: [
-        "Ranking Copanalhas",
+        "**Ranking Copanalhas**",
         "Atualizado: 2026-06-11 23:30 UTC",
-        "```text",
-        "Ainda não há partidas pontuadas.",
-        "```",
-        "",
-        "Como funciona",
-        "- Envie seu palpite pelo botão do jogo do dia; você pode editar até 30 min antes da partida.",
-        "- Se só uma pessoa acertar o placar exato, ela ganha 5 pts solo.",
-        "- Se mais de uma pessoa acertar o placar exato, cada uma ganha 3 pts exato.",
-        "- Se ninguém acertar o placar exato, quem acertar o vencedor ou empate ganha 2 pts resultado.",
-        "- O ponto de mais próximo só vale quando ninguém acerta o placar exato nem o vencedor/empate.",
-        "- Nesse caso, ganha 1 pt quem tiver a menor soma de diferenças nos gols dos dois times; se empatar, desempata pelo total de gols mais próximo.",
-        "- Em empate na pontuação, desempata por solo, exatos, resultados, mais próximos e depois ID do jogador.",
-        "",
-        "Premiação",
-        "- 1000 (da pra aumentar se alguem quiser contribuir)",
-        "- Primeiro lugar = 60%",
-        "- Segundo lugar = 30%",
-        "- Terceiro lugar = 10%",
-        "",
+        "Imagem atualizada.",
         "Football data provided by the Football-Data.org API."
       ].join("\n"),
-      embeds: []
+      embeds: [],
+      files: [{ attachment: png, name: "copanalhas-leaderboard.png" }]
     });
   });
 
   test("includes visible Football-Data attribution in the public dashboard", () => {
-    const message = createLeaderboardDashboardMessage({
-      rows: [],
-      updatedAt: new Date("2026-06-11T23:30:00.000Z"),
-      timeZone: "UTC"
-    });
+    const message = createLeaderboardDashboardMessage(
+      {
+        rows: [],
+        updatedAt: new Date("2026-06-11T23:30:00.000Z"),
+        timeZone: "UTC"
+      },
+      Buffer.from("png")
+    );
 
     expect(message.content).toContain("Football data provided by the Football-Data.org API");
   });
 
-  test("renders ranked player rows in a compact table", () => {
+  test("renders ranked player rows in a compact fallback table", () => {
     expect(
-      createLeaderboardDashboardMessage({
-        rows: [
-          {
-            userId: "user-1",
-            points: 10,
-            soloCount: 2,
-            exactCount: 0,
-            outcomeCount: 0,
-            closestCount: 0,
-            matchesScored: 2
-          },
-          {
-            userId: "user-2",
-            points: 2,
-            soloCount: 0,
-            exactCount: 0,
-            outcomeCount: 1,
-            closestCount: 0,
-            matchesScored: 2
-          }
-        ],
-        displayNames: new Map([
-          ["user-1", "Giova"],
-          ["user-2", "Ana"]
-        ]),
-        updatedAt: new Date("2026-06-11T23:30:00.000Z"),
-        timeZone: "UTC"
-      }).content
+      createLeaderboardDashboardMessage(
+        {
+          rows: [
+            {
+              userId: "user-1",
+              points: 10,
+              soloCount: 2,
+              exactCount: 0,
+              outcomeCount: 0,
+              closestCount: 0,
+              matchesScored: 2
+            },
+            {
+              userId: "user-2",
+              points: 2,
+              soloCount: 0,
+              exactCount: 0,
+              outcomeCount: 1,
+              closestCount: 0,
+              matchesScored: 2
+            }
+          ],
+          displayNames: new Map([
+            ["user-1", "Giova"],
+            ["user-2", "Ana"]
+          ]),
+          updatedAt: new Date("2026-06-11T23:30:00.000Z"),
+          timeZone: "UTC"
+        },
+        null
+      ).content
     ).toBe(
       [
-        "Ranking Copanalhas",
+        "**Ranking Copanalhas**",
         "Atualizado: 2026-06-11 23:30 UTC",
+        "Imagem indisponivel no momento; usando fallback de texto.",
         "```text",
         "#  Pts Solo Exato Resul Perto Jogos  Jogador",
         "1   10    2     0     0     0     2  Giova",
@@ -238,30 +235,36 @@ describe("createLeaderboardDashboardMessage", () => {
   });
 
   test("normalizes dashboard display names before placing them in the table", () => {
-    const content = createLeaderboardDashboardMessage({
-      rows: [{ userId: "user-1", points: 0, soloCount: 0, exactCount: 0, outcomeCount: 0, closestCount: 0, matchesScored: 0 }],
-      displayNames: new Map([["user-1", "Ana\nMaria"]]),
-      updatedAt: new Date("2026-06-11T23:30:00.000Z"),
-      timeZone: "UTC"
-    }).content;
+    const content = createLeaderboardDashboardMessage(
+      {
+        rows: [{ userId: "user-1", points: 0, soloCount: 0, exactCount: 0, outcomeCount: 0, closestCount: 0, matchesScored: 0 }],
+        displayNames: new Map([["user-1", "Ana\nMaria"]]),
+        updatedAt: new Date("2026-06-11T23:30:00.000Z"),
+        timeZone: "UTC"
+      },
+      null
+    ).content;
 
     expect(content).toContain("1    0    0     0     0     0     0  Ana Maria");
     expect(content).not.toContain("Ana\nMaria");
   });
 
   test("keeps numeric columns aligned before long display names", () => {
-    const content = createLeaderboardDashboardMessage({
-      rows: [
-        { userId: "user-1", points: 0, soloCount: 0, exactCount: 0, outcomeCount: 0, closestCount: 0, matchesScored: 0 },
-        { userId: "user-2", points: 0, soloCount: 0, exactCount: 0, outcomeCount: 0, closestCount: 0, matchesScored: 0 }
-      ],
-      displayNames: new Map([
-        ["user-1", "Anguishx"],
-        ["user-2", "QUINZE DIASFIPS"]
-      ]),
-      updatedAt: new Date("2026-06-11T23:30:00.000Z"),
-      timeZone: "UTC"
-    }).content;
+    const content = createLeaderboardDashboardMessage(
+      {
+        rows: [
+          { userId: "user-1", points: 0, soloCount: 0, exactCount: 0, outcomeCount: 0, closestCount: 0, matchesScored: 0 },
+          { userId: "user-2", points: 0, soloCount: 0, exactCount: 0, outcomeCount: 0, closestCount: 0, matchesScored: 0 }
+        ],
+        displayNames: new Map([
+          ["user-1", "Anguishx"],
+          ["user-2", "QUINZE DIASFIPS"]
+        ]),
+        updatedAt: new Date("2026-06-11T23:30:00.000Z"),
+        timeZone: "UTC"
+      },
+      null
+    ).content;
 
     expect(content).toContain(
       ["#  Pts Solo Exato Resul Perto Jogos  Jogador", "1    0    0     0     0     0     0  Anguishx"].join("\n")

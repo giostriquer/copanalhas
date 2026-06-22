@@ -189,7 +189,15 @@ export function formatStandingsDashboardLog(result: UpdateStandingsDashboardResu
 }
 
 export function formatLeaderboardDashboardLog(result: UpdateLeaderboardDashboardResult): string {
-  return `[dashboard] leaderboard action=${result.post.action} message=${result.post.messageId}`;
+  return [
+    "[dashboard] leaderboard",
+    `action=${result.post.action}`,
+    `message=${result.post.messageId}`,
+    `render=${result.renderState}`,
+    result.renderError ? `error=${safeLogMessage(result.renderError)}` : null
+  ]
+    .filter((part): part is string => part !== null)
+    .join(" ");
 }
 
 export function formatBracketDashboardLog(result: UpdateBracketDashboardResult): string {

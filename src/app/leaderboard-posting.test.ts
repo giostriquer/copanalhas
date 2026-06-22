@@ -1,3 +1,5 @@
+import { Buffer } from "node:buffer";
+
 import { describe, expect, test, vi } from "vitest";
 
 import { updateLeaderboardDashboard } from "./leaderboard-posting.js";
@@ -7,6 +9,12 @@ import type { StoredLeaderboardPost, StoredPrediction, StoredResult } from "../s
 describe("updateLeaderboardDashboard", () => {
   test("posts and records the leaderboard dashboard when none exists", async () => {
     const records: StoredLeaderboardPost[] = [];
+    const png = Buffer.from("png");
+    const renderPng = vi.fn(async (svg: string) => {
+      expect(svg).toContain("<svg");
+      expect(svg).toContain("Ranking Copanalhas");
+      return png;
+    });
     const upsertLeaderboardMessage = vi.fn(async (_message, existingMessageId) => {
       expect(existingMessageId).toBeNull();
       return "leaderboard-message-1";
@@ -21,6 +29,7 @@ describe("updateLeaderboardDashboard", () => {
       now: () => new Date("2026-06-11T23:30:00.000Z"),
       listLeaderboardPosts: () => records,
       recordLeaderboardPost: (post) => records.push(post),
+      renderPng,
       upsertLeaderboardMessage
     });
 
@@ -29,17 +38,19 @@ describe("updateLeaderboardDashboard", () => {
       post: {
         messageId: "leaderboard-message-1",
         action: "posted"
-      }
+      },
+      renderState: "image"
     });
     expect(upsertLeaderboardMessage).toHaveBeenCalledWith(
       expect.objectContaining({
-        content: expect.stringContaining("Ranking Copanalhas")
+        content: expect.stringContaining("**Ranking Copanalhas**"),
+        files: [{ attachment: png, name: "copanalhas-leaderboard.png" }]
       }),
       null
     );
     expect(upsertLeaderboardMessage).toHaveBeenCalledWith(
       expect.objectContaining({
-        content: expect.stringContaining("Como funciona")
+        content: expect.stringContaining("Imagem atualizada.")
       }),
       null
     );
@@ -72,6 +83,7 @@ describe("updateLeaderboardDashboard", () => {
       recordLeaderboardPost: (post) => {
         records.splice(0, records.length, post);
       },
+      renderPng: vi.fn(async () => Buffer.from("png")),
       upsertLeaderboardMessage
     });
 
@@ -89,10 +101,13 @@ describe("updateLeaderboardDashboard", () => {
   });
 
   test("shows prediction participants before any match has a result", async () => {
-    let postedContent = "";
+    let renderedSvg = "";
+    const renderPng = vi.fn(async (svg: string) => {
+      renderedSvg = svg;
+      return Buffer.from("png");
+    });
     const upsertLeaderboardMessage = vi.fn(
-      async (message: LeaderboardDashboardMessage) => {
-        postedContent = message.content;
+      async (_message: LeaderboardDashboardMessage) => {
         return "leaderboard-message-1";
       }
     );
@@ -109,15 +124,20 @@ describe("updateLeaderboardDashboard", () => {
       now: () => new Date("2026-06-11T23:35:00.000Z"),
       listLeaderboardPosts: () => [],
       recordLeaderboardPost: vi.fn(),
+      renderPng,
       upsertLeaderboardMessage
     });
 
-    expect(postedContent).toContain("1    0    0     0     0     0     0  user-1");
-    expect(postedContent).toContain("1    0    0     0     0     0     0  user-2");
+    expect(renderedSvg).toContain("user-1");
+    expect(renderedSvg).toContain("user-2");
   });
 
   test("renders resolved Discord display names instead of raw user ids", async () => {
-    let postedContent = "";
+    let renderedSvg = "";
+    const renderPng = vi.fn(async (svg: string) => {
+      renderedSvg = svg;
+      return Buffer.from("png");
+    });
     const resolveUserDisplayNames = vi.fn(async (userIds: readonly string[]) => {
       expect(userIds).toEqual(["user-1", "user-2"]);
 
@@ -127,8 +147,7 @@ describe("updateLeaderboardDashboard", () => {
       ]);
     });
     const upsertLeaderboardMessage = vi.fn(
-      async (message: LeaderboardDashboardMessage) => {
-        postedContent = message.content;
+      async (_message: LeaderboardDashboardMessage) => {
         return "leaderboard-message-1";
       }
     );
@@ -146,14 +165,15 @@ describe("updateLeaderboardDashboard", () => {
       listLeaderboardPosts: () => [],
       recordLeaderboardPost: vi.fn(),
       resolveUserDisplayNames,
+      renderPng,
       upsertLeaderboardMessage
     });
 
     expect(resolveUserDisplayNames).toHaveBeenCalledOnce();
-    expect(postedContent).toContain("1    0    0     0     0     0     0  Giova");
-    expect(postedContent).toContain("1    0    0     0     0     0     0  Ana");
-    expect(postedContent).not.toContain("user-1");
-    expect(postedContent).not.toContain("user-2");
+    expect(renderedSvg).toContain("Giova");
+    expect(renderedSvg).toContain("Ana");
+    expect(renderedSvg).not.toContain("user-1");
+    expect(renderedSvg).not.toContain("user-2");
   });
 
   test("records a replacement when the adapter returns a new message id", async () => {
@@ -171,6 +191,7 @@ describe("updateLeaderboardDashboard", () => {
       recordLeaderboardPost: (post) => {
         records.splice(0, records.length, post);
       },
+      renderPng: vi.fn(async () => Buffer.from("png")),
       upsertLeaderboardMessage
     });
 
@@ -179,6 +200,34 @@ describe("updateLeaderboardDashboard", () => {
       action: "replaced"
     });
     expect(records[0]?.messageId).toBe("replacement-message");
+  });
+
+  test("records a text-only fallback when rendering throws", async () => {
+    const postedMessages: LeaderboardDashboardMessage[] = [];
+
+    const result = await updateLeaderboardDashboard({
+      guildId: "guild-1",
+      channelId: "channel-1",
+      predictions: [prediction("user-1", "wc2026-001", 2, 1)],
+      results: [resultFor("wc2026-001", 2, 1)],
+      timeZone: "UTC",
+      now: () => new Date("2026-06-11T23:45:00.000Z"),
+      listLeaderboardPosts: () => [],
+      recordLeaderboardPost: vi.fn(),
+      renderPng: vi.fn(async () => {
+        throw new Error("sharp failed");
+      }),
+      upsertLeaderboardMessage: vi.fn(async (message) => {
+        postedMessages.push(message);
+        return "leaderboard-message-1";
+      })
+    });
+
+    expect(result.renderState).toBe("text-fallback");
+    expect(result.renderError).toBe("sharp failed");
+    expect(postedMessages[0]?.files).toEqual([]);
+    expect(postedMessages[0]?.content).toContain("Dashboard image render failed: sharp failed");
+    expect(postedMessages[0]?.content).toContain("1    5    1     0     0     0     1  user-1");
   });
 });
 

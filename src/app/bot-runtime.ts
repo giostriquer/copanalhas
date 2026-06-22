@@ -181,6 +181,7 @@ export interface StartCopanalhasBotRuntimeOptions {
     message: LeaderboardDashboardMessage,
     existingMessageId: string | null
   ): Promise<string>;
+  renderLeaderboardPng(svg: string): Promise<Buffer>;
   upsertBracketMessage?(
     message: BracketDashboardMessage,
     existingMessageId: string | null
@@ -389,6 +390,7 @@ function createOperatorCommandOptions(
       ...(options.resolveUserDisplayNames
         ? { resolveUserDisplayNames: options.resolveUserDisplayNames }
         : {}),
+      renderPng: options.renderLeaderboardPng,
       upsertLeaderboardMessage: options.upsertLeaderboardMessage
     });
 

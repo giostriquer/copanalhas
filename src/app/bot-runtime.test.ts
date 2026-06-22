@@ -41,6 +41,7 @@ describe("startCopanalhasBotRuntime", () => {
       sendPredictionReveal,
       upsertStandingsMessage,
       upsertLeaderboardMessage,
+      renderLeaderboardPng: vi.fn(async () => Buffer.from("png")),
       upsertBracketMessage,
       renderBracketPng,
       upsertChaosDashboardMessage,
@@ -86,7 +87,7 @@ describe("startCopanalhasBotRuntime", () => {
       "[2026-06-11T21:15:00.000Z][dashboard] standings posts=2 posted=2 edited=0 replaced=0"
     );
     expect(writeLine).toHaveBeenCalledWith(
-      "[2026-06-11T21:15:00.000Z][dashboard] leaderboard action=posted message=leaderboard-message-1"
+      "[2026-06-11T21:15:00.000Z][dashboard] leaderboard action=posted message=leaderboard-message-1 render=image"
     );
     expect(writeLine).toHaveBeenCalledWith(
       "[2026-06-11T21:15:00.000Z][dashboard] bracket action=posted message=bracket-message-1 phase=provisional render=image"
@@ -151,6 +152,7 @@ describe("startCopanalhasBotRuntime", () => {
       })),
       upsertStandingsMessage: vi.fn(async (message) => `standings-${message.key}`),
       upsertLeaderboardMessage: vi.fn(async () => "leaderboard-message-1"),
+      renderLeaderboardPng: vi.fn(async () => Buffer.from("png")),
       upsertBracketMessage: vi.fn(async () => "bracket-message-1"),
       renderBracketPng: vi.fn(async () => Buffer.from("png")),
       upsertChaosDashboardMessage,
@@ -190,6 +192,7 @@ describe("startCopanalhasBotRuntime", () => {
       })),
       upsertStandingsMessage: vi.fn(async (message) => `standings-${message.key}`),
       upsertLeaderboardMessage: vi.fn(async () => "leaderboard-message-1"),
+      renderLeaderboardPng: vi.fn(async () => Buffer.from("png")),
       now: () => new Date("2026-06-11T21:15:00.000Z"),
       writeLine: vi.fn()
     });
@@ -256,6 +259,7 @@ describe("startCopanalhasBotRuntime", () => {
       sendPredictionReveal,
       upsertStandingsMessage: vi.fn(async (message) => `standings-${message.key}`),
       upsertLeaderboardMessage: vi.fn(async () => "leaderboard-message-1"),
+      renderLeaderboardPng: vi.fn(async () => Buffer.from("png")),
       now: () => new Date("2026-06-11T18:30:00.000Z"),
       writeLine: vi.fn()
     });
@@ -307,6 +311,7 @@ describe("startCopanalhasBotRuntime", () => {
       deleteMatchStartAlert: vi.fn(async () => undefined),
       upsertStandingsMessage: vi.fn(async (message) => `standings-${message.key}`),
       upsertLeaderboardMessage: vi.fn(async () => "leaderboard-message-1"),
+      renderLeaderboardPng: vi.fn(async () => Buffer.from("png")),
       now: () => new Date("2026-06-11T18:55:20.000Z"),
       writeLine
     });
@@ -386,6 +391,7 @@ describe("startCopanalhasBotRuntime", () => {
       deleteMatchStartAlert,
       upsertStandingsMessage: vi.fn(async (message) => `standings-${message.key}`),
       upsertLeaderboardMessage: vi.fn(async () => "leaderboard-message-1"),
+      renderLeaderboardPng: vi.fn(async () => Buffer.from("png")),
       now: () => new Date("2026-06-11T21:05:00.000Z"),
       writeLine
     });
@@ -424,6 +430,7 @@ describe("startCopanalhasBotRuntime", () => {
       })),
       upsertStandingsMessage: vi.fn(async (message) => `standings-${message.key}`),
       upsertLeaderboardMessage,
+      renderLeaderboardPng: vi.fn(async () => Buffer.from("png")),
       now: () => new Date("2026-06-11T12:00:00.000Z"),
       writeLine: vi.fn()
     });
@@ -499,6 +506,7 @@ describe("startCopanalhasBotRuntime", () => {
       })),
       upsertStandingsMessage,
       upsertLeaderboardMessage,
+      renderLeaderboardPng: vi.fn(async () => Buffer.from("png")),
       upsertBracketMessage,
       renderBracketPng,
       upsertChaosDashboardMessage,
@@ -563,6 +571,7 @@ describe("startCopanalhasBotRuntime", () => {
       })),
       upsertStandingsMessage,
       upsertLeaderboardMessage,
+      renderLeaderboardPng: vi.fn(async () => Buffer.from("png")),
       upsertBracketMessage,
       renderBracketPng: vi.fn(async () => Buffer.from("png")),
       syncFinishedResults,
@@ -615,6 +624,7 @@ describe("startCopanalhasBotRuntime", () => {
       })),
       upsertStandingsMessage: vi.fn(async (message) => `standings-${message.key}`),
       upsertLeaderboardMessage: vi.fn(async () => "leaderboard-message-1"),
+      renderLeaderboardPng: vi.fn(async () => Buffer.from("png")),
       now: () => now,
       writeLine
     });
@@ -656,6 +666,7 @@ describe("startCopanalhasBotRuntime", () => {
       })),
       upsertStandingsMessage,
       upsertLeaderboardMessage,
+      renderLeaderboardPng: vi.fn(async () => Buffer.from("png")),
       upsertBracketMessage,
       renderBracketPng,
       syncFinishedResults,
@@ -681,7 +692,7 @@ describe("startCopanalhasBotRuntime", () => {
       "[2026-06-11T21:15:00.000Z][dashboard] standings posts=2 posted=2 edited=0 replaced=0"
     );
     expect(writeLine).toHaveBeenCalledWith(
-      "[2026-06-11T21:15:00.000Z][dashboard] leaderboard action=posted message=leaderboard-message-1"
+      "[2026-06-11T21:15:00.000Z][dashboard] leaderboard action=posted message=leaderboard-message-1 render=image"
     );
     expect(writeLine).toHaveBeenCalledWith(
       "[2026-06-11T21:15:00.000Z][dashboard] bracket action=posted message=bracket-message-1 phase=provisional render=image"
@@ -712,6 +723,7 @@ describe("startCopanalhasBotRuntime", () => {
         })),
         upsertStandingsMessage: vi.fn(async (message) => `standings-${message.key}`),
         upsertLeaderboardMessage: vi.fn(async () => "leaderboard-message-1"),
+        renderLeaderboardPng: vi.fn(async () => Buffer.from("png")),
         syncFinishedResults,
         now: () => new Date("2026-06-11T21:15:00.000Z"),
         writeLine
@@ -760,6 +772,7 @@ describe("startCopanalhasBotRuntime", () => {
       })),
       upsertStandingsMessage,
       upsertLeaderboardMessage,
+      renderLeaderboardPng: vi.fn(async () => Buffer.from("png")),
       upsertBracketMessage,
       renderBracketPng,
       syncFinishedResults,
@@ -875,6 +888,7 @@ describe("startCopanalhasBotRuntime", () => {
       editPredictionReveal,
       upsertStandingsMessage: vi.fn(async (message) => `standings-${message.key}`),
       upsertLeaderboardMessage: vi.fn(async () => "leaderboard-message-1"),
+      renderLeaderboardPng: vi.fn(async () => Buffer.from("png")),
       syncFinishedResults,
       now: () => new Date("2026-06-11T21:15:00.000Z"),
       writeLine: vi.fn()
@@ -924,6 +938,7 @@ describe("startCopanalhasBotRuntime", () => {
       })),
       upsertStandingsMessage: vi.fn(async (message) => `standings-${message.key}`),
       upsertLeaderboardMessage: vi.fn(async () => "leaderboard-message-1"),
+      renderLeaderboardPng: vi.fn(async () => Buffer.from("png")),
       now: () => new Date("2026-06-11T12:00:00.000Z"),
       writeLine: vi.fn()
     });
@@ -1028,6 +1043,7 @@ describe("startCopanalhasBotRuntime", () => {
       })),
       upsertStandingsMessage: vi.fn(async (message) => `standings-${message.key}`),
       upsertLeaderboardMessage: vi.fn(async () => "leaderboard-message-1"),
+      renderLeaderboardPng: vi.fn(async () => Buffer.from("png")),
       now: () => new Date("2026-06-14T03:15:00.000Z"),
       writeLine: vi.fn()
     });

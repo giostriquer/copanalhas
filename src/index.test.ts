@@ -257,6 +257,7 @@ describe("runCli", () => {
       sendMatchCard: vi.fn(async () => "discord-message-1"),
       upsertStandingsMessage: vi.fn(async (message) => `standings-${message.key}`),
       upsertLeaderboardMessage: vi.fn(async () => "leaderboard-message-1"),
+      renderLeaderboardPng: vi.fn(async () => Buffer.from("png")),
       upsertBracketMessage,
       renderBracketPng: vi.fn(async () => Buffer.from("png")),
       upsertChaosDashboardMessage,
@@ -296,7 +297,7 @@ describe("runCli", () => {
     expect(lines).toEqual([
       "[2026-06-11T12:00:00.000Z][bot] Starting Discord collector for configured channel.",
       "[2026-06-11T12:00:00.000Z][dashboard] standings posts=2 posted=2 edited=0 replaced=0",
-      "[2026-06-11T12:00:00.000Z][dashboard] leaderboard action=posted message=leaderboard-message-1",
+      "[2026-06-11T12:00:00.000Z][dashboard] leaderboard action=posted message=leaderboard-message-1 render=image",
       "[2026-06-11T12:00:00.000Z][dashboard] bracket action=posted message=bracket-message-1 phase=provisional render=image",
       "[2026-06-11T12:00:00.000Z][dashboard] recap posts=0 posted=0 edited=0 replaced=0 skipped=3 incomplete=3 alreadyPosted=0",
       "[2026-06-11T12:00:00.000Z][auto-post] date=2026-06-11 windowDays=3 posted=8 skipped=0",

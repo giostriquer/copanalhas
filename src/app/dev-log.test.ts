@@ -189,9 +189,10 @@ describe("dev log formatting", () => {
     expect(
       formatLeaderboardDashboardLog({
         action: "updated",
-        post: { messageId: "leaderboard-message-1", action: "posted" }
+        post: { messageId: "leaderboard-message-1", action: "posted" },
+        renderState: "image"
       })
-    ).toBe("[dashboard] leaderboard action=posted message=leaderboard-message-1");
+    ).toBe("[dashboard] leaderboard action=posted message=leaderboard-message-1 render=image");
 
     expect(
       formatBracketDashboardLog({

@@ -95,7 +95,8 @@ describe("handleOperatorCommand", () => {
     const updateStandingsDashboard = vi.fn(async () => ({ action: "updated" as const, posts: [] }));
     const updateLeaderboardDashboard = vi.fn(async () => ({
       action: "updated" as const,
-      post: { messageId: "leaderboard-message-1", action: "edited" as const }
+      post: { messageId: "leaderboard-message-1", action: "edited" as const },
+      renderState: "image" as const
     }));
     const updateBracketDashboard = vi.fn(async () => ({
       action: "updated" as const,
@@ -539,7 +540,8 @@ describe("handleOperatorCommand", () => {
     }));
     const updateLeaderboardDashboard = vi.fn(async () => ({
       action: "updated" as const,
-      post: { messageId: "leaderboard-message-1", action: "edited" as const }
+      post: { messageId: "leaderboard-message-1", action: "edited" as const },
+      renderState: "image" as const
     }));
     const updatePredictionResultReveals = vi.fn(async () => undefined);
     const updateBracketDashboard = vi.fn(async () => ({
@@ -880,7 +882,8 @@ function options(overrides: Partial<OperatorCommandOptions> = {}): OperatorComma
     listLeaderboardPosts: vi.fn(() => []),
     updateLeaderboardDashboard: vi.fn(async () => ({
       action: "updated" as const,
-      post: { messageId: "leaderboard-message-1", action: "edited" as const }
+      post: { messageId: "leaderboard-message-1", action: "edited" as const },
+      renderState: "image" as const
     })),
     listBracketPosts: vi.fn(() => []),
     updateBracketDashboard: vi.fn(async () => ({

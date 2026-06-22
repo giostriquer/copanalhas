@@ -323,7 +323,8 @@ function operatorOptions(): OperatorCommandOptions {
     listLeaderboardPosts: vi.fn(() => []),
     updateLeaderboardDashboard: vi.fn(async () => ({
       action: "updated" as const,
-      post: { messageId: "leaderboard-message-1", action: "edited" as const }
+      post: { messageId: "leaderboard-message-1", action: "edited" as const },
+      renderState: "image" as const
     })),
     listBracketPosts: vi.fn(() => []),
     updateBracketDashboard: vi.fn(async () => ({
