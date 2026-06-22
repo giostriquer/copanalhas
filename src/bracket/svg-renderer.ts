@@ -49,7 +49,6 @@ const rightR32X = canvasWidth - marginX - r32Width;
 const bracketSides = [
   {
     key: "left",
-    label: "Lado esquerdo",
     direction: "left-to-right",
     pairs: [
       { nextMatchNumber: 89, matchNumbers: [74, 77] },
@@ -71,7 +70,6 @@ const bracketSides = [
   },
   {
     key: "right",
-    label: "Lado direito",
     direction: "right-to-left",
     pairs: [
       { nextMatchNumber: 91, matchNumbers: [76, 78] },
@@ -154,10 +152,8 @@ function renderColumnHeadings(y: number): string {
 }
 
 function renderSide(side: BracketSide, layout: BracketSideLayout): string {
-  const labelX = side.key === "left" ? leftR32X : rightR32X;
   const parts = [
-    `<g data-bracket-side="${escapeAttribute(side.key)}">`,
-    `<text x="${labelX}" y="${headerHeight}" font-family="Inter, Arial, sans-serif" font-size="20" font-weight="850" fill="#141b2b">${escapeText(side.label)}</text>`
+    `<g data-bracket-side="${escapeAttribute(side.key)}">`
   ];
 
   for (const r16Box of layout.roundOf16Boxes) {
@@ -365,9 +361,6 @@ function renderRoundOf32Match(match: BracketMatch, x: number, y: number): string
     `<line x1="3" y1="${r32Height / 2}" x2="${r32Width}" y2="${r32Height / 2}" stroke="#edf0f3"/>`,
     `<text x="${r32Width - 26}" y="25" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="850" fill="#141b2b">#${matchNumber}</text>`,
     `<text x="${r32Width - 26}" y="43" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="8" fill="#778397">${escapeText(matchLabelSuffix(match))}</text>`,
-    matchHasTieWarning(match)
-      ? `<text x="${r32Width - 7}" y="-8" text-anchor="end" font-family="Inter, Arial, sans-serif" font-size="8" font-weight="750" fill="#9a5b00">ordem provisória</text>`
-      : "",
     renderEntrantRow(match.home, 12, 21, 1),
     renderEntrantRow(match.away, 12, 53, r32Height / 2 + 1),
     "</g>"
@@ -599,13 +592,6 @@ function matchNumberFor(bracketMatch: BracketMatch): number {
   return Number(labelMatch?.groups?.number ?? 0);
 }
 
-function matchHasTieWarning(match: BracketMatch): boolean {
-  return (
-    match.home.warning === "tie-order-provisional" ||
-    match.away.warning === "tie-order-provisional"
-  );
-}
-
 function escapeText(value: string): string {
   return value
     .replaceAll("&", "&amp;")
@@ -619,7 +605,6 @@ function escapeAttribute(value: string): string {
 
 interface BracketSide {
   key: "left" | "right";
-  label: string;
   direction: "left-to-right" | "right-to-left";
   pairs: readonly BracketPathPair[];
   quarterFinals: readonly BracketPathPairResult[];

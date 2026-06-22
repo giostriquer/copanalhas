@@ -10,8 +10,6 @@ describe("renderBracketSvg", () => {
     expect(svg).toContain("<svg");
     expect(svg).toContain("Copa do Mundo 2026 - Mata-mata");
     expect(svg).toContain("Rodada de 32");
-    expect(svg).toContain("Lado esquerdo");
-    expect(svg).toContain("Lado direito");
     expect(svg).toContain("Team &amp; One");
     expect(svg).toContain("Team &lt;Two&gt;");
     expect(svg).toContain('data-bracket-column="round-of-32"');
@@ -53,7 +51,9 @@ describe("renderBracketSvg", () => {
     expect(svg).toContain("Vencedor #102");
     expect(svg).toContain("Perdedor #101");
     expect(svg).toContain("Perdedor #102");
-    expect(svg).toContain("ordem provisória");
+    expect(svg).not.toContain("ordem provisória");
+    expect(svg).not.toContain("Lado esquerdo");
+    expect(svg).not.toContain("Lado direito");
     expect(svg).toContain("Football data provided by the Football-Data.org API.");
     expect(svg).not.toContain(">Como está</text>");
     expect(svg).not.toContain("caminho para a semifinal");
