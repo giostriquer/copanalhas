@@ -29,7 +29,7 @@
 - Modify `src/storage/database.test.ts` for post and weekly snapshot persistence.
 - Modify `src/app/dev-log.ts` and `src/app/dev-log.test.ts` for `[dashboard] chaos ...` logs.
 - Modify `src/app/operator-health.ts` and `src/app/operator-health.test.ts` for chaos dashboard status.
-- Modify `src/discord/commands.ts` and `src/discord/commands.test.ts` for `/copanalhas painel-caos`.
+- Modify `src/discord/commands.ts` and `src/discord/commands.test.ts` for `/copanalhas copanalhas-recap-painel`.
 - Modify `src/discord/operator-commands.ts` and `src/discord/operator-commands.test.ts` for command routing, status, reset/manual-result/result-sync dashboard refreshes.
 - Modify `src/app/bot-runtime.ts` and `src/app/bot-runtime.test.ts` for startup, prediction, and result-sync refresh hooks with render failure isolation.
 - Modify `src/index.ts` so the production bot passes the Discord chaos updater and PNG renderer.
@@ -385,8 +385,8 @@ Add expectations:
 
 ```ts
 expect(formatChaosDashboardLog({ action: "updated", post: { action: "posted", messageId: "chaos-1" }, weekStart: "2026-06-22", renderState: "image" })).toBe("[dashboard] chaos action=posted message=chaos-1 week=2026-06-22 render=image");
-expect(createCopanalhasCommand().toJSON()).toContainSubcommand("painel-caos");
-expect(await handleOperatorCommand(command("painel-caos"), options)).toMatchObject({ action: "replied", content: "Updated chaos dashboard: edited (image)." });
+expect(createCopanalhasCommand().toJSON()).toContainSubcommand("copanalhas-recap-painel");
+expect(await handleOperatorCommand(command("copanalhas-recap-painel"), options)).toMatchObject({ action: "replied", content: "Updated chaos dashboard: edited (image)." });
 expect(statusReply.content).toContain("Chaos dashboard: present");
 expect(upsertChaosDashboardMessage).toHaveBeenCalledAfterResultSync();
 ```
@@ -407,8 +407,8 @@ Add:
 
 - `formatChaosDashboardLog()` in `src/app/dev-log.ts`.
 - `chaosDashboardPost` status in `OperatorHealthSnapshot`, report lines, and log lines.
-- `painel-caos` subcommand in `src/discord/commands.ts`.
-- `painel-caos` in `OperatorSubcommand`, parsing, handling, status fallback, manual result refresh, reset refresh, and sync-results refresh in `src/discord/operator-commands.ts`.
+- `copanalhas-recap-painel` subcommand in `src/discord/commands.ts`.
+- `copanalhas-recap-painel` in `OperatorSubcommand`, parsing, handling, status fallback, manual result refresh, reset refresh, and sync-results refresh in `src/discord/operator-commands.ts`.
 - `listChaosDashboardPosts`, `recordChaosDashboardPost`, `listChaosWeeklySnapshotRows`, and `recordChaosWeeklySnapshotRows` to `BotRuntimeStore`.
 - `upsertChaosDashboardMessage` and `renderChaosDashboardPng` optional dependencies in `StartCopanalhasBotRuntimeOptions`.
 - startup refresh, prediction refresh, and result-sync refresh in `src/app/bot-runtime.ts`.

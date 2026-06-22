@@ -288,7 +288,7 @@ describe("handleOperatorCommand", () => {
     });
   });
 
-  test("painel-caos posts or updates the chaos dashboard", async () => {
+  test("copanalhas-recap-painel posts or updates the chaos dashboard", async () => {
     const updateChaosDashboard = vi.fn(async () => ({
       action: "updated" as const,
       post: { messageId: "chaos-message-1", action: "edited" as const },
@@ -297,7 +297,7 @@ describe("handleOperatorCommand", () => {
     }));
 
     const result = await handleOperatorCommand(
-      command("painel-caos"),
+      command("copanalhas-recap-painel"),
       options({ updateChaosDashboard })
     );
 
@@ -309,9 +309,9 @@ describe("handleOperatorCommand", () => {
     expect(updateChaosDashboard).toHaveBeenCalledOnce();
   });
 
-  test("painel-caos returns a private failure reply when refresh fails", async () => {
+  test("copanalhas-recap-painel returns a private failure reply when refresh fails", async () => {
     const result = await handleOperatorCommand(
-      command("painel-caos"),
+      command("copanalhas-recap-painel"),
       options({
         updateChaosDashboard: vi.fn(async () => {
           throw new Error("Discord upload failed");
@@ -824,7 +824,7 @@ function command(
     | "reveal"
     | "repost-reveal"
     | "bracket"
-    | "painel-caos",
+    | "copanalhas-recap-painel",
   commandOptions: Record<string, string> = {},
   overrides: Partial<OperatorCommandInput> = {}
 ): OperatorCommandInput {
@@ -898,7 +898,7 @@ function discordCommandInteraction(
     | "reveal"
     | "repost-reveal"
     | "bracket"
-    | "painel-caos",
+    | "copanalhas-recap-painel",
   events: string[] = []
 ) {
   return {

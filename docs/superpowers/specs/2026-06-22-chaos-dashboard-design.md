@@ -145,7 +145,7 @@ from stats and rendering logic.
 
 Add an operator command to force a refresh, preferably:
 
-- `/copanalhas painel-caos`
+- `/copanalhas copanalhas-recap-painel`
 
 The command should privately report whether the dashboard was posted, edited,
 replaced, or failed to render.
@@ -331,7 +331,7 @@ Refresh the dashboard when:
 - the bot starts
 - automatic result sync stores at least one new final result
 - an operator records or changes a result manually
-- an operator runs `/copanalhas painel-caos`
+- an operator runs `/copanalhas copanalhas-recap-painel`
 - prediction interactions change participation stats, if implementation can
   debounce image updates safely
 
@@ -388,7 +388,7 @@ stores only derived leaderboard state needed for movement calculations.
 
 ## Operator Controls And Status
 
-Add `/copanalhas painel-caos` to post or update the dashboard.
+Add `/copanalhas copanalhas-recap-painel` to post or update the dashboard.
 
 Extend `/copanalhas status` with chaos dashboard health:
 
@@ -436,7 +436,7 @@ Required coverage:
 - dashboard post storage saves and reuses message IDs
 - updater posts, edits, and replaces the dashboard message
 - runtime refreshes after startup and result sync storage
-- `/copanalhas painel-caos` command routing
+- `/copanalhas copanalhas-recap-painel` command routing
 - `/copanalhas status` includes chaos dashboard health
 
 Required regression gates:

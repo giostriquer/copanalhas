@@ -112,7 +112,7 @@ While `bot` is running, use `/copanalhas` for normal operator work:
 - `/copanalhas status`
 - `/copanalhas leaderboard`
 - `/copanalhas bracket`
-- `/copanalhas painel-caos`
+- `/copanalhas copanalhas-recap-painel`
 - `/copanalhas meus-palpites`
 - `/copanalhas predictions match:wc2026-001`
 - `/copanalhas reveal match:wc2026-001`
@@ -177,7 +177,7 @@ shows a permanent `Painel do Caos` with the top leaderboard rows, calendar-week
 movement, roast-style people awards, and match-level chaos stats. It stores only
 the persistent Discord message pointer and lightweight weekly leaderboard
 baselines needed to compare movement; it does not store raw private message
-content. Operators can run `/copanalhas painel-caos` to refresh only this
+content. Operators can run `/copanalhas copanalhas-recap-painel` to refresh only this
 dashboard.
 
 Prediction reveal posts are automatic. Every minute, the bot checks for matches

@@ -40,7 +40,7 @@ export type OperatorSubcommand =
   | "standings"
   | "leaderboard"
   | "bracket"
-  | "painel-caos"
+  | "copanalhas-recap-painel"
   | "sync-results"
   | "meus-palpites"
   | "predictions"
@@ -323,7 +323,7 @@ export async function handleOperatorCommand(
     }
   }
 
-  if (command.subcommand === "painel-caos") {
+  if (command.subcommand === "copanalhas-recap-painel") {
     try {
       const result = await options.updateChaosDashboard();
 
@@ -651,7 +651,7 @@ function parseOperatorSubcommand(value: string): OperatorSubcommand | undefined 
     value === "standings" ||
     value === "leaderboard" ||
     value === "bracket" ||
-    value === "painel-caos" ||
+    value === "copanalhas-recap-painel" ||
     value === "sync-results" ||
     value === "meus-palpites" ||
     value === "predictions" ||
