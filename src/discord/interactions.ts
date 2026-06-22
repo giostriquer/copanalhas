@@ -33,7 +33,6 @@ export interface PredictionInteractionOptions {
   now?(): Date;
   listPredictions(): StoredPrediction[];
   upsertPrediction(prediction: StoredPrediction): void | Promise<void>;
-  refreshLeaderboardAfterPrediction?(): void | Promise<void>;
   logPredictionInteraction?(result: PredictionInteractionResult): void;
 }
 
@@ -310,7 +309,6 @@ async function handleScoreModal(
     ].join("\n"),
     ephemeral: true
   });
-  await options.refreshLeaderboardAfterPrediction?.();
 
   return {
     action: "accepted",

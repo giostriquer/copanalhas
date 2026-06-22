@@ -40,14 +40,14 @@ describe("createPredictionPersistenceHandler", () => {
     });
   });
 
-  test("refreshes the leaderboard after storing an accepted Discord prediction", async () => {
+  test("does not refresh the leaderboard after storing an accepted Discord prediction", async () => {
     const upsertPrediction = vi.fn();
     const refreshLeaderboardAfterPrediction = vi.fn(async () => undefined);
     const handler = createPredictionPersistenceHandler({
       matches: WORLD_CUP_2026_SEED.matches,
       upsertPrediction,
-      refreshLeaderboardAfterPrediction,
-      writeLine: () => undefined
+      writeLine: () => undefined,
+      ...({ refreshLeaderboardAfterPrediction } as Record<string, unknown>)
     });
 
     await handler({
@@ -67,7 +67,7 @@ describe("createPredictionPersistenceHandler", () => {
     });
 
     expect(upsertPrediction).toHaveBeenCalledOnce();
-    expect(refreshLeaderboardAfterPrediction).toHaveBeenCalledOnce();
+    expect(refreshLeaderboardAfterPrediction).not.toHaveBeenCalled();
   });
 
   test("does not store accepted predictions without a match number", async () => {

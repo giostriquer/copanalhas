@@ -150,7 +150,7 @@ describe("handlePredictionInteraction", () => {
     expect(storedPredictions).toEqual([result.prediction]);
   });
 
-  test("refreshes the leaderboard after accepting a modal score prediction", async () => {
+  test("does not refresh the leaderboard after accepting a modal score prediction", async () => {
     const events: string[] = [];
     const refreshLeaderboardAfterPrediction = vi.fn(async () => {
       events.push("refresh");
@@ -166,16 +166,18 @@ describe("handlePredictionInteraction", () => {
 
     await handlePredictionInteraction(
       interaction,
-      options({
-        upsertPrediction: vi.fn(async () => {
-          events.push("store");
+      {
+        ...options({
+          upsertPrediction: vi.fn(async () => {
+            events.push("store");
+          })
         }),
-        refreshLeaderboardAfterPrediction
-      })
+        ...({ refreshLeaderboardAfterPrediction } as Record<string, unknown>)
+      }
     );
 
-    expect(events).toEqual(["store", "reply", "refresh"]);
-    expect(refreshLeaderboardAfterPrediction).toHaveBeenCalledOnce();
+    expect(events).toEqual(["store", "reply"]);
+    expect(refreshLeaderboardAfterPrediction).not.toHaveBeenCalled();
   });
 
   test("rejects invalid modal score input without storing", async () => {

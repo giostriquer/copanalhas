@@ -5,7 +5,6 @@ import type { WorldCupMatch } from "../worldcup/types.js";
 export interface PredictionPersistenceHandlerOptions {
   matches: WorldCupMatch[];
   upsertPrediction(prediction: StoredPrediction): void | Promise<void>;
-  refreshLeaderboardAfterPrediction?(): void | Promise<void>;
   writeLine(line: string): void;
 }
 
@@ -45,6 +44,5 @@ export function createPredictionPersistenceHandler(
       updatedAt: prediction.updatedAt,
       parserVersion: prediction.parserVersion
     });
-    await options.refreshLeaderboardAfterPrediction?.();
   };
 }

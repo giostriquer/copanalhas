@@ -4,7 +4,6 @@ import { Buffer } from "node:buffer";
 import { startCopanalhasBotRuntime, type BotRuntimeStore } from "./bot-runtime.js";
 import type { CopanalhasConfig } from "../discord/config.js";
 import type { DiscordIngestionResult } from "../discord/ingestion.js";
-import type { PredictionInteractionOptions } from "../discord/interactions.js";
 import type { OperatorCommandOptions } from "../discord/operator-commands.js";
 import type {
   StoredMatchStartAlert,
@@ -406,13 +405,12 @@ describe("startCopanalhasBotRuntime", () => {
     );
   });
 
-  test("refreshes the leaderboard after accepted predictions reach runtime handlers", async () => {
+  test("does not refresh the leaderboard after accepted predictions reach runtime handlers", async () => {
     const store = createStore();
     let onMessageResult: ((result: DiscordIngestionResult) => void | Promise<void>) | undefined;
-    let predictionOptions: PredictionInteractionOptions | undefined;
     const startDiscord = vi.fn(async (_config, onMessage, interactionOptions) => {
       onMessageResult = onMessage;
-      predictionOptions = interactionOptions;
+      expect(interactionOptions).not.toHaveProperty("refreshLeaderboardAfterPrediction");
       return { destroy: vi.fn(async () => undefined) };
     });
     const upsertLeaderboardMessage = vi.fn(async () => "leaderboard-message-1");
@@ -434,11 +432,6 @@ describe("startCopanalhasBotRuntime", () => {
       now: () => new Date("2026-06-11T12:00:00.000Z"),
       writeLine: vi.fn()
     });
-
-    upsertLeaderboardMessage.mockClear();
-    await predictionOptions?.refreshLeaderboardAfterPrediction?.();
-
-    expect(upsertLeaderboardMessage).toHaveBeenCalledOnce();
 
     upsertLeaderboardMessage.mockClear();
     await onMessageResult?.({
@@ -463,7 +456,7 @@ describe("startCopanalhasBotRuntime", () => {
         matchId: "wc2026-001"
       })
     );
-    expect(upsertLeaderboardMessage).toHaveBeenCalledOnce();
+    expect(upsertLeaderboardMessage).not.toHaveBeenCalled();
   });
 
   test("refreshes standings after result sync stores final scores", async () => {

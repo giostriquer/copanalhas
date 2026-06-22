@@ -222,18 +222,12 @@ export async function startCopanalhasBotRuntime(
     autoPostState,
     resultSyncState
   );
-  const predictionInteractionOptions = createPredictionInteractionOptions(
-    options,
-    operatorCommandOptions
-  );
+  const predictionInteractionOptions = createPredictionInteractionOptions(options);
   const discordClient = await options.startDiscord(
     options.config,
     createPredictionPersistenceHandler({
       matches: options.matches,
       upsertPrediction: (prediction) => options.store.upsertPrediction(prediction),
-      refreshLeaderboardAfterPrediction: async () => {
-        await operatorCommandOptions.updateLeaderboardDashboard();
-      },
       writeLine: (line) => writeRuntimeLine(options, line)
     }),
     predictionInteractionOptions,
@@ -337,8 +331,7 @@ function hasChaosDashboardDependencies(
 }
 
 function createPredictionInteractionOptions(
-  options: StartCopanalhasBotRuntimeOptions,
-  operatorCommandOptions: Pick<OperatorCommandOptions, "updateLeaderboardDashboard">
+  options: StartCopanalhasBotRuntimeOptions
 ): PredictionInteractionOptions {
   return {
     guildId: options.config.guildId,
@@ -349,9 +342,6 @@ function createPredictionInteractionOptions(
     now: options.now,
     listPredictions: () => options.store.listPredictions(),
     upsertPrediction: (prediction) => options.store.upsertPrediction(prediction),
-    refreshLeaderboardAfterPrediction: async () => {
-      await operatorCommandOptions.updateLeaderboardDashboard();
-    },
     logPredictionInteraction: (result) =>
       writeRuntimeLine(options, formatPredictionInteractionLog(result))
   };
