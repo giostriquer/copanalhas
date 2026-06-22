@@ -68,7 +68,7 @@ export function buildChaosDashboardModel(
   const week = weekForDate(options.now, options.timeZone);
 
   return {
-    title: "Painel do Caos",
+    title: "Copanalhas Recap",
     generatedAtLabel: formatDashboardTimestamp(options.now, options.timeZone),
     week,
     totals: {

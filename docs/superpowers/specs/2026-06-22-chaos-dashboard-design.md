@@ -1,4 +1,4 @@
-# Painel do Caos Dashboard Design
+# Copanalhas Recap Dashboard Design
 
 ## Goal
 
@@ -9,7 +9,7 @@ scoring data.
 
 The dashboard is called:
 
-- `Painel do Caos`
+- `Copanalhas Recap`
 
 It is a presentation feature. It must not change prediction acceptance,
 prediction cutoff behavior, scoring rules, result sync gating, reveal messages,
@@ -64,7 +64,7 @@ existing public dashboards:
 - `World Cup 2026 Group Standings, Groups G-L`
 - `Copanalhas Leaderboard`
 - `Copa do Mundo 2026 - Mata-mata`
-- `Painel do Caos`
+- `Copanalhas Recap`
 
 The lifecycle should mirror the other dashboards:
 
@@ -160,7 +160,7 @@ most chaos within a few seconds.
 
 Show:
 
-- `Painel do Caos`
+- `Copanalhas Recap`
 - updated timestamp in local time
 - current calendar-week range
 - scored matches counted

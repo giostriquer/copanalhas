@@ -4,7 +4,7 @@ export function sampleChaosDashboardModel(
   overrides: Partial<ChaosDashboardModel> = {}
 ): ChaosDashboardModel {
   return {
-    title: "Painel do Caos",
+    title: "Copanalhas Recap",
     generatedAtLabel: "2026-06-24 12:30 GMT-3",
     week: {
       start: "2026-06-22",

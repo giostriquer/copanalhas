@@ -8,7 +8,7 @@ describe("chaos dashboard SVG renderer", () => {
     const svg = renderChaosDashboardSvg(sampleChaosDashboardModel());
 
     expect(svg).toContain("<svg");
-    expect(svg).toContain("Painel do Caos");
+    expect(svg).toContain("Copanalhas Recap");
     expect(svg).toContain("Premios da Zoacao");
     expect(svg).toContain("Caos dos Jogos");
     expect(svg).toContain("Guibexa");

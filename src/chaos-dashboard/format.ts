@@ -2,8 +2,8 @@ import type { Buffer } from "node:buffer";
 
 import type { ChaosDashboardModel } from "./types.js";
 
-export const CHAOS_DASHBOARD_TITLE = "Painel do Caos";
-export const CHAOS_ATTACHMENT_NAME = "copanalhas-painel-do-caos.png";
+export const CHAOS_DASHBOARD_TITLE = "Copanalhas Recap";
+export const CHAOS_ATTACHMENT_NAME = "copanalhas-recap.png";
 
 export interface ChaosDashboardMessage {
   content: string;

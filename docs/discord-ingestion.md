@@ -144,7 +144,7 @@ channel:
 - World Cup 2026 Group Standings, Groups G-L
 - Copanalhas Leaderboard
 - World Cup 2026 Bracket
-- Painel do Caos
+- Copanalhas Recap
 
 The standings, leaderboard, bracket, and chaos dashboard messages are edited in place.
 Startup posts or repairs missing dashboard messages. Automatic result sync,
@@ -173,7 +173,7 @@ bracket reports that blocked state instead of guessing. Operators can run
 
 The chaos dashboard is a deterministic PNG generated from reviewed match data,
 stored predictions, stored final results, and the official scoring output. It
-shows a permanent `Painel do Caos` with the top leaderboard rows, calendar-week
+shows a permanent `Copanalhas Recap` with the top leaderboard rows, calendar-week
 movement, roast-style people awards, and match-level chaos stats. It stores only
 the persistent Discord message pointer and lightweight weekly leaderboard
 baselines needed to compare movement; it does not store raw private message

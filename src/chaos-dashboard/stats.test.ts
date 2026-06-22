@@ -20,7 +20,7 @@ describe("chaos dashboard stats", () => {
       timeZone: "America/Sao_Paulo"
     });
 
-    expect(model.title).toBe("Painel do Caos");
+    expect(model.title).toBe("Copanalhas Recap");
     expect(model.week).toMatchObject({
       start: "2026-06-22",
       end: "2026-06-28",

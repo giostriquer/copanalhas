@@ -1,7 +1,7 @@
 import type { LeaderboardRow } from "../scoring/scoring.js";
 
 export interface ChaosDashboardModel {
-  title: "Painel do Caos";
+  title: "Copanalhas Recap";
   generatedAtLabel: string;
   week: ChaosWeek;
   totals: ChaosTotals;

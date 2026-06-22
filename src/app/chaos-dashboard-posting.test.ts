@@ -23,7 +23,7 @@ describe("updateChaosDashboard", () => {
     });
     const upsertChaosDashboardMessage = vi.fn(async (message, existingMessageId) => {
       expect(existingMessageId).toBeNull();
-      expect(message.content).toContain("Painel do Caos");
+      expect(message.content).toContain("Copanalhas Recap");
       expect(message.files[0]?.attachment).toBe(png);
       return "chaos-message-1";
     });
@@ -169,7 +169,7 @@ describe("updateChaosDashboard", () => {
     });
 
     expect(resolveUserDisplayNames).toHaveBeenCalledOnce();
-    expect(postedContent).toContain("Painel do Caos");
+    expect(postedContent).toContain("Copanalhas Recap");
   });
 });
 

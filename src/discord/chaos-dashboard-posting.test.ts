@@ -138,9 +138,9 @@ function clientWithChannel(channel: {
 
 function message(): ChaosDashboardMessage {
   return {
-    content: "Painel do Caos",
+    content: "Copanalhas Recap",
     embeds: [],
-    files: [{ attachment: Buffer.from("png"), name: "copanalhas-painel-do-caos.png" }]
+    files: [{ attachment: Buffer.from("png"), name: "copanalhas-recap.png" }]
   };
 }
 

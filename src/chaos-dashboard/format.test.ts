@@ -14,8 +14,8 @@ describe("chaos dashboard message format", () => {
     const png = Buffer.from("png");
     const message = createChaosDashboardMessage(sampleChaosDashboardModel(), png);
 
-    expect(CHAOS_DASHBOARD_TITLE).toBe("Painel do Caos");
-    expect(message.content).toContain("**Painel do Caos**");
+    expect(CHAOS_DASHBOARD_TITLE).toBe("Copanalhas Recap");
+    expect(message.content).toContain("**Copanalhas Recap**");
     expect(message.content).toContain("Semana: 2026-06-22..2026-06-28");
     expect(message.content).toContain("Zoeira estatistica");
     expect(message.embeds).toEqual([]);

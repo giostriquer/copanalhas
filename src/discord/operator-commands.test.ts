@@ -137,7 +137,7 @@ describe("handleOperatorCommand", () => {
         "Standings refreshed.",
         "Leaderboard refreshed.",
         "Bracket refreshed.",
-        "Painel do Caos refreshed."
+        "Copanalhas Recap refreshed."
       ].join("\n"),
       ephemeral: true
     });

@@ -67,7 +67,7 @@ export function createCopanalhasCommand() {
       subcommand.setName("bracket").setDescription("Post or update the World Cup bracket")
     )
     .addSubcommand((subcommand) =>
-      subcommand.setName("copanalhas-recap-painel").setDescription("Post or update the Painel do Caos")
+      subcommand.setName("copanalhas-recap-painel").setDescription("Post or update the Copanalhas Recap")
     )
     .addSubcommand((subcommand) =>
       subcommand

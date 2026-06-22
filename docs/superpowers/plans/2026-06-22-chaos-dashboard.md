@@ -1,8 +1,8 @@
-# Painel do Caos Dashboard Implementation Plan
+# Copanalhas Recap Dashboard Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Build a permanent generated PNG Discord dashboard called `Painel do Caos` with people and match chaos stats, weekly movement, operator refresh, status, tests, and runtime hooks.
+**Goal:** Build a permanent generated PNG Discord dashboard called `Copanalhas Recap` with people and match chaos stats, weekly movement, operator refresh, status, tests, and runtime hooks.
 
 **Architecture:** Add a pure `src/chaos-dashboard` feature module that builds a presentation model from predictions, results, scoring output, leaderboard rows, display names, and weekly snapshots. Add storage for one dashboard post and week-start leaderboard snapshots, then wire an app updater, Discord adapter, command, logs, health, startup, prediction, and result-sync refreshes around that pure core.
 
@@ -66,7 +66,7 @@ test("builds people awards, match chaos, and top rows from scored results", () =
     timeZone: "America/Sao_Paulo"
   });
 
-  expect(model.title).toBe("Painel do Caos");
+  expect(model.title).toBe("Copanalhas Recap");
   expect(model.week.label).toBe("2026-06-22..2026-06-28");
   expect(model.totals.scoredMatches).toBe(2);
   expect(model.totals.predictions).toBe(8);
@@ -184,11 +184,11 @@ Cover:
 
 ```ts
 expect(createChaosDashboardMessage(model, Buffer.from("png")).files).toEqual([
-  { attachment: Buffer.from("png"), name: "copanalhas-painel-do-caos.png" }
+  { attachment: Buffer.from("png"), name: "copanalhas-recap.png" }
 ]);
-expect(createChaosDashboardMessage(model, null).content).toContain("Painel do Caos");
+expect(createChaosDashboardMessage(model, null).content).toContain("Copanalhas Recap");
 expect(createChaosDashboardMessage(model, null).content).toContain("Zoeira estatistica");
-expect(renderChaosDashboardSvg(model)).toContain("Painel do Caos");
+expect(renderChaosDashboardSvg(model)).toContain("Copanalhas Recap");
 expect(renderChaosDashboardSvg(model)).toContain("Premios da Zoacao");
 expect(renderChaosDashboardSvg(model)).toContain("Caos dos Jogos");
 expect(await renderChaosDashboardPng(renderChaosDashboardSvg(model))).toSatisfy(
@@ -211,8 +211,8 @@ Expected: fail because formatter and renderer files do not exist.
 Implement:
 
 ```ts
-export const CHAOS_DASHBOARD_TITLE = "Painel do Caos";
-export const CHAOS_ATTACHMENT_NAME = "copanalhas-painel-do-caos.png";
+export const CHAOS_DASHBOARD_TITLE = "Copanalhas Recap";
+export const CHAOS_ATTACHMENT_NAME = "copanalhas-recap.png";
 export interface ChaosDashboardMessage { content: string; embeds: []; files: Array<{ attachment: Buffer; name: string }>; }
 export function createChaosDashboardMessage(model: ChaosDashboardModel, png: Buffer | null): ChaosDashboardMessage;
 export function renderChaosDashboardSvg(model: ChaosDashboardModel): string;
