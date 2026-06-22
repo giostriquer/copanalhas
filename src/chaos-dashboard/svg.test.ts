@@ -41,7 +41,7 @@ describe("chaos dashboard SVG renderer", () => {
     expect(subtitleY - valueY).toBeGreaterThanOrEqual(18);
   });
 
-  test("renders the leader of the week as a spacious profile card with aligned stat chips", () => {
+  test("renders weekly profile cards with stats using the empty right side", () => {
     const svg = renderChaosDashboardSvg(
       sampleChaosDashboardModel({
         leaderboardTop: [],
@@ -56,25 +56,50 @@ describe("chaos dashboard SVG renderer", () => {
           outcomeCount: 3,
           closestCount: 0,
           avatarDataUri: "data:image/png;base64,leader-avatar"
+        },
+        apostazuOfWeek: {
+          userId: "apostazu",
+          displayName: "Apostazu",
+          points: 0,
+          finishedPredictions: 5,
+          zeroPointPredictions: 5,
+          wrongOutcomes: 5,
+          averageDistance: 3,
+          avatarDataUri: "data:image/png;base64,apostazu-avatar"
         }
       })
     );
 
-    expect(svg).toContain('height="152"');
     expect(svg).toContain("Pessoa Central");
+    expect(svg).toContain("Apostazu da Semana");
+    expect(svg).toContain("Apostazu");
     expect(svg).toContain("Solo 1");
     expect(svg).toContain("Exato 4");
     expect(svg).toContain("Resultado 3");
     expect(svg).toContain("Perto 0");
+    expect(svg).toContain("Zeros 5");
+    expect(svg).toContain("Errou 5");
+    expect(svg).toContain("Erro 3,0");
+    expect(svg).toContain("Jogos 5");
+    expect(svg).toContain('href="data:image/png;base64,leader-avatar"');
+    expect(svg).toContain('href="data:image/png;base64,apostazu-avatar"');
     expect(svg).not.toContain("Solo 1   Exato 4");
     expect(svg).not.toContain("Resultado 3   Perto 0");
 
     const titleY = textY(svg, "Lider da Semana");
     const pointsY = textY(svg, "23 pts");
     const soloY = textY(svg, "Solo 1");
+    const leaderNameX = textX(svg, "Pessoa Central");
+    const pointsX = textX(svg, "23 pts");
+    const soloX = textX(svg, "Solo 1");
+    const apostazuNameX = textX(svg, "Apostazu");
+    const zerosX = textX(svg, "Zeros 5");
 
-    expect(pointsY - titleY).toBeGreaterThanOrEqual(48);
-    expect(soloY - pointsY).toBeGreaterThanOrEqual(28);
+    expect(pointsY - titleY).toBeLessThanOrEqual(24);
+    expect(soloY - pointsY).toBeGreaterThanOrEqual(14);
+    expect(pointsX - leaderNameX).toBeGreaterThanOrEqual(150);
+    expect(soloX - leaderNameX).toBeGreaterThanOrEqual(150);
+    expect(zerosX - apostazuNameX).toBeGreaterThanOrEqual(150);
   });
 
   test("escapes user and match text before writing SVG", () => {
@@ -101,6 +126,17 @@ describe("chaos dashboard SVG renderer", () => {
 function textY(svg: string, value: string): number {
   const escaped = value.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&");
   const match = new RegExp(`<text[^>]* y="([0-9]+)"[^>]*>${escaped}</text>`, "u").exec(svg);
+
+  if (!match?.[1]) {
+    throw new Error(`Could not find text node for ${value}`);
+  }
+
+  return Number(match[1]);
+}
+
+function textX(svg: string, value: string): number {
+  const escaped = value.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&");
+  const match = new RegExp(`<text[^>]* x="([0-9.]+)"[^>]*>${escaped}</text>`, "u").exec(svg);
 
   if (!match?.[1]) {
     throw new Error(`Could not find text node for ${value}`);

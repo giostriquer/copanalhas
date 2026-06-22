@@ -155,10 +155,6 @@ async function updateChaosRecapPeriod(input: {
   const leaderboardRows = buildLeaderboard(scoredPredictions, input.periodPredictions);
   const userIds = leaderboardRows.map((row) => row.userId);
   const displayNames = await resolveDisplayNames(input.options, userIds);
-  const avatarDataUris = await resolveAvatarDataUris(
-    input.options,
-    leaderboardRows[0] ? [leaderboardRows[0].userId] : []
-  );
   const previousWeekRows = input.options.listChaosWeeklySnapshotRows(
     input.period.key,
     input.options.guildId,
@@ -184,11 +180,30 @@ async function updateChaosRecapPeriod(input: {
       label: input.period.label
     },
     displayNames,
-    avatarDataUris,
+    avatarDataUris: new Map(),
     previousWeekRows,
     now: input.updatedAt,
     timeZone: input.options.timeZone
   });
+  const avatarDataUris = await resolveAvatarDataUris(input.options, profileCardUserIds(model));
+
+  if (avatarDataUris.size > 0) {
+    model = buildChaosDashboardModel({
+      matches: input.periodMatches,
+      predictions: input.periodPredictions,
+      results: input.periodResults,
+      period: {
+        key: input.period.key,
+        label: input.period.label
+      },
+      displayNames,
+      avatarDataUris,
+      previousWeekRows,
+      now: input.updatedAt,
+      timeZone: input.options.timeZone
+    });
+  }
+
   let copyState: UpdatedChaosDashboardPost["copyState"];
   let copyError: string | undefined;
 
@@ -255,6 +270,16 @@ async function updateChaosRecapPeriod(input: {
     ...(copyState ? { copyState } : {}),
     ...(copyError ? { copyError } : {})
   };
+}
+
+function profileCardUserIds(model: Pick<ReturnType<typeof buildChaosDashboardModel>, "leaderOfWeek" | "apostazuOfWeek">): string[] {
+  return [
+    ...new Set(
+      [model.leaderOfWeek?.userId, model.apostazuOfWeek?.userId].filter(
+        (userId): userId is string => Boolean(userId)
+      )
+    )
+  ];
 }
 
 async function resolveAvatarDataUris(

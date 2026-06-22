@@ -8,6 +8,7 @@ export interface ChaosDashboardModel {
   totals: ChaosTotals;
   leaderboardTop: ChaosLeaderboardRow[];
   leaderOfWeek?: ChaosLeaderOfWeek;
+  apostazuOfWeek?: ChaosApostazuOfWeek;
   weeklyMovement: ChaosWeeklyMovement;
   peopleAwards: ChaosPeopleAward[];
   matchAwards: ChaosMatchAward[];
@@ -43,6 +44,17 @@ export interface ChaosLeaderOfWeek {
   exactCount: number;
   outcomeCount: number;
   closestCount: number;
+  avatarDataUri?: string;
+}
+
+export interface ChaosApostazuOfWeek {
+  userId: string;
+  displayName: string;
+  points: number;
+  finishedPredictions: number;
+  zeroPointPredictions: number;
+  wrongOutcomes: number;
+  averageDistance: number;
   avatarDataUri?: string;
 }
 

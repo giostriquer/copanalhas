@@ -32,6 +32,7 @@ export interface BuildChaosDashboardModelOptions {
 
 interface UserFinishedStats {
   userId: string;
+  points: number;
   finishedPredictions: number;
   zeroPointPredictions: number;
   wrongOutcomes: number;
@@ -57,13 +58,20 @@ const negativeAwardMinimumFinishedPredictions = 5;
 export function buildChaosDashboardModel(
   options: BuildChaosDashboardModelOptions
 ): ChaosDashboardModel {
+  const displayNames = options.displayNames ?? new Map();
+  const avatarDataUris = options.avatarDataUris ?? new Map();
   const scoredPredictions = options.results.flatMap((result) =>
     scoreMatch(result, [...options.predictions])
   );
   const leaderboard = buildLeaderboard(scoredPredictions, options.predictions);
-  const rankedRows = rankLeaderboardRows(leaderboard, options.displayNames ?? new Map());
+  const rankedRows = rankLeaderboardRows(leaderboard, displayNames);
   const currentSnapshotRows = createWeeklySnapshotRows(leaderboard);
   const resultIds = new Set(options.results.map((result) => result.matchId));
+  const statsByUser = userFinishedStats({
+    predictions: options.predictions,
+    results: options.results,
+    scoredPredictions
+  });
   const matchStats = options.matches.map((match) => {
     const result = options.results.find((candidate) => candidate.matchId === match.id);
 
@@ -74,12 +82,13 @@ export function buildChaosDashboardModel(
     };
   });
   const week = weekForDate(options.now, options.timeZone);
-  const leaderOfWeek = buildLeaderOfWeek(rankedRows, options.avatarDataUris ?? new Map());
+  const leaderOfWeek = buildLeaderOfWeek(rankedRows, avatarDataUris);
+  const apostazuOfWeek = buildApostazuOfWeek(statsByUser, displayNames, avatarDataUris);
   const weeklyMovement = buildWeeklyMovement({
     currentRows: currentSnapshotRows,
     leaderboardRows: rankedRows,
     previousRows: options.previousWeekRows,
-    displayNames: options.displayNames ?? new Map()
+    displayNames
   });
 
   return {
@@ -95,16 +104,54 @@ export function buildChaosDashboardModel(
     },
     leaderboardTop: rankedRows.slice(0, 5),
     ...(leaderOfWeek ? { leaderOfWeek } : {}),
+    ...(apostazuOfWeek ? { apostazuOfWeek } : {}),
     weeklyMovement,
     peopleAwards: buildPeopleAwards({
       leaderboardRows: rankedRows,
       predictions: options.predictions,
       results: options.results,
       scoredPredictions,
-      displayNames: options.displayNames ?? new Map(),
+      statsByUser,
+      displayNames,
       weeklyMovement
     }),
     matchAwards: buildMatchAwards(matchStats)
+  };
+}
+
+function buildApostazuOfWeek(
+  statsByUser: readonly UserFinishedStats[],
+  displayNames: ReadonlyMap<string, string>,
+  avatarDataUris: ReadonlyMap<string, string>
+): ChaosDashboardModel["apostazuOfWeek"] {
+  const apostazu = statsByUser.toSorted((left, right) => {
+    const leftDistance = averageUserDistance(left);
+    const rightDistance = averageUserDistance(right);
+
+    return (
+      left.points - right.points ||
+      right.zeroPointPredictions - left.zeroPointPredictions ||
+      right.wrongOutcomes - left.wrongOutcomes ||
+      rightDistance - leftDistance ||
+      left.userId.localeCompare(right.userId)
+    );
+  })[0];
+
+  if (!apostazu) {
+    return undefined;
+  }
+
+  const avatarDataUri = avatarDataUris.get(apostazu.userId);
+
+  return {
+    userId: apostazu.userId,
+    displayName: displayNameForUser(apostazu.userId, displayNames),
+    points: apostazu.points,
+    finishedPredictions: apostazu.finishedPredictions,
+    zeroPointPredictions: apostazu.zeroPointPredictions,
+    wrongOutcomes: apostazu.wrongOutcomes,
+    averageDistance: averageUserDistance(apostazu),
+    ...(avatarDataUri ? { avatarDataUri } : {})
   };
 }
 
@@ -155,10 +202,10 @@ function buildPeopleAwards(options: {
   predictions: readonly ScorePrediction[];
   results: readonly MatchResult[];
   scoredPredictions: ReturnType<typeof scoreMatch>;
+  statsByUser: readonly UserFinishedStats[];
   displayNames: ReadonlyMap<string, string>;
   weeklyMovement: ChaosWeeklyMovement;
 }): ChaosPeopleAward[] {
-  const statsByUser = userFinishedStats(options);
   const candidates: PeopleAwardCandidate[] = [
     ...movementAwardCandidates(options.weeklyMovement),
     fixedAwardCandidate(
@@ -211,7 +258,7 @@ function buildPeopleAwards(options: {
       awardFromUserStats(
         "inimigo-do-obvio",
         "Inimigo do obvio",
-        statsByUser,
+        options.statsByUser,
         options.displayNames,
         (stats) => stats.wrongOutcomes,
         "resultados errados",
@@ -223,7 +270,7 @@ function buildPeopleAwards(options: {
       awardFromUserStats(
         "mao-de-alface-estatistica",
         "Mao de alface estatistica",
-        statsByUser,
+        options.statsByUser,
         options.displayNames,
         (stats) =>
           stats.finishedPredictions === 0 ? 0 : stats.totalDistance / stats.finishedPredictions,
@@ -237,7 +284,7 @@ function buildPeopleAwards(options: {
       awardFromUserStats(
         "cravou-nada-falou-tudo",
         "Cravou nada, falou tudo",
-        statsByUser,
+        options.statsByUser,
         options.displayNames,
         (stats) => stats.zeroPointPredictions,
         "zeros",
@@ -249,7 +296,7 @@ function buildPeopleAwards(options: {
       awardFromUserStats(
         "teto-solar-aberto",
         "Teto solar aberto",
-        statsByUser,
+        options.statsByUser,
         options.displayNames,
         (stats) =>
           stats.finishedPredictions === 0 ? 0 : stats.predictedGoals / stats.finishedPredictions,
@@ -397,6 +444,7 @@ function userFinishedStats(options: {
 
     const stats = statsByUser.get(prediction.userId) ?? {
       userId: prediction.userId,
+      points: 0,
       finishedPredictions: 0,
       zeroPointPredictions: 0,
       wrongOutcomes: 0,
@@ -409,6 +457,7 @@ function userFinishedStats(options: {
     const scored = scoredByUserMatch.get(`${prediction.userId}|${prediction.matchId}`);
 
     stats.finishedPredictions += 1;
+    stats.points += scored?.points ?? 0;
     stats.totalDistance += distance;
     stats.predictedGoals += prediction.homeScore + prediction.awayScore;
 
@@ -426,6 +475,10 @@ function userFinishedStats(options: {
   return [...statsByUser.values()].filter(
     (stats) => stats.finishedPredictions >= negativeAwardMinimumFinishedPredictions
   );
+}
+
+function averageUserDistance(stats: UserFinishedStats): number {
+  return stats.finishedPredictions === 0 ? 0 : stats.totalDistance / stats.finishedPredictions;
 }
 
 function awardFromLeaderboard(

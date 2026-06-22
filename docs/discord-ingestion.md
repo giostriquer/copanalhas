@@ -188,8 +188,8 @@ unrelated later matches. Operators can run `/copanalhas copanalhas-recap-painel`
 to intentionally refresh/backfill completed recap posts. The feature stores only
 the Discord message pointer per period and lightweight derived snapshot rows; it
 does not store raw private message content. The recap image may resolve the
-period leader's current Discord display avatar while rendering, but avatar URLs
-and image bytes are not persisted.
+current Discord display avatars for the weekly profile cards while rendering,
+but avatar URLs and image bytes are not persisted.
 
 Prediction reveal posts are automatic. Every minute, the bot checks for matches
 whose prediction cutoff has passed, groups matches that share the same cutoff

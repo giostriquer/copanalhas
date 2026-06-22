@@ -49,6 +49,49 @@ describe("chaos dashboard stats", () => {
     expect(model.matchAwards.map((award) => award.key)).toContain("consenso-burro");
   });
 
+  test("selects Apostazu da Semana from the lowest scoring eligible weekly player", () => {
+    const matches = Array.from({ length: 5 }, (_, index) =>
+      match(`apostazu-match-${index + 1}`, index + 1, "BRA", "Brazil", "JPN", "Japan")
+    );
+    const results = matches.map((candidate) => ({
+      matchId: candidate.id,
+      homeScore: 1,
+      awayScore: 0
+    }));
+    const predictions = matches.flatMap((candidate) => [
+      prediction("leader", candidate.id, 1, 0),
+      prediction("bad-distance", candidate.id, 0, 2),
+      prediction("bad-close", candidate.id, 0, 1)
+    ]);
+    const avatarDataUri = "data:image/png;base64,apostazu-avatar";
+
+    const model = buildChaosDashboardModel({
+      matches,
+      predictions,
+      results,
+      displayNames: new Map([
+        ["leader", "Lider"],
+        ["bad-distance", "Apostazu"],
+        ["bad-close", "Quase Apostazu"]
+      ]),
+      avatarDataUris: new Map([["bad-distance", avatarDataUri]]),
+      previousWeekRows: [],
+      now: new Date("2026-06-24T15:30:00.000Z"),
+      timeZone: "America/Sao_Paulo"
+    });
+
+    expect(model.apostazuOfWeek).toMatchObject({
+      userId: "bad-distance",
+      displayName: "Apostazu",
+      points: 0,
+      finishedPredictions: 5,
+      zeroPointPredictions: 5,
+      wrongOutcomes: 5,
+      averageDistance: 3,
+      avatarDataUri
+    });
+  });
+
   test("uses a Monday calendar week in the configured local timezone", () => {
     expect(weekStartKey(new Date("2026-06-22T03:00:00.000Z"), "America/Sao_Paulo")).toBe(
       "2026-06-22"
@@ -260,5 +303,19 @@ function match(
     venue: "Test Stadium",
     sourceId: "test",
     externalIds: {}
+  };
+}
+
+function prediction(
+  userId: string,
+  matchId: string,
+  homeScore: number,
+  awayScore: number
+): ScorePrediction {
+  return {
+    userId,
+    matchId,
+    homeScore,
+    awayScore
   };
 }

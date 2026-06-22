@@ -27,6 +27,9 @@ const brazilPanelStroke = "#1e64d1";
 const brazilGreen = "#009C3B";
 
 export function renderChaosDashboardSvg(model: ChaosDashboardModel): string {
+  const profileTop = contentTop + 276;
+  const hasApostazuCard = Boolean(model.apostazuOfWeek);
+
   return [
     `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" role="img" aria-label="${escapeAttribute(model.title)}">`,
     `<rect width="100%" height="100%" fill="${brazilBlue}"/>`,
@@ -45,8 +48,14 @@ export function renderChaosDashboardSvg(model: ChaosDashboardModel): string {
     ),
     renderPanel(leftX, contentTop, leftWidth, panelHeight, "Placar Principal", [
       ...renderLeaderboard(model.leaderboardTop, leftX + 18, contentTop + 56),
-      ...renderLeaderCard(model.leaderOfWeek, leftX + 18, contentTop + 276),
-      ...renderMovement(model.weeklyMovement, leftX + 18, contentTop + 456)
+      ...renderLeaderCard(model.leaderOfWeek, leftX + 18, profileTop),
+      ...renderApostazuCard(model.apostazuOfWeek, leftX + 18, profileTop + 130),
+      ...renderMovement(
+        model.weeklyMovement,
+        leftX + 18,
+        contentTop + (hasApostazuCard ? 556 : 436),
+        hasApostazuCard ? 4 : 6
+      )
     ]),
     renderPanel(centerX, contentTop, centerWidth, panelHeight, "Genios e Copazus", renderPeopleAwards(model.peopleAwards)),
     renderPanel(rightX, contentTop, rightWidth, panelHeight, "Highlights", renderMatchAwards(model.matchAwards)),
@@ -63,61 +72,126 @@ function renderLeaderCard(
     return [];
   }
 
-  const cardHeight = 152;
-  const avatarSize = 88;
-  const avatarX = x + 18;
-  const avatarY = y + 32;
+  return renderProfileCard({
+    x,
+    y,
+    title: "Lider da Semana",
+    displayName: leader.displayName,
+    points: leader.points,
+    avatarDataUri: leader.avatarDataUri,
+    avatarClipId: "chaos-leader-avatar",
+    accent: brazilGreen,
+    highlightFill: "#dbeafe",
+    highlightStroke: "#bfdbfe",
+    stats: [
+      { label: "Solo", value: String(leader.soloCount) },
+      { label: "Exato", value: String(leader.exactCount) },
+      { label: "Resultado", value: String(leader.outcomeCount) },
+      { label: "Perto", value: String(leader.closestCount) }
+    ]
+  });
+}
+
+function renderApostazuCard(
+  apostazu: ChaosDashboardModel["apostazuOfWeek"],
+  x: number,
+  y: number
+): string[] {
+  if (!apostazu) {
+    return [];
+  }
+
+  return renderProfileCard({
+    x,
+    y,
+    title: "Apostazu da Semana",
+    displayName: apostazu.displayName,
+    points: apostazu.points,
+    avatarDataUri: apostazu.avatarDataUri,
+    avatarClipId: "chaos-apostazu-avatar",
+    accent: "#ef4444",
+    highlightFill: "#fee2e2",
+    highlightStroke: "#fecaca",
+    stats: [
+      { label: "Zeros", value: String(apostazu.zeroPointPredictions) },
+      { label: "Errou", value: String(apostazu.wrongOutcomes) },
+      { label: "Erro", value: formatDecimal(apostazu.averageDistance) },
+      { label: "Jogos", value: String(apostazu.finishedPredictions) }
+    ]
+  });
+}
+
+function renderProfileCard(input: {
+  x: number;
+  y: number;
+  title: string;
+  displayName: string;
+  points: number;
+  avatarDataUri?: string | undefined;
+  avatarClipId: string;
+  accent: string;
+  highlightFill: string;
+  highlightStroke: string;
+  stats: readonly { label: string; value: string }[];
+}): string[] {
+  const cardHeight = 118;
+  const avatarSize = 76;
+  const avatarX = input.x + 18;
+  const avatarY = input.y + 21;
   const avatarCenterX = avatarX + avatarSize / 2;
   const avatarCenterY = avatarY + avatarSize / 2;
-  const textX = x + 124;
-  const chipY = y + 102;
-  const chipWidth = 116;
-  const chipHeight = 18;
-  const chipGap = 8;
-  const clipId = "chaos-leader-avatar";
-  const avatar = leader.avatarDataUri
+  const textX = input.x + 108;
+  const highlightsX = input.x + 276;
+  const highlightWidth = 122;
+  const miniStatWidth = 56;
+  const miniStatHeight = 17;
+  const miniStatGap = 6;
+  const nameLines = wrapText(input.displayName, 14, 2);
+  const avatar = input.avatarDataUri
     ? [
-        `<defs><clipPath id="${clipId}"><circle cx="${avatarCenterX}" cy="${avatarCenterY}" r="${avatarSize / 2}"/></clipPath></defs>`,
-        `<image href="${escapeAttribute(leader.avatarDataUri)}" x="${avatarX}" y="${avatarY}" width="${avatarSize}" height="${avatarSize}" preserveAspectRatio="xMidYMid slice" clip-path="url(#${clipId})"/>`
+        `<defs><clipPath id="${input.avatarClipId}"><circle cx="${avatarCenterX}" cy="${avatarCenterY}" r="${avatarSize / 2}"/></clipPath></defs>`,
+        `<image href="${escapeAttribute(input.avatarDataUri)}" x="${avatarX}" y="${avatarY}" width="${avatarSize}" height="${avatarSize}" preserveAspectRatio="xMidYMid slice" clip-path="url(#${input.avatarClipId})"/>`
       ]
     : [
         `<circle cx="${avatarCenterX}" cy="${avatarCenterY}" r="${avatarSize / 2}" fill="${brazilYellow}"/>`,
-        text(initialsForName(leader.displayName), avatarCenterX, avatarCenterY + 9, 26, brazilBlue, 900, "middle")
+        text(initialsForName(input.displayName), avatarCenterX, avatarCenterY + 9, 24, brazilBlue, 900, "middle")
       ];
 
   return [
-    `<rect x="${x - 8}" y="${y}" width="${leftWidth - 20}" height="${cardHeight}" rx="8" fill="#f8fafc"/>`,
-    `<rect x="${x - 8}" y="${y}" width="6" height="${cardHeight}" rx="3" fill="${brazilGreen}"/>`,
+    `<rect x="${input.x - 8}" y="${input.y}" width="${leftWidth - 20}" height="${cardHeight}" rx="8" fill="#f8fafc"/>`,
+    `<rect x="${input.x - 8}" y="${input.y}" width="6" height="${cardHeight}" rx="3" fill="${input.accent}"/>`,
     ...avatar,
     `<circle cx="${avatarCenterX}" cy="${avatarCenterY}" r="${avatarSize / 2}" fill="none" stroke="${brazilYellow}" stroke-width="4"/>`,
-    text("Lider da Semana", textX, y + 30, 13, brazilBlue, 900),
-    text(truncate(leader.displayName, 26), textX, y + 60, 19, "#111827", 900),
-    text(`${leader.points} pts`, textX, y + 84, 17, brazilBlue, 900),
-    ...renderLeaderStatChip("Solo", leader.soloCount, textX, chipY, chipWidth, chipHeight),
-    ...renderLeaderStatChip("Exato", leader.exactCount, textX + chipWidth + chipGap, chipY, chipWidth, chipHeight),
-    ...renderLeaderStatChip("Resultado", leader.outcomeCount, textX, chipY + chipHeight + 6, chipWidth, chipHeight),
-    ...renderLeaderStatChip(
-      "Perto",
-      leader.closestCount,
-      textX + chipWidth + chipGap,
-      chipY + chipHeight + 6,
-      chipWidth,
-      chipHeight
+    text(input.title, textX, input.y + 30, 12, brazilBlue, 900),
+    ...nameLines.map((line, index) =>
+      text(line, textX, input.y + 59 + index * 19, index === 0 ? 18 : 16, "#111827", 900)
+    ),
+    `<rect x="${highlightsX}" y="${input.y + 17}" width="${highlightWidth}" height="84" rx="8" fill="${input.highlightFill}" stroke="${input.highlightStroke}"/>`,
+    text(`${input.points} pts`, highlightsX + highlightWidth / 2, input.y + 47, 21, brazilBlue, 900, "middle"),
+    ...input.stats.slice(0, 4).flatMap((stat, index) =>
+      renderMiniStat({
+        label: stat.label,
+        value: stat.value,
+        x: highlightsX + 5 + (index % 2) * (miniStatWidth + miniStatGap),
+        y: input.y + 60 + Math.floor(index / 2) * 23,
+        width: miniStatWidth,
+        height: miniStatHeight
+      })
     )
   ];
 }
 
-function renderLeaderStatChip(
-  label: string,
-  value: number,
-  x: number,
-  y: number,
-  width: number,
-  height: number
-): string[] {
+function renderMiniStat(input: {
+  label: string;
+  value: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}): string[] {
   return [
-    `<rect x="${x}" y="${y}" width="${width}" height="${height}" rx="5" fill="#dbeafe" stroke="#bfdbfe"/>`,
-    text(`${label} ${value}`, x + width / 2, y + 13, 10, brazilBlue, 900, "middle")
+    `<rect x="${input.x}" y="${input.y}" width="${input.width}" height="${input.height}" rx="4" fill="#ffffff" opacity="0.72"/>`,
+    text(`${input.label} ${input.value}`, input.x + input.width / 2, input.y + 12, 7.5, brazilBlue, 900, "middle")
   ];
 }
 
@@ -157,7 +231,8 @@ function renderLeaderboard(rows: readonly ChaosLeaderboardRow[], x: number, y: n
 function renderMovement(
   movement: ChaosDashboardModel["weeklyMovement"],
   x: number,
-  y: number
+  y: number,
+  maxRows = 6
 ): string[] {
   const parts = [
     text("Sobe e Desce da Semana", x, y, 18, "#ffffff", 900)
@@ -171,7 +246,7 @@ function renderMovement(
     ...movement.climbers.map((row) => ({ ...row, marker: `+${row.movement}` })),
     ...movement.fallers.map((row) => ({ ...row, marker: String(row.movement) })),
     ...movement.newcomers.map((row) => ({ ...row, marker: "novo" }))
-  ].slice(0, 6);
+  ].slice(0, maxRows);
 
   if (rows.length === 0) {
     return [...parts, text("Ninguem se mexeu. A vergonha ficou estavel.", x, y + 34, 14, "#d1d5db", 700)];
@@ -318,6 +393,13 @@ function wrapText(value: string, maxLineLength: number, maxLines: number): strin
   }
 
   return lines;
+}
+
+function formatDecimal(value: number): string {
+  return value.toLocaleString("pt-BR", {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1
+  });
 }
 
 function initialsForName(value: string): string {

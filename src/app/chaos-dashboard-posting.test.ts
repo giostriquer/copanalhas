@@ -186,15 +186,31 @@ describe("updateChaosRecaps", () => {
     expect(postedContent).toContain("Copanalhas Recap");
   });
 
-  test("resolves an avatar only for the period leader", async () => {
+  test("resolves avatars for weekly profile cards", async () => {
+    const groupWeekOneMatches = WORLD_CUP_2026_SEED.matches.filter(
+      (match) => match.matchNumber <= 24
+    );
+    const firstFiveMatches = groupWeekOneMatches.slice(0, 5);
+    const firstMatch = firstFiveMatches[0]!;
     const resolveUserAvatarDataUris = vi.fn(async (userIds: readonly string[]) => {
-      expect(userIds).toEqual(["user-a"]);
-      return new Map([["user-a", "data:image/png;base64,leader-avatar"]]);
+      expect(userIds).toEqual(["user-a", "user-b"]);
+      return new Map([
+        ["user-a", "data:image/png;base64,leader-avatar"],
+        ["user-b", "data:image/png;base64,apostazu-avatar"]
+      ]);
     });
     let renderedSvg = "";
 
     await updateChaosRecaps({
       ...baseOptionsWithCompletedGroupWeekOne(),
+      predictions: firstFiveMatches.flatMap((match) => {
+        const exactScore = match.id === firstMatch.id ? [2, 1] : [1, 0];
+
+        return [
+          prediction("user-a", match.id, exactScore[0]!, exactScore[1]!),
+          prediction("user-b", match.id, 0, 3)
+        ];
+      }),
       listChaosDashboardPosts: () => [],
       recordChaosDashboardPost: vi.fn(),
       listChaosWeeklySnapshotRows: () => existingSnapshotRows(),
@@ -209,7 +225,9 @@ describe("updateChaosRecaps", () => {
 
     expect(resolveUserAvatarDataUris).toHaveBeenCalledOnce();
     expect(renderedSvg).toContain("Lider da Semana");
+    expect(renderedSvg).toContain("Apostazu da Semana");
     expect(renderedSvg).toContain('href="data:image/png;base64,leader-avatar"');
+    expect(renderedSvg).toContain('href="data:image/png;base64,apostazu-avatar"');
   });
 
   test("applies generated recap copy before rendering the image", async () => {

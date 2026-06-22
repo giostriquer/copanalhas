@@ -43,6 +43,16 @@ export function sampleChaosDashboardModel(
       closestCount: 0,
       avatarDataUri: "data:image/png;base64,leader-avatar"
     },
+    apostazuOfWeek: {
+      userId: "user-b",
+      displayName: "SEVERAO DO HEXA",
+      points: 2,
+      finishedPredictions: 12,
+      zeroPointPredictions: 10,
+      wrongOutcomes: 8,
+      averageDistance: 2.7,
+      avatarDataUri: "data:image/png;base64,apostazu-avatar"
+    },
     weeklyMovement: {
       status: "ready",
       climbers: [
