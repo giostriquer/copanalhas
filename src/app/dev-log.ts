@@ -206,13 +206,46 @@ export function formatBracketDashboardLog(result: UpdateBracketDashboardResult):
 }
 
 export function formatChaosDashboardLog(result: UpdateChaosDashboardResult): string {
+  const postCounts = {
+    posted: 0,
+    edited: 0,
+    replaced: 0
+  };
+  const skippedCounts = {
+    incomplete: 0,
+    alreadyPosted: 0
+  };
+
+  for (const post of result.posted) {
+    postCounts[post.action] += 1;
+  }
+
+  for (const skipped of result.skipped) {
+    if (skipped.reason === "already-posted") {
+      skippedCounts.alreadyPosted += 1;
+    } else {
+      skippedCounts.incomplete += 1;
+    }
+  }
+
   return [
-    "[dashboard] chaos",
-    `action=${result.post.action}`,
-    `message=${result.post.messageId}`,
-    `week=${result.weekStart}`,
-    `render=${result.renderState}`,
-    result.renderError ? `error=${safeLogMessage(result.renderError)}` : null
+    "[dashboard] recap",
+    `posts=${result.posted.length}`,
+    `posted=${postCounts.posted}`,
+    `edited=${postCounts.edited}`,
+    `replaced=${postCounts.replaced}`,
+    `skipped=${result.skipped.length}`,
+    `incomplete=${skippedCounts.incomplete}`,
+    `alreadyPosted=${skippedCounts.alreadyPosted}`,
+    result.posted.length > 0
+      ? `periods=${result.posted.map((post) => safeLogValue(post.periodKey)).join(",")}`
+      : null,
+    result.posted.some((post) => post.renderError)
+      ? `errors=${result.posted
+          .filter((post) => post.renderError)
+          .map((post) => `${safeLogValue(post.periodKey)}:${safeLogMessage(post.renderError ?? "")}`)
+          .join(",")}`
+      : null
   ]
     .filter((part): part is string => part !== null)
     .join(" ");

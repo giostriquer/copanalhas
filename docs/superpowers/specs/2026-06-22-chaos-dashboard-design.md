@@ -1,5 +1,10 @@
 # Copanalhas Recap Dashboard Design
 
+> Superseded: the live single-dashboard posting model in this document was
+> replaced by
+> `docs/superpowers/specs/2026-06-22-periodic-copanalhas-recap-design.md`.
+> Keep the stat/rendering ideas, but use durable period recap posts.
+
 ## Goal
 
 Add a permanent Discord image dashboard that summarizes Copanalhas prediction

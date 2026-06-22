@@ -6,6 +6,10 @@ export function sampleChaosDashboardModel(
   return {
     title: "Copanalhas Recap",
     generatedAtLabel: "2026-06-24 12:30 GMT-3",
+    period: {
+      key: "group-week-1",
+      label: "Fase de grupos - semana 1"
+    },
     week: {
       start: "2026-06-22",
       end: "2026-06-28",

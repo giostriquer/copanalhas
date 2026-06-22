@@ -449,11 +449,12 @@ describe("CopanalhasDatabase", () => {
     store.close();
   });
 
-  test("records chaos dashboard posts by guild and channel", () => {
+  test("records chaos recap posts by guild, channel, and period", () => {
     const store = openCopanalhasDatabase(":memory:");
     store.migrate();
 
     store.recordChaosDashboardPost({
+      periodKey: "group-week-1",
       guildId: "guild-1",
       channelId: "channel-1",
       messageId: "chaos-message-1",
@@ -461,15 +462,33 @@ describe("CopanalhasDatabase", () => {
       updatedAt: "2026-06-22T12:00:00.000Z"
     });
     store.recordChaosDashboardPost({
+      periodKey: "group-week-2",
       guildId: "guild-1",
       channelId: "channel-1",
       messageId: "chaos-message-2",
       createdAt: "2026-06-22T12:00:00.000Z",
       updatedAt: "2026-06-22T12:05:00.000Z"
     });
+    store.recordChaosDashboardPost({
+      periodKey: "group-week-1",
+      guildId: "guild-1",
+      channelId: "channel-1",
+      messageId: "chaos-message-1-edited",
+      createdAt: "2026-06-22T12:00:00.000Z",
+      updatedAt: "2026-06-22T12:10:00.000Z"
+    });
 
     expect(store.listChaosDashboardPosts()).toEqual([
       {
+        periodKey: "group-week-1",
+        guildId: "guild-1",
+        channelId: "channel-1",
+        messageId: "chaos-message-1-edited",
+        createdAt: "2026-06-22T12:00:00.000Z",
+        updatedAt: "2026-06-22T12:10:00.000Z"
+      },
+      {
+        periodKey: "group-week-2",
         guildId: "guild-1",
         channelId: "channel-1",
         messageId: "chaos-message-2",

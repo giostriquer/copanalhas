@@ -216,22 +216,39 @@ describe("dev log formatting", () => {
     expect(
       formatChaosDashboardLog({
         action: "updated",
-        post: { messageId: "chaos-message-1", action: "posted" },
-        weekStart: "2026-06-22",
-        renderState: "image"
+        posted: [
+          {
+            periodKey: "group-week-1",
+            messageId: "chaos-message-1",
+            action: "posted",
+            renderState: "image"
+          }
+        ],
+        skipped: [
+          { periodKey: "group-week-2", reason: "incomplete" },
+          { periodKey: "group-week-3", reason: "incomplete" }
+        ]
       })
-    ).toBe("[dashboard] chaos action=posted message=chaos-message-1 week=2026-06-22 render=image");
+    ).toBe(
+      "[dashboard] recap posts=1 posted=1 edited=0 replaced=0 skipped=2 incomplete=2 alreadyPosted=0 periods=group-week-1"
+    );
 
     expect(
       formatChaosDashboardLog({
         action: "updated",
-        post: { messageId: "chaos-message-1", action: "edited" },
-        weekStart: "2026-06-22",
-        renderState: "text-fallback",
-        renderError: "sharp failed badly"
+        posted: [
+          {
+            periodKey: "group-week-1",
+            messageId: "chaos-message-1",
+            action: "edited",
+            renderState: "text-fallback",
+            renderError: "sharp failed badly"
+          }
+        ],
+        skipped: []
       })
     ).toBe(
-      "[dashboard] chaos action=edited message=chaos-message-1 week=2026-06-22 render=text-fallback error=sharp failed badly"
+      "[dashboard] recap posts=1 posted=0 edited=1 replaced=0 skipped=0 incomplete=0 alreadyPosted=0 periods=group-week-1 errors=group-week-1:sharp failed badly"
     );
   });
 });

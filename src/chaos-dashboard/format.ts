@@ -19,7 +19,7 @@ export function createChaosDashboardMessage(
     content: [
       `**${CHAOS_DASHBOARD_TITLE}**`,
       `Atualizado: ${model.generatedAtLabel}`,
-      `Semana: ${model.week.label}`,
+      `Periodo: ${model.period.label}`,
       `Jogos pontuados: ${model.totals.scoredMatches} | Palpites: ${model.totals.predictions}`,
       png ? "Imagem atualizada." : "Imagem indisponivel no momento; usando fallback de texto.",
       "",

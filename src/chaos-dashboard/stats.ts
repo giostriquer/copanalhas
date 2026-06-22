@@ -22,6 +22,7 @@ export interface BuildChaosDashboardModelOptions {
   matches: readonly WorldCupMatch[];
   predictions: readonly ScorePrediction[];
   results: readonly MatchResult[];
+  period?: { key: string; label: string };
   displayNames?: ReadonlyMap<string, string>;
   previousWeekRows: readonly ChaosWeeklySnapshotRow[];
   now: Date;
@@ -70,6 +71,7 @@ export function buildChaosDashboardModel(
   return {
     title: "Copanalhas Recap",
     generatedAtLabel: formatDashboardTimestamp(options.now, options.timeZone),
+    period: options.period ?? { key: "live", label: `Semana ${week.label}` },
     week,
     totals: {
       scoredMatches: options.results.length,

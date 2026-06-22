@@ -246,7 +246,7 @@ export async function startCopanalhasBotRuntime(
     await runBracketDashboardRefresh(options, operatorCommandOptions.updateBracketDashboard);
   }
   if (hasChaosDashboardDependencies(options)) {
-    await runChaosDashboardRefresh(options, operatorCommandOptions.updateChaosDashboard);
+    await runChaosDashboardRefresh(options, () => operatorCommandOptions.updateChaosDashboard(false));
   }
   await runAutoPost(options, operatorCommandOptions, autoPostState);
   await runPredictionReveals(options);
@@ -417,7 +417,7 @@ function createOperatorCommandOptions(
 
     return result;
   };
-  const updateChaosDashboardForRuntime = async () => {
+  const updateChaosDashboardForRuntime = async (refreshExisting = true) => {
     if (!hasChaosDashboardDependencies(options)) {
       throw new Error("Chaos dashboard dependencies are not configured.");
     }
@@ -430,6 +430,7 @@ function createOperatorCommandOptions(
       results: options.store.listResults(),
       timeZone: options.config.timezone,
       now: options.now,
+      refreshExisting,
       listChaosDashboardPosts: () => options.store.listChaosDashboardPosts(),
       recordChaosDashboardPost: (post) => options.store.recordChaosDashboardPost(post),
       listChaosWeeklySnapshotRows: (weekStart, guildId, channelId) =>
@@ -457,7 +458,7 @@ function createOperatorCommandOptions(
     updateStandingsDashboard: updateStandingsDashboardForRuntime,
     updateLeaderboardDashboard: updateLeaderboardDashboardForRuntime,
     updateBracketDashboard: updateBracketDashboardForRuntime,
-    updateChaosDashboard: updateChaosDashboardForRuntime
+    updateChaosDashboard: () => updateChaosDashboardForRuntime(false)
   };
 
   return {
@@ -788,7 +789,7 @@ async function runResultSync(
       await runBracketDashboardRefresh(options, operatorCommandOptions.updateBracketDashboard);
     }
     if (hasChaosDashboardDependencies(options)) {
-      await runChaosDashboardRefresh(options, operatorCommandOptions.updateChaosDashboard);
+      await runChaosDashboardRefresh(options, () => operatorCommandOptions.updateChaosDashboard(false));
     }
     await runPredictionResultReveals(options);
     await runMatchStartAlerts(options);
@@ -908,9 +909,9 @@ function createOperatorHealthSnapshot(
       (post) =>
         post.guildId === options.config.guildId && post.channelId === options.config.channelId
     );
-  const chaosDashboardPost = options.store
+  const chaosDashboardPosts = options.store
     .listChaosDashboardPosts()
-    .find(
+    .filter(
       (post) =>
         post.guildId === options.config.guildId && post.channelId === options.config.channelId
     );
@@ -964,8 +965,10 @@ function createOperatorHealthSnapshot(
       lastUpdatedAt: bracketPost?.updatedAt ?? null
     },
     chaosDashboardPost: {
-      present: chaosDashboardPost !== undefined,
-      lastUpdatedAt: chaosDashboardPost?.updatedAt ?? null
+      present: chaosDashboardPosts.length > 0,
+      count: chaosDashboardPosts.length,
+      periodKeys: chaosDashboardPosts.map((post) => post.periodKey).sort(),
+      lastUpdatedAt: latestTimestamp(chaosDashboardPosts.map((post) => post.updatedAt))
     },
     data: {
       matchesLoaded: options.matches.length,

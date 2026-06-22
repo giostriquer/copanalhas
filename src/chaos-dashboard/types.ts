@@ -3,6 +3,7 @@ import type { LeaderboardRow } from "../scoring/scoring.js";
 export interface ChaosDashboardModel {
   title: "Copanalhas Recap";
   generatedAtLabel: string;
+  period: ChaosRecapPeriodSummary;
   week: ChaosWeek;
   totals: ChaosTotals;
   leaderboardTop: ChaosLeaderboardRow[];
@@ -10,6 +11,11 @@ export interface ChaosDashboardModel {
   peopleAwards: ChaosPeopleAward[];
   matchAwards: ChaosMatchAward[];
   footer: string;
+}
+
+export interface ChaosRecapPeriodSummary {
+  key: string;
+  label: string;
 }
 
 export interface ChaosWeek {

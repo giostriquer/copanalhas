@@ -137,16 +137,17 @@ result-sync action, standings post health, leaderboard post health, and bracket
 post health. Use it after starting the bot to confirm that catch-up ran and the
 process is ready for members.
 
-The main public dashboard is five persistent messages in the configured
-channel:
+The main public dashboard surface starts with four persistent messages in the
+configured channel:
 
 - World Cup 2026 Group Standings, Groups A-F
 - World Cup 2026 Group Standings, Groups G-L
 - Copanalhas Leaderboard
 - World Cup 2026 Bracket
-- Copanalhas Recap
 
-The standings, leaderboard, bracket, and chaos dashboard messages are edited in place.
+The standings, leaderboard, and bracket messages are edited in place. Copanalhas
+Recap posts are different: each completed recap period gets its own durable
+message so members can compare week and phase artifacts side by side.
 Startup posts or repairs missing dashboard messages. Automatic result sync,
 manual result entry, forced result sync, and `reset-test-date` refresh the
 affected dashboards so the channel does not fill with new scoreboard messages.
@@ -171,14 +172,22 @@ qualification resolver. If FIFA tiebreakers still need manual review, the
 bracket reports that blocked state instead of guessing. Operators can run
 `/copanalhas bracket` to refresh only the bracket dashboard.
 
-The chaos dashboard is a deterministic PNG generated from reviewed match data,
+`Copanalhas Recap` is a deterministic PNG generated from reviewed match data,
 stored predictions, stored final results, and the official scoring output. It
-shows a permanent `Copanalhas Recap` with the top leaderboard rows, calendar-week
-movement, roast-style people awards, and match-level chaos stats. It stores only
-the persistent Discord message pointer and lightweight weekly leaderboard
-baselines needed to compare movement; it does not store raw private message
-content. Operators can run `/copanalhas copanalhas-recap-painel` to refresh only this
-dashboard.
+posts one durable image per completed tournament period. For the current
+reviewed group-stage seed, the automatic recap periods are:
+
+- `group-week-1`: matches #1-#24
+- `group-week-2`: matches #25-#48
+- `group-week-3`: matches #49-#72
+
+A period is eligible only after every match in that period has a stored final
+result. Startup and result sync backfill completed periods that do not already
+have recap posts; they do not live-edit older completed period artifacts after
+unrelated later matches. Operators can run `/copanalhas copanalhas-recap-painel`
+to intentionally refresh/backfill completed recap posts. The feature stores only
+the Discord message pointer per period and lightweight derived snapshot rows; it
+does not store raw private message content.
 
 Prediction reveal posts are automatic. Every minute, the bot checks for matches
 whose prediction cutoff has passed, groups matches that share the same cutoff
@@ -204,8 +213,9 @@ late result sync. If the bot misses the early window, it can still catch up for
 `reset-test-date` is the broader smoke-test reset. It clears posted-card dedupe
 records, predictions, prediction reveal records, match-start alert records, and
 results for matches on the selected date, then refreshes standings, leaderboard,
-bracket, and chaos dashboards so temporary manual results do not keep affecting
-public tables or generated images.
+bracket, and due recap backfills so temporary manual results do not keep
+affecting public tables. Durable recap artifacts already posted to Discord are
+not automatically deleted by reset commands.
 
 `meus-palpites` is member-facing and private. It defaults to the active
 operational matchday and shows only that matchday's predictions for the caller.

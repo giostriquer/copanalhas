@@ -27,7 +27,7 @@ export function renderChaosDashboardSvg(model: ChaosDashboardModel): string {
     '<rect width="100%" height="100%" fill="#111827"/>',
     '<rect x="0" y="0" width="100%" height="122" fill="#f9c74f"/>',
     text(model.title, margin, 52, 34, "#111827", 900),
-    text(`Resumo ate agora + semana ${model.week.label}`, margin, 82, 15, "#263040", 700),
+    text(`Resumo do periodo: ${model.period.label}`, margin, 82, 15, "#263040", 700),
     text(`Atualizado: ${model.generatedAtLabel}`, width - margin, 56, 14, "#263040", 700, "end"),
     text(
       `${model.totals.scoredMatches} jogos pontuados  |  ${model.totals.predictions} palpites  |  ${model.totals.finishedPredictions} palpites finalizados`,

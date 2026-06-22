@@ -7,9 +7,15 @@ import {
 import { renderChaosDashboardSvg } from "../chaos-dashboard/svg.js";
 import {
   buildChaosDashboardModel,
-  createWeeklySnapshotRows,
-  weekStartKey
+  createWeeklySnapshotRows
 } from "../chaos-dashboard/stats.js";
+import {
+  filterPredictionsForChaosRecapPeriod,
+  filterResultsForChaosRecapPeriod,
+  listChaosRecapPeriods,
+  matchesForChaosRecapPeriod,
+  type ChaosRecapPeriod
+} from "../chaos-dashboard/periods.js";
 import type { ChaosWeeklySnapshotRow } from "../chaos-dashboard/types.js";
 import { buildLeaderboard, scoreMatch, type MatchResult, type ScorePrediction } from "../scoring/scoring.js";
 import type {
@@ -26,6 +32,7 @@ export interface UpdateChaosDashboardOptions {
   results: readonly MatchResult[];
   timeZone: string;
   now(): Date;
+  refreshExisting?: boolean;
   listChaosDashboardPosts(): StoredChaosDashboardPost[];
   recordChaosDashboardPost(post: StoredChaosDashboardPost): void;
   listChaosWeeklySnapshotRows(
@@ -50,62 +57,132 @@ export interface UpdateChaosDashboardOptions {
 
 export interface UpdateChaosDashboardResult {
   action: "updated";
-  post: UpdatedChaosDashboardPost;
-  weekStart: string;
+  posted: UpdatedChaosDashboardPost[];
+  skipped: SkippedChaosRecapPeriod[];
+}
+
+export interface UpdatedChaosDashboardPost {
+  periodKey: string;
+  messageId: string;
+  action: "posted" | "edited" | "replaced";
   renderState: "image" | "text-fallback";
   renderError?: string;
 }
 
-export interface UpdatedChaosDashboardPost {
-  messageId: string;
-  action: "posted" | "edited" | "replaced";
+export interface SkippedChaosRecapPeriod {
+  periodKey: string;
+  reason: "incomplete" | "already-posted";
 }
 
-export async function updateChaosDashboard(
+export async function updateChaosRecaps(
   options: UpdateChaosDashboardOptions
 ): Promise<UpdateChaosDashboardResult> {
   const timestamp = options.now().toISOString();
   const updatedAt = new Date(timestamp);
-  const weekStart = weekStartKey(updatedAt, options.timeZone);
-  const existing = matchingPost(options);
-  const scoredPredictions = options.results.flatMap((result) =>
-    scoreMatch(result, [...options.predictions])
+  const periods = listChaosRecapPeriods(options.matches);
+  const posted: UpdatedChaosDashboardPost[] = [];
+  const skipped: SkippedChaosRecapPeriod[] = [];
+
+  for (const period of periods) {
+    const periodMatches = matchesForChaosRecapPeriod(period, options.matches);
+    const periodResults = filterResultsForChaosRecapPeriod(
+      period,
+      options.matches,
+      options.results
+    );
+
+    if (periodResults.length < periodMatches.length) {
+      skipped.push({ periodKey: period.key, reason: "incomplete" });
+      continue;
+    }
+
+    const existing = matchingPost(options, period.key);
+
+    if (existing && options.refreshExisting === false) {
+      skipped.push({ periodKey: period.key, reason: "already-posted" });
+      continue;
+    }
+
+    const periodPredictions = filterPredictionsForChaosRecapPeriod(
+      period,
+      options.matches,
+      options.predictions
+    );
+    const post = await updateChaosRecapPeriod({
+      options,
+      period,
+      periodMatches,
+      periodPredictions,
+      periodResults,
+      existing,
+      timestamp,
+      updatedAt
+    });
+
+    posted.push(post);
+  }
+
+  return {
+    action: "updated",
+    posted,
+    skipped
+  };
+}
+
+export const updateChaosDashboard = updateChaosRecaps;
+
+async function updateChaosRecapPeriod(input: {
+  options: UpdateChaosDashboardOptions;
+  period: ChaosRecapPeriod;
+  periodMatches: readonly WorldCupMatch[];
+  periodPredictions: readonly ScorePrediction[];
+  periodResults: readonly MatchResult[];
+  existing: StoredChaosDashboardPost | undefined;
+  timestamp: string;
+  updatedAt: Date;
+}): Promise<UpdatedChaosDashboardPost> {
+  const scoredPredictions = input.periodResults.flatMap((result) =>
+    scoreMatch(result, [...input.periodPredictions])
   );
-  const leaderboardRows = buildLeaderboard(scoredPredictions, options.predictions);
+  const leaderboardRows = buildLeaderboard(scoredPredictions, input.periodPredictions);
   const userIds = leaderboardRows.map((row) => row.userId);
-  const displayNames = await resolveDisplayNames(options, userIds);
-  const previousWeekRows = options.listChaosWeeklySnapshotRows(
-    weekStart,
-    options.guildId,
-    options.channelId
+  const displayNames = await resolveDisplayNames(input.options, userIds);
+  const previousWeekRows = input.options.listChaosWeeklySnapshotRows(
+    input.period.key,
+    input.options.guildId,
+    input.options.channelId
   );
 
   if (previousWeekRows.length === 0) {
-    options.recordChaosWeeklySnapshotRows(
-      weekStart,
-      options.guildId,
-      options.channelId,
+    input.options.recordChaosWeeklySnapshotRows(
+      input.period.key,
+      input.options.guildId,
+      input.options.channelId,
       createWeeklySnapshotRows(leaderboardRows),
-      timestamp
+      input.timestamp
     );
   }
 
   const model = buildChaosDashboardModel({
-    matches: options.matches,
-    predictions: options.predictions,
-    results: options.results,
+    matches: input.periodMatches,
+    predictions: input.periodPredictions,
+    results: input.periodResults,
+    period: {
+      key: input.period.key,
+      label: input.period.label
+    },
     displayNames,
     previousWeekRows,
-    now: updatedAt,
-    timeZone: options.timeZone
+    now: input.updatedAt,
+    timeZone: input.options.timeZone
   });
   let message: ChaosDashboardMessage;
-  let renderState: UpdateChaosDashboardResult["renderState"] = "image";
+  let renderState: UpdatedChaosDashboardPost["renderState"] = "image";
   let renderError: string | undefined;
 
   try {
     const svg = renderChaosDashboardSvg(model);
-    const png = await options.renderPng(svg);
+    const png = await input.options.renderPng(svg);
     message = createChaosDashboardMessage(model, png);
   } catch (error) {
     renderState = "text-fallback";
@@ -113,27 +190,25 @@ export async function updateChaosDashboard(
     message = createChaosDashboardMessage(model, null);
   }
 
-  const messageId = await options.upsertChaosDashboardMessage(
+  const messageId = await input.options.upsertChaosDashboardMessage(
     message,
-    existing?.messageId ?? null
+    input.existing?.messageId ?? null
   );
-  const postAction = actionForPost(existing?.messageId ?? null, messageId);
+  const postAction = actionForPost(input.existing?.messageId ?? null, messageId);
 
-  options.recordChaosDashboardPost({
-    guildId: options.guildId,
-    channelId: options.channelId,
+  input.options.recordChaosDashboardPost({
+    periodKey: input.period.key,
+    guildId: input.options.guildId,
+    channelId: input.options.channelId,
     messageId,
-    createdAt: existing?.createdAt ?? timestamp,
-    updatedAt: timestamp
+    createdAt: input.existing?.createdAt ?? input.timestamp,
+    updatedAt: input.timestamp
   });
 
   return {
-    action: "updated",
-    post: {
-      messageId,
-      action: postAction
-    },
-    weekStart,
+    periodKey: input.period.key,
+    messageId,
+    action: postAction,
     renderState,
     ...(renderError ? { renderError } : {})
   };
@@ -155,11 +230,17 @@ async function resolveDisplayNames(
 }
 
 function matchingPost(
-  options: Pick<UpdateChaosDashboardOptions, "guildId" | "channelId" | "listChaosDashboardPosts">
+  options: Pick<UpdateChaosDashboardOptions, "guildId" | "channelId" | "listChaosDashboardPosts">,
+  periodKey: string
 ): StoredChaosDashboardPost | undefined {
   return options
     .listChaosDashboardPosts()
-    .find((post) => post.guildId === options.guildId && post.channelId === options.channelId);
+    .find(
+      (post) =>
+        post.periodKey === periodKey &&
+        post.guildId === options.guildId &&
+        post.channelId === options.channelId
+    );
 }
 
 function actionForPost(

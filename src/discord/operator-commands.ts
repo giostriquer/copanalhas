@@ -91,7 +91,7 @@ export interface OperatorCommandOptions {
   listBracketPosts(): StoredBracketPost[];
   updateBracketDashboard(): Promise<UpdateBracketDashboardResult>;
   listChaosDashboardPosts(): StoredChaosDashboardPost[];
-  updateChaosDashboard(): Promise<UpdateChaosDashboardResult>;
+  updateChaosDashboard(refreshExisting?: boolean): Promise<UpdateChaosDashboardResult>;
   syncResultsNow(): Promise<RuntimeResultSyncStatus>;
   repostPredictionReveal(matchId: string): Promise<RepostPredictionRevealResult>;
   updatePredictionResultReveals?(): Promise<unknown>;
@@ -238,7 +238,7 @@ export async function handleOperatorCommand(
     await options.updateStandingsDashboard();
     await options.updateLeaderboardDashboard();
     await options.updateBracketDashboard();
-    await options.updateChaosDashboard();
+    await options.updateChaosDashboard(false);
 
     return reply(
       [
@@ -327,9 +327,11 @@ export async function handleOperatorCommand(
     try {
       const result = await options.updateChaosDashboard();
 
-      return reply(`Updated chaos dashboard: ${result.post.action} (${result.renderState}).`);
+      return reply(
+        `Updated Copanalhas Recap: ${formatChaosRecapUpdateSummary(result)}.`
+      );
     } catch (error) {
-      return reply(`Failed to update chaos dashboard: ${errorMessage(error)}.`);
+      return reply(`Failed to update Copanalhas Recap: ${errorMessage(error)}.`);
     }
   }
 
@@ -428,7 +430,7 @@ export async function handleOperatorCommand(
     await options.updateStandingsDashboard();
     await options.updateLeaderboardDashboard();
     await options.updateBracketDashboard();
-    await options.updateChaosDashboard();
+    await options.updateChaosDashboard(false);
     await options.updatePredictionResultReveals?.();
 
     return reply(`Recorded result ${match.id} ${parsedScore.score.normalizedText}.`);
@@ -821,18 +823,43 @@ function formatBracketStatus(
   ];
 }
 
+function formatChaosRecapUpdateSummary(result: UpdateChaosDashboardResult): string {
+  const posted = result.posted.filter((post) => post.action === "posted").length;
+  const edited = result.posted.filter((post) => post.action === "edited").length;
+  const replaced = result.posted.filter((post) => post.action === "replaced").length;
+  const incomplete = result.skipped.filter((period) => period.reason === "incomplete").length;
+  const alreadyPosted = result.skipped.filter(
+    (period) => period.reason === "already-posted"
+  ).length;
+
+  return [
+    `${result.posted.length} recaps updated`,
+    `posted=${posted}`,
+    `edited=${edited}`,
+    `replaced=${replaced}`,
+    `incomplete=${incomplete}`,
+    `alreadyPosted=${alreadyPosted}`
+  ].join(" ");
+}
+
 function formatChaosDashboardStatus(
   posts: StoredChaosDashboardPost[],
   guildId: string,
   channelId: string
 ): string[] {
-  const matchingPost = posts.find(
+  const matchingPosts = posts.filter(
     (post) => post.guildId === guildId && post.channelId === channelId
   );
+  const latestUpdatedAt = matchingPosts
+    .map((post) => post.updatedAt)
+    .sort()
+    .at(-1);
+  const periodKeys = matchingPosts.map((post) => post.periodKey).sort();
 
   return [
-    `Chaos dashboard: ${matchingPost ? "present" : "missing"}`,
-    `Chaos dashboard last updated: ${matchingPost?.updatedAt ?? "never"}`
+    `Copanalhas Recap posts: ${matchingPosts.length}`,
+    `Copanalhas Recap periods: ${periodKeys.length > 0 ? periodKeys.join(", ") : "none"}`,
+    `Copanalhas Recap last updated: ${latestUpdatedAt ?? "never"}`
   ];
 }
 

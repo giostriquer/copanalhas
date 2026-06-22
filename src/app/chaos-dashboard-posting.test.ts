@@ -2,7 +2,7 @@ import { Buffer } from "node:buffer";
 
 import { describe, expect, test, vi } from "vitest";
 
-import { updateChaosDashboard } from "./chaos-dashboard-posting.js";
+import { updateChaosRecaps } from "./chaos-dashboard-posting.js";
 import type { ChaosDashboardMessage } from "../chaos-dashboard/format.js";
 import type {
   StoredChaosDashboardPost,
@@ -12,8 +12,8 @@ import type {
 } from "../storage/database.js";
 import { WORLD_CUP_2026_SEED } from "../worldcup/seed.js";
 
-describe("updateChaosDashboard", () => {
-  test("posts and records the chaos dashboard when none exists", async () => {
+describe("updateChaosRecaps", () => {
+  test("posts and records only completed recap periods", async () => {
     const posts: StoredChaosDashboardPost[] = [];
     const snapshots: StoredChaosWeeklySnapshotRow[] = [];
     const png = Buffer.from("png");
@@ -28,8 +28,8 @@ describe("updateChaosDashboard", () => {
       return "chaos-message-1";
     });
 
-    const result = await updateChaosDashboard({
-      ...baseOptions(),
+    const result = await updateChaosRecaps({
+      ...baseOptionsWithCompletedGroupWeekOne(),
       listChaosDashboardPosts: () => posts,
       recordChaosDashboardPost: (post) => posts.push(post),
       listChaosWeeklySnapshotRows: () => snapshots,
@@ -50,15 +50,22 @@ describe("updateChaosDashboard", () => {
 
     expect(result).toEqual({
       action: "updated",
-      post: {
-        messageId: "chaos-message-1",
-        action: "posted"
-      },
-      weekStart: "2026-06-22",
-      renderState: "image"
+      posted: [
+        {
+          periodKey: "group-week-1",
+          messageId: "chaos-message-1",
+          action: "posted",
+          renderState: "image"
+        }
+      ],
+      skipped: [
+        { periodKey: "group-week-2", reason: "incomplete" },
+        { periodKey: "group-week-3", reason: "incomplete" }
+      ]
     });
     expect(posts).toEqual([
       {
+        periodKey: "group-week-1",
         guildId: "guild-1",
         channelId: "channel-1",
         messageId: "chaos-message-1",
@@ -69,15 +76,15 @@ describe("updateChaosDashboard", () => {
     expect(snapshots.length).toBeGreaterThan(0);
   });
 
-  test("edits an existing chaos dashboard and preserves created time", async () => {
-    const posts: StoredChaosDashboardPost[] = [existingPost()];
+  test("edits an existing recap period and preserves created time", async () => {
+    const posts: StoredChaosDashboardPost[] = [existingPost("group-week-1")];
     const upsertChaosDashboardMessage = vi.fn(async (_message, existingMessageId) => {
       expect(existingMessageId).toBe("chaos-message-1");
       return "chaos-message-1";
     });
 
-    const result = await updateChaosDashboard({
-      ...baseOptions(new Date("2026-06-24T15:35:00.000Z")),
+    const result = await updateChaosRecaps({
+      ...baseOptionsWithCompletedGroupWeekOne(new Date("2026-06-24T15:35:00.000Z")),
       listChaosDashboardPosts: () => posts,
       recordChaosDashboardPost: (post) => {
         posts.splice(0, posts.length, post);
@@ -88,11 +95,13 @@ describe("updateChaosDashboard", () => {
       upsertChaosDashboardMessage
     });
 
-    expect(result.post).toEqual({
+    expect(result.posted[0]).toMatchObject({
+      periodKey: "group-week-1",
       messageId: "chaos-message-1",
       action: "edited"
     });
     expect(posts[0]).toEqual({
+      periodKey: "group-week-1",
       guildId: "guild-1",
       channelId: "channel-1",
       messageId: "chaos-message-1",
@@ -102,10 +111,10 @@ describe("updateChaosDashboard", () => {
   });
 
   test("records a replacement when the adapter returns a new message id", async () => {
-    const posts: StoredChaosDashboardPost[] = [existingPost()];
+    const posts: StoredChaosDashboardPost[] = [existingPost("group-week-1")];
 
-    const result = await updateChaosDashboard({
-      ...baseOptions(),
+    const result = await updateChaosRecaps({
+      ...baseOptionsWithCompletedGroupWeekOne(),
       listChaosDashboardPosts: () => posts,
       recordChaosDashboardPost: (post) => {
         posts.splice(0, posts.length, post);
@@ -116,7 +125,8 @@ describe("updateChaosDashboard", () => {
       upsertChaosDashboardMessage: vi.fn(async () => "replacement-message")
     });
 
-    expect(result.post).toEqual({
+    expect(result.posted[0]).toMatchObject({
+      periodKey: "group-week-1",
       messageId: "replacement-message",
       action: "replaced"
     });
@@ -126,8 +136,8 @@ describe("updateChaosDashboard", () => {
   test("posts a text fallback when image rendering throws", async () => {
     const postedMessages: ChaosDashboardMessage[] = [];
 
-    const result = await updateChaosDashboard({
-      ...baseOptions(),
+    const result = await updateChaosRecaps({
+      ...baseOptionsWithCompletedGroupWeekOne(),
       listChaosDashboardPosts: () => [],
       recordChaosDashboardPost: vi.fn(),
       listChaosWeeklySnapshotRows: () => existingSnapshotRows(),
@@ -141,8 +151,11 @@ describe("updateChaosDashboard", () => {
       })
     });
 
-    expect(result.renderState).toBe("text-fallback");
-    expect(result.renderError).toBe("sharp failed");
+    expect(result.posted[0]).toMatchObject({
+      periodKey: "group-week-1",
+      renderState: "text-fallback",
+      renderError: "sharp failed"
+    });
     expect(postedMessages[0]?.files).toEqual([]);
     expect(postedMessages[0]?.content).toContain("Imagem indisponivel no momento");
   });
@@ -154,8 +167,8 @@ describe("updateChaosDashboard", () => {
     });
     let postedContent = "";
 
-    await updateChaosDashboard({
-      ...baseOptions(),
+    await updateChaosRecaps({
+      ...baseOptionsWithCompletedGroupWeekOne(),
       listChaosDashboardPosts: () => [],
       recordChaosDashboardPost: vi.fn(),
       listChaosWeeklySnapshotRows: () => existingSnapshotRows(),
@@ -173,7 +186,7 @@ describe("updateChaosDashboard", () => {
   });
 });
 
-function baseOptions(now = new Date("2026-06-24T15:30:00.000Z")) {
+function baseOptionsWithCompletedGroupWeekOne(now = new Date("2026-06-24T15:30:00.000Z")) {
   const firstMatch = WORLD_CUP_2026_SEED.matches[0]!;
 
   return {
@@ -184,14 +197,19 @@ function baseOptions(now = new Date("2026-06-24T15:30:00.000Z")) {
       prediction("user-a", firstMatch.id, 2, 1),
       prediction("user-b", firstMatch.id, 1, 0)
     ],
-    results: [resultFor(firstMatch.id, 2, 1)],
+    results: WORLD_CUP_2026_SEED.matches
+      .filter((match) => match.matchNumber <= 24)
+      .map((match) =>
+        match.id === firstMatch.id ? resultFor(match.id, 2, 1) : resultFor(match.id, 1, 0)
+      ),
     timeZone: "UTC",
     now: () => now
   };
 }
 
-function existingPost(): StoredChaosDashboardPost {
+function existingPost(periodKey: string): StoredChaosDashboardPost {
   return {
+    periodKey,
     guildId: "guild-1",
     channelId: "channel-1",
     messageId: "chaos-message-1",

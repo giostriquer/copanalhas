@@ -335,9 +335,8 @@ function operatorOptions(): OperatorCommandOptions {
     listChaosDashboardPosts: vi.fn(() => []),
     updateChaosDashboard: vi.fn(async () => ({
       action: "updated" as const,
-      post: { messageId: "chaos-message-1", action: "edited" as const },
-      weekStart: "2026-06-22",
-      renderState: "image" as const
+      posted: [],
+      skipped: []
     })),
     syncResultsNow: vi.fn(async () => ({
       action: "disabled" as const,

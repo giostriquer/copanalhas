@@ -1,5 +1,10 @@
 # Copanalhas Recap Dashboard Implementation Plan
 
+> Superseded: the live single-dashboard implementation plan in this document was
+> replaced by
+> `docs/superpowers/plans/2026-06-22-periodic-copanalhas-recap.md`. Keep the
+> stat/rendering ideas, but use durable period recap posts.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Build a permanent generated PNG Discord dashboard called `Copanalhas Recap` with people and match chaos stats, weekly movement, operator refresh, status, tests, and runtime hooks.

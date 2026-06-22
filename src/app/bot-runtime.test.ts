@@ -80,8 +80,8 @@ describe("startCopanalhasBotRuntime", () => {
     expect(store.recordLeaderboardPost).toHaveBeenCalledOnce();
     expect(upsertBracketMessage).toHaveBeenCalledOnce();
     expect(store.recordBracketPost).toHaveBeenCalledOnce();
-    expect(upsertChaosDashboardMessage).toHaveBeenCalledOnce();
-    expect(store.recordChaosDashboardPost).toHaveBeenCalledOnce();
+    expect(upsertChaosDashboardMessage).not.toHaveBeenCalled();
+    expect(store.recordChaosDashboardPost).not.toHaveBeenCalled();
     expect(writeLine).toHaveBeenCalledWith(
       "[2026-06-11T21:15:00.000Z][dashboard] standings posts=2 posted=2 edited=0 replaced=0"
     );
@@ -92,7 +92,7 @@ describe("startCopanalhasBotRuntime", () => {
       "[2026-06-11T21:15:00.000Z][dashboard] bracket action=posted message=bracket-message-1 phase=provisional render=image"
     );
     expect(writeLine).toHaveBeenCalledWith(
-      "[2026-06-11T21:15:00.000Z][dashboard] chaos action=posted message=chaos-message-1 week=2026-06-08 render=image"
+      "[2026-06-11T21:15:00.000Z][dashboard] recap posts=0 posted=0 edited=0 replaced=0 skipped=3 incomplete=3 alreadyPosted=0"
     );
     expect(writeLine).toHaveBeenCalledWith(
       "[2026-06-11T21:15:00.000Z][auto-post] date=2026-06-11 windowDays=3 posted=8 skipped=0"
@@ -104,10 +104,71 @@ describe("startCopanalhasBotRuntime", () => {
       "[2026-06-11T21:15:00.000Z][health] nextMatchday=2026-06-11 matches=2 posted=2/2"
     );
     expect(writeLine).toHaveBeenCalledWith(
-      "[2026-06-11T21:15:00.000Z][health] dashboards standings=2/2 leaderboard=present bracket=present chaos=present lastLeaderboard=2026-06-11T21:15:00.000Z lastBracket=2026-06-11T21:15:00.000Z lastChaos=2026-06-11T21:15:00.000Z"
+      "[2026-06-11T21:15:00.000Z][health] dashboards standings=2/2 leaderboard=present bracket=present recaps=0 recapPeriods=none lastLeaderboard=2026-06-11T21:15:00.000Z lastBracket=2026-06-11T21:15:00.000Z lastRecap=never"
     );
 
     await runtime.stop();
+  });
+
+  test("posts completed recap periods during startup backfill", async () => {
+    const store = {
+      ...createStore(),
+      listPredictions: vi.fn(() => [
+        {
+          userId: "user-a",
+          matchId: "wc2026-001",
+          messageId: "prediction-message-1",
+          homeScore: 1,
+          awayScore: 0,
+          submittedAt: "2026-06-10T12:00:00.000Z",
+          updatedAt: null,
+          parserVersion: "prediction-modal-v1"
+        }
+      ]),
+      listResults: vi.fn(() =>
+        WORLD_CUP_2026_SEED.matches
+          .filter((match) => match.matchNumber <= 24)
+          .map((match) => storedResult(match.id))
+      )
+    };
+    const upsertChaosDashboardMessage = vi.fn(async (message, existingMessageId) => {
+      expect(existingMessageId).toBeNull();
+      expect(message.content).toContain("Fase de grupos - semana 1");
+      return "recap-week-1";
+    });
+    const writeLine = vi.fn();
+
+    await startCopanalhasBotRuntime({
+      config: config(),
+      store,
+      matches: WORLD_CUP_2026_SEED.matches,
+      startDiscord: vi.fn(async () => ({ destroy: vi.fn(async () => undefined) })),
+      startInterval: vi.fn(() => ({ stop: vi.fn() })),
+      sendMatchCard: vi.fn(async () => "discord-message-1"),
+      sendPredictionReveal: vi.fn(async () => ({
+        threadId: "thread-1",
+        messageId: "reveal-message-1"
+      })),
+      upsertStandingsMessage: vi.fn(async (message) => `standings-${message.key}`),
+      upsertLeaderboardMessage: vi.fn(async () => "leaderboard-message-1"),
+      upsertBracketMessage: vi.fn(async () => "bracket-message-1"),
+      renderBracketPng: vi.fn(async () => Buffer.from("png")),
+      upsertChaosDashboardMessage,
+      renderChaosDashboardPng: vi.fn(async () => Buffer.from("png")),
+      now: () => new Date("2026-06-24T15:30:00.000Z"),
+      writeLine
+    });
+
+    expect(upsertChaosDashboardMessage).toHaveBeenCalledOnce();
+    expect(store.recordChaosDashboardPost).toHaveBeenCalledWith(
+      expect.objectContaining({
+        periodKey: "group-week-1",
+        messageId: "recap-week-1"
+      })
+    );
+    expect(writeLine).toHaveBeenCalledWith(
+      "[2026-06-24T15:30:00.000Z][dashboard] recap posts=1 posted=1 edited=0 replaced=0 skipped=2 incomplete=2 alreadyPosted=0 periods=group-week-1"
+    );
   });
 
   test("posts due matchday cards during startup catch-up", async () => {
@@ -460,7 +521,7 @@ describe("startCopanalhasBotRuntime", () => {
     expect(upsertStandingsMessage).toHaveBeenCalledTimes(2);
     expect(upsertLeaderboardMessage).toHaveBeenCalledOnce();
     expect(upsertBracketMessage).toHaveBeenCalledOnce();
-    expect(upsertChaosDashboardMessage).toHaveBeenCalledOnce();
+    expect(upsertChaosDashboardMessage).not.toHaveBeenCalled();
   });
 
   test("isolates bracket refresh failures from standings and leaderboard refreshes", async () => {
@@ -1096,8 +1157,8 @@ function createStore(): BotRuntimeStore {
       upsertBy(
         chaosDashboardPosts,
         post,
-        (stored) => `${stored.guildId}|${stored.channelId}`,
-        (next) => `${next.guildId}|${next.channelId}`
+        (stored) => `${stored.periodKey}|${stored.guildId}|${stored.channelId}`,
+        (next) => `${next.periodKey}|${next.guildId}|${next.channelId}`
       );
     }),
     listChaosWeeklySnapshotRows: vi.fn(() => chaosWeeklySnapshotRows),
@@ -1118,6 +1179,18 @@ function createStore(): BotRuntimeStore {
       }
     }),
     insertScoringRun: vi.fn()
+  };
+}
+
+function storedResult(matchId: string): StoredResult {
+  return {
+    matchId,
+    homeScore: 1,
+    awayScore: 0,
+    recordedAt: "2026-06-24T15:00:00.000Z",
+    resultSource: "manual",
+    externalMatchId: null,
+    fetchedAt: null
   };
 }
 

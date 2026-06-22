@@ -105,9 +105,15 @@ describe("handleOperatorCommand", () => {
     }));
     const updateChaosDashboard = vi.fn(async () => ({
       action: "updated" as const,
-      post: { messageId: "chaos-message-1", action: "edited" as const },
-      weekStart: "2026-06-22",
-      renderState: "image" as const
+      posted: [
+        {
+          periodKey: "group-week-1",
+          messageId: "chaos-message-1",
+          action: "edited" as const,
+          renderState: "image" as const
+        }
+      ],
+      skipped: []
     }));
 
     const result = await handleOperatorCommand(
@@ -152,7 +158,7 @@ describe("handleOperatorCommand", () => {
     expect(updateStandingsDashboard).toHaveBeenCalledOnce();
     expect(updateLeaderboardDashboard).toHaveBeenCalledOnce();
     expect(updateBracketDashboard).toHaveBeenCalledOnce();
-    expect(updateChaosDashboard).toHaveBeenCalledOnce();
+    expect(updateChaosDashboard).toHaveBeenCalledWith(false);
   });
 
   test("status reports today's automation state and recent catch-up results", async () => {
@@ -178,10 +184,10 @@ describe("handleOperatorCommand", () => {
         "Next result-sync check: 2026-06-11T20:50:00.000Z (2 pending)",
         "Last auto-post: posted 1, skipped 1 across 3 days from 2026-06-11",
         "Last result sync: waiting for 2 pending matches; next check 2026-06-11T20:50:00.000Z",
-        "Dashboards: standings 1/2, leaderboard present, bracket present, chaos present",
+        "Dashboards: standings 1/2, leaderboard present, bracket present, recaps 2",
         "Last leaderboard update: 2026-06-11T18:00:00.000Z",
         "Last bracket update: 2026-06-11T18:05:00.000Z",
-        "Last chaos update: 2026-06-11T18:10:00.000Z",
+        "Last recap update: 2026-06-11T18:10:00.000Z",
         "Data: 72 matches loaded, 0 missing kickoff times"
       ].join("\n"),
       ephemeral: true
@@ -291,9 +297,21 @@ describe("handleOperatorCommand", () => {
   test("copanalhas-recap-painel posts or updates the chaos dashboard", async () => {
     const updateChaosDashboard = vi.fn(async () => ({
       action: "updated" as const,
-      post: { messageId: "chaos-message-1", action: "edited" as const },
-      weekStart: "2026-06-22",
-      renderState: "image" as const
+      posted: [
+        {
+          periodKey: "group-week-1",
+          messageId: "chaos-message-1",
+          action: "posted" as const,
+          renderState: "image" as const
+        },
+        {
+          periodKey: "group-week-2",
+          messageId: "chaos-message-2",
+          action: "edited" as const,
+          renderState: "image" as const
+        }
+      ],
+      skipped: [{ periodKey: "group-week-3", reason: "incomplete" as const }]
     }));
 
     const result = await handleOperatorCommand(
@@ -303,10 +321,11 @@ describe("handleOperatorCommand", () => {
 
     expect(result).toEqual({
       action: "replied",
-      content: "Updated chaos dashboard: edited (image).",
+      content:
+        "Updated Copanalhas Recap: 2 recaps updated posted=1 edited=1 replaced=0 incomplete=1 alreadyPosted=0.",
       ephemeral: true
     });
-    expect(updateChaosDashboard).toHaveBeenCalledOnce();
+    expect(updateChaosDashboard).toHaveBeenCalledWith();
   });
 
   test("copanalhas-recap-painel returns a private failure reply when refresh fails", async () => {
@@ -321,7 +340,7 @@ describe("handleOperatorCommand", () => {
 
     expect(result).toEqual({
       action: "replied",
-      content: "Failed to update chaos dashboard: Discord upload failed.",
+      content: "Failed to update Copanalhas Recap: Discord upload failed.",
       ephemeral: true
     });
   });
@@ -873,9 +892,8 @@ function options(overrides: Partial<OperatorCommandOptions> = {}): OperatorComma
     listChaosDashboardPosts: vi.fn(() => []),
     updateChaosDashboard: vi.fn(async () => ({
       action: "updated" as const,
-      post: { messageId: "chaos-message-1", action: "edited" as const },
-      weekStart: "2026-06-22",
-      renderState: "image" as const
+      posted: [],
+      skipped: []
     })),
     syncResultsNow: vi.fn(async () => ({
       action: "disabled" as const,
@@ -1048,6 +1066,8 @@ function operatorHealthSnapshot(): OperatorHealthSnapshot {
     },
     chaosDashboardPost: {
       present: true,
+      count: 2,
+      periodKeys: ["group-week-1", "group-week-2"],
       lastUpdatedAt: "2026-06-11T18:10:00.000Z"
     },
     data: {

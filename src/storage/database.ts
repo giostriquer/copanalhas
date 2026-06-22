@@ -64,6 +64,7 @@ export interface StoredBracketPost {
 }
 
 export interface StoredChaosDashboardPost {
+  periodKey: string;
   guildId: string;
   channelId: string;
   messageId: string;
@@ -190,12 +191,13 @@ export class CopanalhasDatabase {
       ) STRICT;
 
       CREATE TABLE IF NOT EXISTS chaos_dashboard_posts (
+        period_key TEXT NOT NULL,
         guild_id TEXT NOT NULL,
         channel_id TEXT NOT NULL,
         message_id TEXT NOT NULL,
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL,
-        PRIMARY KEY (guild_id, channel_id)
+        PRIMARY KEY (period_key, guild_id, channel_id)
       ) STRICT;
 
       CREATE TABLE IF NOT EXISTS chaos_weekly_snapshots (
@@ -248,6 +250,50 @@ export class CopanalhasDatabase {
     this.ensureColumn("results", "external_match_id", "TEXT");
     this.ensureColumn("results", "fetched_at", "TEXT");
     this.ensureColumn("prediction_reveal_posts", "result_revealed_at", "TEXT");
+    this.migrateChaosDashboardPostsPeriodKey();
+  }
+
+  private migrateChaosDashboardPostsPeriodKey(): void {
+    const columns = this.database.prepare("PRAGMA table_info(chaos_dashboard_posts)").all() as Array<{
+      name: string;
+    }>;
+
+    if (columns.some((column) => column.name === "period_key")) {
+      return;
+    }
+
+    this.database.exec(`
+      ALTER TABLE chaos_dashboard_posts RENAME TO chaos_dashboard_posts_legacy;
+
+      CREATE TABLE chaos_dashboard_posts (
+        period_key TEXT NOT NULL,
+        guild_id TEXT NOT NULL,
+        channel_id TEXT NOT NULL,
+        message_id TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        PRIMARY KEY (period_key, guild_id, channel_id)
+      ) STRICT;
+
+      INSERT INTO chaos_dashboard_posts (
+        period_key,
+        guild_id,
+        channel_id,
+        message_id,
+        created_at,
+        updated_at
+      )
+      SELECT
+        'legacy-live-dashboard',
+        guild_id,
+        channel_id,
+        message_id,
+        created_at,
+        updated_at
+      FROM chaos_dashboard_posts_legacy;
+
+      DROP TABLE chaos_dashboard_posts_legacy;
+    `);
   }
 
   upsertMatches(matches: WorldCupMatch[]): void {
@@ -715,27 +761,36 @@ export class CopanalhasDatabase {
     this.database
       .prepare(`
         INSERT INTO chaos_dashboard_posts (
+          period_key,
           guild_id,
           channel_id,
           message_id,
           created_at,
           updated_at
         )
-        VALUES (?, ?, ?, ?, ?)
-        ON CONFLICT(guild_id, channel_id) DO UPDATE SET
+        VALUES (?, ?, ?, ?, ?, ?)
+        ON CONFLICT(period_key, guild_id, channel_id) DO UPDATE SET
           message_id = excluded.message_id,
           created_at = excluded.created_at,
           updated_at = excluded.updated_at
       `)
-      .run(post.guildId, post.channelId, post.messageId, post.createdAt, post.updatedAt);
+      .run(
+        post.periodKey,
+        post.guildId,
+        post.channelId,
+        post.messageId,
+        post.createdAt,
+        post.updatedAt
+      );
   }
 
   listChaosDashboardPosts(): StoredChaosDashboardPost[] {
     const rows = this.database
-      .prepare("SELECT * FROM chaos_dashboard_posts ORDER BY guild_id, channel_id")
+      .prepare("SELECT * FROM chaos_dashboard_posts ORDER BY period_key, guild_id, channel_id")
       .all() as unknown as ChaosDashboardPostRow[];
 
     return rows.map((row) => ({
+      periodKey: row.period_key,
       guildId: row.guild_id,
       channelId: row.channel_id,
       messageId: row.message_id,
@@ -961,6 +1016,7 @@ interface BracketPostRow {
 }
 
 interface ChaosDashboardPostRow {
+  period_key: string;
   guild_id: string;
   channel_id: string;
   message_id: string;
