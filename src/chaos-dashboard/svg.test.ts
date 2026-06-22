@@ -41,6 +41,42 @@ describe("chaos dashboard SVG renderer", () => {
     expect(subtitleY - valueY).toBeGreaterThanOrEqual(18);
   });
 
+  test("renders the leader of the week as a spacious profile card with aligned stat chips", () => {
+    const svg = renderChaosDashboardSvg(
+      sampleChaosDashboardModel({
+        leaderboardTop: [],
+        peopleAwards: [],
+        matchAwards: [],
+        leaderOfWeek: {
+          userId: "leader",
+          displayName: "Pessoa Central",
+          points: 23,
+          soloCount: 1,
+          exactCount: 4,
+          outcomeCount: 3,
+          closestCount: 0,
+          avatarDataUri: "data:image/png;base64,leader-avatar"
+        }
+      })
+    );
+
+    expect(svg).toContain('height="152"');
+    expect(svg).toContain("Pessoa Central");
+    expect(svg).toContain("Solo 1");
+    expect(svg).toContain("Exato 4");
+    expect(svg).toContain("Resultado 3");
+    expect(svg).toContain("Perto 0");
+    expect(svg).not.toContain("Solo 1   Exato 4");
+    expect(svg).not.toContain("Resultado 3   Perto 0");
+
+    const titleY = textY(svg, "Lider da Semana");
+    const pointsY = textY(svg, "23 pts");
+    const soloY = textY(svg, "Solo 1");
+
+    expect(pointsY - titleY).toBeGreaterThanOrEqual(48);
+    expect(soloY - pointsY).toBeGreaterThanOrEqual(28);
+  });
+
   test("escapes user and match text before writing SVG", () => {
     const model = sampleChaosDashboardModel({
       leaderboardTop: [

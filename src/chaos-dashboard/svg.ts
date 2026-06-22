@@ -46,7 +46,7 @@ export function renderChaosDashboardSvg(model: ChaosDashboardModel): string {
     renderPanel(leftX, contentTop, leftWidth, panelHeight, "Placar Principal", [
       ...renderLeaderboard(model.leaderboardTop, leftX + 18, contentTop + 56),
       ...renderLeaderCard(model.leaderOfWeek, leftX + 18, contentTop + 276),
-      ...renderMovement(model.weeklyMovement, leftX + 18, contentTop + 436)
+      ...renderMovement(model.weeklyMovement, leftX + 18, contentTop + 456)
     ]),
     renderPanel(centerX, contentTop, centerWidth, panelHeight, "Genios e Copazus", renderPeopleAwards(model.peopleAwards)),
     renderPanel(rightX, contentTop, rightWidth, panelHeight, "Highlights", renderMatchAwards(model.matchAwards)),
@@ -63,11 +63,17 @@ function renderLeaderCard(
     return [];
   }
 
-  const avatarSize = 76;
+  const cardHeight = 152;
+  const avatarSize = 88;
   const avatarX = x + 18;
-  const avatarY = y + 22;
+  const avatarY = y + 32;
   const avatarCenterX = avatarX + avatarSize / 2;
   const avatarCenterY = avatarY + avatarSize / 2;
+  const textX = x + 124;
+  const chipY = y + 102;
+  const chipWidth = 116;
+  const chipHeight = 18;
+  const chipGap = 8;
   const clipId = "chaos-leader-avatar";
   const avatar = leader.avatarDataUri
     ? [
@@ -80,15 +86,38 @@ function renderLeaderCard(
       ];
 
   return [
-    `<rect x="${x - 8}" y="${y}" width="${leftWidth - 20}" height="120" rx="8" fill="#f8fafc"/>`,
-    `<rect x="${x - 8}" y="${y}" width="6" height="120" rx="3" fill="${brazilGreen}"/>`,
+    `<rect x="${x - 8}" y="${y}" width="${leftWidth - 20}" height="${cardHeight}" rx="8" fill="#f8fafc"/>`,
+    `<rect x="${x - 8}" y="${y}" width="6" height="${cardHeight}" rx="3" fill="${brazilGreen}"/>`,
     ...avatar,
     `<circle cx="${avatarCenterX}" cy="${avatarCenterY}" r="${avatarSize / 2}" fill="none" stroke="${brazilYellow}" stroke-width="4"/>`,
-    text("Lider da Semana", x + 112, y + 30, 13, brazilBlue, 900),
-    text(truncate(leader.displayName, 22), x + 112, y + 58, 19, "#111827", 900),
-    text(`${leader.points} pts`, x + 112, y + 84, 16, brazilBlue, 900),
-    text(`Solo ${leader.soloCount}   Exato ${leader.exactCount}`, x + 112, y + 102, 10, "#475569", 800),
-    text(`Resultado ${leader.outcomeCount}   Perto ${leader.closestCount}`, x + 112, y + 116, 10, "#475569", 800)
+    text("Lider da Semana", textX, y + 30, 13, brazilBlue, 900),
+    text(truncate(leader.displayName, 26), textX, y + 60, 19, "#111827", 900),
+    text(`${leader.points} pts`, textX, y + 84, 17, brazilBlue, 900),
+    ...renderLeaderStatChip("Solo", leader.soloCount, textX, chipY, chipWidth, chipHeight),
+    ...renderLeaderStatChip("Exato", leader.exactCount, textX + chipWidth + chipGap, chipY, chipWidth, chipHeight),
+    ...renderLeaderStatChip("Resultado", leader.outcomeCount, textX, chipY + chipHeight + 6, chipWidth, chipHeight),
+    ...renderLeaderStatChip(
+      "Perto",
+      leader.closestCount,
+      textX + chipWidth + chipGap,
+      chipY + chipHeight + 6,
+      chipWidth,
+      chipHeight
+    )
+  ];
+}
+
+function renderLeaderStatChip(
+  label: string,
+  value: number,
+  x: number,
+  y: number,
+  width: number,
+  height: number
+): string[] {
+  return [
+    `<rect x="${x}" y="${y}" width="${width}" height="${height}" rx="5" fill="#dbeafe" stroke="#bfdbfe"/>`,
+    text(`${label} ${value}`, x + width / 2, y + 13, 10, brazilBlue, 900, "middle")
   ];
 }
 
