@@ -87,14 +87,8 @@ function renderLeaderCard(
     text("Lider da Semana", x + 112, y + 30, 13, brazilBlue, 900),
     text(truncate(leader.displayName, 22), x + 112, y + 58, 19, "#111827", 900),
     text(`${leader.points} pts`, x + 112, y + 84, 16, brazilBlue, 900),
-    text(
-      `S ${leader.soloCount}   E ${leader.exactCount}   R ${leader.outcomeCount}   P ${leader.closestCount}`,
-      x + 112,
-      y + 104,
-      11,
-      "#475569",
-      800
-    )
+    text(`Solo ${leader.soloCount}   Exato ${leader.exactCount}`, x + 112, y + 102, 10, "#475569", 800),
+    text(`Resultado ${leader.outcomeCount}   Perto ${leader.closestCount}`, x + 112, y + 116, 10, "#475569", 800)
   ];
 }
 
@@ -104,7 +98,13 @@ function renderLeaderboard(rows: readonly ChaosLeaderboardRow[], x: number, y: n
   }
 
   const parts = [
-    text("#  Pts  S  E  R  P   Jogador", x, y, 12, "#9ca3af", 800)
+    text("#", x, y, 10, "#9ca3af", 800, "middle"),
+    text("Jogador", x + 26, y, 10, "#9ca3af", 800),
+    text("Pts", x + 198, y, 10, "#9ca3af", 800, "middle"),
+    text("Solo", x + 238, y, 9, "#9ca3af", 800, "middle"),
+    text("Exato", x + 278, y, 9, "#9ca3af", 800, "middle"),
+    text("Resultado", x + 326, y, 8, "#9ca3af", 800, "middle"),
+    text("Perto", x + 382, y, 9, "#9ca3af", 800, "middle")
   ];
 
   rows.slice(0, 5).forEach((row, index) => {
@@ -112,13 +112,13 @@ function renderLeaderboard(rows: readonly ChaosLeaderboardRow[], x: number, y: n
 
     parts.push(
       `<rect x="${x - 8}" y="${rowY - 23}" width="${leftWidth - 20}" height="30" rx="6" fill="${index === 0 ? "#0047ab" : "#00358f"}"/>`,
-      text(String(row.rank), x, rowY, 14, brazilYellow, 900),
-      text(String(row.points), x + 42, rowY, 14, "#f3f4f6", 900),
-      text(String(row.soloCount), x + 88, rowY, 12, "#d1d5db", 800),
-      text(String(row.exactCount), x + 116, rowY, 12, "#d1d5db", 800),
-      text(String(row.outcomeCount), x + 144, rowY, 12, "#d1d5db", 800),
-      text(String(row.closestCount), x + 172, rowY, 12, "#d1d5db", 800),
-      text(truncate(row.displayName, 25), x + 212, rowY, 14, "#f3f4f6", 850)
+      text(String(row.rank), x, rowY, 14, brazilYellow, 900, "middle"),
+      text(truncate(row.displayName, 22), x + 26, rowY, 13, "#f3f4f6", 850),
+      text(String(row.points), x + 198, rowY, 14, "#f3f4f6", 900, "middle"),
+      text(String(row.soloCount), x + 238, rowY, 12, "#d1d5db", 800, "middle"),
+      text(String(row.exactCount), x + 278, rowY, 12, "#d1d5db", 800, "middle"),
+      text(String(row.outcomeCount), x + 326, rowY, 12, "#d1d5db", 800, "middle"),
+      text(String(row.closestCount), x + 382, rowY, 12, "#d1d5db", 800, "middle")
     );
   });
 
@@ -171,7 +171,7 @@ function renderPeopleAwards(awards: readonly ChaosPeopleAward[]): string[] {
       x,
       y,
       width: 214,
-      height: 112,
+      height: 126,
       title: award.title,
       subject: award.subject,
       value: award.value,
@@ -183,13 +183,13 @@ function renderPeopleAwards(awards: readonly ChaosPeopleAward[]): string[] {
 
 function renderMatchAwards(awards: readonly ChaosMatchAward[]): string[] {
   return awards.slice(0, 5).flatMap((award, index) => {
-    const y = contentTop + 54 + index * 112;
+    const y = contentTop + 54 + index * 120;
 
     return renderAwardCard({
       x: rightX + 18,
       y,
       width: rightWidth - 36,
-      height: 92,
+      height: 108,
       title: award.title,
       subject: award.matchLabel,
       value: award.value,
@@ -227,13 +227,19 @@ function renderAwardCard(input: {
   subtitle: string;
   accent: string;
 }): string[] {
+  const wide = input.width > 260;
+  const subtitleLines = wrapText(input.subtitle, wide ? 58 : 26, 2);
+  const subtitleStartY = input.y + (wide ? 91 : 94);
+
   return [
     `<rect x="${input.x}" y="${input.y}" width="${input.width}" height="${input.height}" rx="7" fill="#f8fafc"/>`,
     `<rect x="${input.x}" y="${input.y}" width="5" height="${input.height}" rx="2" fill="${input.accent}"/>`,
     text(input.title, input.x + 16, input.y + 24, 13, "#111827", 900),
-    text(truncate(input.subject, input.width > 260 ? 38 : 24), input.x + 16, input.y + 50, 15, "#111827", 900),
-    text(input.value, input.x + 16, input.y + 73, 13, "#334155", 900),
-    text(truncate(input.subtitle, input.width > 260 ? 54 : 28), input.x + 16, input.y + input.height - 14, 10, "#64748b", 700)
+    text(truncate(input.subject, wide ? 38 : 24), input.x + 16, input.y + 50, 15, "#111827", 900),
+    text(input.value, input.x + 16, input.y + 72, 13, "#334155", 900),
+    ...subtitleLines.map((line, index) =>
+      text(line, input.x + 16, subtitleStartY + index * 13, 10, "#64748b", 700)
+    )
   ];
 }
 
@@ -255,6 +261,34 @@ function truncate(value: string, maxLength: number): string {
   }
 
   return `${value.slice(0, Math.max(0, maxLength - 1))}.`;
+}
+
+function wrapText(value: string, maxLineLength: number, maxLines: number): string[] {
+  const words = value.split(/\s+/u).filter(Boolean);
+  const lines: string[] = [];
+
+  for (const word of words) {
+    const current = lines.at(-1);
+
+    if (!current) {
+      lines.push(word);
+      continue;
+    }
+
+    if (`${current} ${word}`.length <= maxLineLength) {
+      lines[lines.length - 1] = `${current} ${word}`;
+      continue;
+    }
+
+    if (lines.length >= maxLines) {
+      lines[lines.length - 1] = truncate(`${current} ${word}`, maxLineLength);
+      continue;
+    }
+
+    lines.push(word);
+  }
+
+  return lines;
 }
 
 function initialsForName(value: string): string {

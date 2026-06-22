@@ -18,9 +18,27 @@ describe("chaos dashboard SVG renderer", () => {
     expect(svg).toContain('href="data:image/png;base64,leader-avatar"');
     expect(svg).toContain("Profeta isolado");
     expect(svg).toContain("Consenso burro");
+    expect(svg).toContain("Solo");
+    expect(svg).toContain("Exato");
+    expect(svg).toContain("Resultado");
+    expect(svg).toContain("Perto");
+    expect(svg).not.toContain("#  Pts  S  E  R  P   Jogador");
     expect(svg).not.toContain("Premios da Zoacao");
     expect(svg).not.toContain("Caos dos Jogos");
     expect(svg).not.toContain("Zoeira estatistica");
+  });
+
+  test("wraps award subtitles without colliding with value text", () => {
+    const svg = renderChaosDashboardSvg(sampleChaosDashboardModel());
+
+    expect(svg).toContain("Cravou sozinho e deixou a");
+    expect(svg).toContain("mesa olhando torto.");
+    expect(svg).not.toContain("Cravou sozinho e deixou a m.");
+
+    const valueY = textY(svg, "2 no consenso errado");
+    const subtitleY = textY(svg, "A democracia produziu uma derrota coletiva.");
+
+    expect(subtitleY - valueY).toBeGreaterThanOrEqual(18);
   });
 
   test("escapes user and match text before writing SVG", () => {
@@ -43,3 +61,14 @@ describe("chaos dashboard SVG renderer", () => {
     expect(renderChaosDashboardSvg(model)).toContain("Nome &lt;perigoso&gt;");
   });
 });
+
+function textY(svg: string, value: string): number {
+  const escaped = value.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&");
+  const match = new RegExp(`<text[^>]* y="([0-9]+)"[^>]*>${escaped}</text>`, "u").exec(svg);
+
+  if (!match?.[1]) {
+    throw new Error(`Could not find text node for ${value}`);
+  }
+
+  return Number(match[1]);
+}
