@@ -9,6 +9,7 @@ import {
   type ResolvedRoundOf32Fixture
 } from "../worldcup/fifa-qualification.js";
 import type { WorldCupMatch, WorldCupTeam } from "../worldcup/types.js";
+import { computeQualificationSecurityByTeamCode } from "./qualification-security.js";
 import {
   ROUND_OF_32_TEMPLATES,
   VISUAL_SKELETON_ROUNDS,
@@ -44,6 +45,11 @@ function createProvisionalBracketState(
   results: readonly StandingsResult[]
 ): BracketState {
   const standings = computeFifaGroupStandings(groupMatches, results);
+  const qualificationSecurityByTeamCode = computeQualificationSecurityByTeamCode(
+    groupMatches,
+    results,
+    standings
+  );
   const slotEntrants = new Map<string, BracketEntrant>();
 
   for (const standing of standings) {
@@ -55,6 +61,7 @@ function createProvisionalBracketState(
         teamCode: row.teamCode,
         teamName: row.teamName,
         sourceSlot,
+        qualificationSecurity: qualificationSecurityByTeamCode.get(row.teamCode) ?? "not-secured",
         ...(row.tiebreakerStatus === "needs-manual-tiebreaker"
           ? { warning: "tie-order-provisional" as const }
           : {})
@@ -208,7 +215,8 @@ function resolvedEntrant(slot: string, team: WorldCupTeam): BracketEntrant {
     label: team.code,
     teamCode: team.code,
     teamName: team.name,
-    sourceSlot: slot
+    sourceSlot: slot,
+    qualificationSecurity: "locked-slot"
   };
 }
 

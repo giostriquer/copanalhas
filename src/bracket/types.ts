@@ -1,4 +1,5 @@
 export type BracketPhase = "provisional" | "final" | "blocked";
+export type QualificationSecurity = "locked-slot" | "qualified-floating" | "not-secured";
 
 export type BracketRoundKey =
   | "round_of_32"
@@ -38,5 +39,6 @@ export interface BracketEntrant {
   teamCode?: string;
   teamName?: string;
   sourceSlot?: string;
+  qualificationSecurity?: QualificationSecurity;
   warning?: "tie-order-provisional";
 }

@@ -46,6 +46,39 @@ describe("createBracketState", () => {
     ).toBe(true);
   });
 
+  test("marks provisional round-of-32 entrants by conservative qualification security", () => {
+    const state = createBracketState({
+      matches: groupMatches(["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L"]),
+      results: [
+        result("A-AB", 1, 0),
+        result("A-AC", 1, 0),
+        result("A-AD", 1, 0),
+        result("B-AC", 1, 0),
+        result("B-AD", 1, 0),
+        result("B-BC", 1, 0),
+        result("B-BD", 1, 0)
+      ]
+    });
+    const entrants = roundOf32Entrants(state);
+
+    expect(entrantByTeamCode(entrants, "A1")).toMatchObject({
+      sourceSlot: "1A",
+      qualificationSecurity: "locked-slot"
+    });
+    expect(entrantByTeamCode(entrants, "B1")).toMatchObject({
+      sourceSlot: "1B",
+      qualificationSecurity: "qualified-floating"
+    });
+    expect(entrantByTeamCode(entrants, "B2")).toMatchObject({
+      sourceSlot: "2B",
+      qualificationSecurity: "qualified-floating"
+    });
+    expect(entrantByTeamCode(entrants, "C1")).toMatchObject({
+      sourceSlot: "1C",
+      qualificationSecurity: "not-secured"
+    });
+  });
+
   test("marks third-place entrants provisional when the eighth and ninth third-place rows are tied", () => {
     const state = createBracketState({
       matches: groupMatches(["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L"]),
@@ -135,6 +168,16 @@ describe("createBracketState", () => {
     expect(roundOf32?.matches.map((match) => match.state)).toEqual(
       Array.from({ length: 16 }, () => "final")
     );
+    expect(roundOf32?.matches.flatMap((match) => [match.home, match.away])).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ qualificationSecurity: "locked-slot" })
+      ])
+    );
+    expect(
+      roundOf32?.matches
+        .flatMap((match) => [match.home, match.away])
+        .every((entrant) => entrant.qualificationSecurity === "locked-slot")
+    ).toBe(true);
     expect(
       roundOf32?.matches.map((match) => [
         match.label,
@@ -275,6 +318,22 @@ function thirdPlaceCutoffTieResults(): StandingsResult[] {
 
 function result(matchId: string, homeScore: number, awayScore: number): StandingsResult {
   return { matchId, homeScore, awayScore };
+}
+
+function roundOf32Entrants(state: ReturnType<typeof createBracketState>) {
+  return state.rounds
+    .find((roundState) => roundState.key === "round_of_32")
+    ?.matches.flatMap((matchFixture) => [matchFixture.home, matchFixture.away]) ?? [];
+}
+
+function entrantByTeamCode(entrants: ReturnType<typeof roundOf32Entrants>, teamCode: string) {
+  const entrant = entrants.find((candidate) => candidate.teamCode === teamCode);
+
+  if (!entrant) {
+    throw new Error(`Missing bracket entrant for team ${teamCode}.`);
+  }
+
+  return entrant;
 }
 
 function groupMatches(groups: readonly string[]): WorldCupMatch[] {

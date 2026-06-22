@@ -158,11 +158,16 @@ winner/loser placeholders until knockout teams and results are reviewed. Team
 names are rendered with Portuguese display names and local SVG flag assets from
 the installed `flag-icons` package, so the runtime renderer does not fetch media
 from the network. During the group stage, Round of 32 entrants are shown as
-provisional `as it stands` slots; once all group results are complete, final
-Round of 32 slots use the reviewed FIFA qualification resolver. If FIFA
-tiebreakers still need manual review, the bracket reports that blocked state
-instead of guessing. Operators can run `/copanalhas bracket` to refresh only the
-bracket dashboard.
+provisional `as it stands` slots; each team row uses a conservative security
+border: green for an exact slot that is already locked, yellow for a team that
+has qualified but can still move to another slot, and red for a projected team
+that has not secured a Round of 32 place. The security calculation enumerates
+remaining win/draw/loss point outcomes and treats unresolved tiebreaker or
+third-place uncertainty as unsecured rather than guessing. Once all group
+results are complete, final Round of 32 slots use the reviewed FIFA
+qualification resolver. If FIFA tiebreakers still need manual review, the
+bracket reports that blocked state instead of guessing. Operators can run
+`/copanalhas bracket` to refresh only the bracket dashboard.
 
 Prediction reveal posts are automatic. Every minute, the bot checks for matches
 whose prediction cutoff has passed, groups matches that share the same cutoff

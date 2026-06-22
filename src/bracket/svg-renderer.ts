@@ -2,7 +2,12 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { createRequire } from "node:module";
 
-import type { BracketEntrant, BracketMatch, BracketState } from "./types.js";
+import type {
+  BracketEntrant,
+  BracketMatch,
+  BracketState,
+  QualificationSecurity
+} from "./types.js";
 import { formatCompactTeamName } from "../worldcup/team-display.js";
 
 export interface RenderReferenceBracketSvgOptions {
@@ -28,6 +33,8 @@ const r32Gap = 26;
 const flagWidth = 23;
 const flagHeight = 16;
 const teamTextMaxLength = 18;
+const entrantAreaX = 4;
+const entrantAreaWidth = r32Width - 56;
 const connectorColor = "#4f8f38";
 const leftR32X = marginX;
 const leftR16X = 306;
@@ -361,8 +368,8 @@ function renderRoundOf32Match(match: BracketMatch, x: number, y: number): string
     matchHasTieWarning(match)
       ? `<text x="${r32Width - 7}" y="-8" text-anchor="end" font-family="Inter, Arial, sans-serif" font-size="8" font-weight="750" fill="#9a5b00">ordem provisória</text>`
       : "",
-    renderEntrantRow(match.home, 12, 21),
-    renderEntrantRow(match.away, 12, 53),
+    renderEntrantRow(match.home, 12, 21, 1),
+    renderEntrantRow(match.away, 12, 53, r32Height / 2 + 1),
     "</g>"
   ].join("");
 }
@@ -422,7 +429,12 @@ function renderCenterConnector(pathBox: PathBox): string {
   return `<path data-connector-match="${pathBox.matchNumber}" d="${segments.join(" ")}" fill="none" stroke="${connectorColor}" stroke-width="1.4"/>`;
 }
 
-function renderEntrantRow(entrant: BracketEntrant, x: number, baselineY: number): string {
+function renderEntrantRow(
+  entrant: BracketEntrant,
+  x: number,
+  baselineY: number,
+  rowY: number
+): string {
   const primary =
     entrant.teamCode && entrant.teamName
       ? formatCompactTeamName({ code: entrant.teamCode, name: entrant.teamName }, teamTextMaxLength)
@@ -433,9 +445,20 @@ function renderEntrantRow(entrant: BracketEntrant, x: number, baselineY: number)
   const textX = flag ? x + flagWidth + 7 : x;
 
   return [
+    `<g data-entrant-source-slot="${escapeAttribute(entrant.sourceSlot ?? entrant.label)}"${entrant.teamCode ? ` data-entrant-team-code="${escapeAttribute(entrant.teamCode)}"` : ""}>`,
+    renderQualificationSecurityBorder(entrant, rowY),
     flag,
-    `<text x="${textX}" y="${baselineY}" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="800" fill="#141b2b">${escapeText(primary)}</text>`
+    `<text x="${textX}" y="${baselineY}" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="800" fill="#141b2b">${escapeText(primary)}</text>`,
+    "</g>"
   ].join("");
+}
+
+function renderQualificationSecurityBorder(entrant: BracketEntrant, rowY: number): string {
+  if (!entrant.qualificationSecurity) {
+    return "";
+  }
+
+  return `<rect data-qualification-security="${escapeAttribute(entrant.qualificationSecurity)}" x="${entrantAreaX}" y="${rowY}" width="${entrantAreaWidth}" height="${r32Height / 2 - 2}" fill="none" stroke="${qualificationSecurityColor(entrant.qualificationSecurity)}" stroke-width="1.5"/>`;
 }
 
 function renderFlagImage(teamCode: string, x: number, y: number): string {
@@ -536,6 +559,18 @@ function statusColor(match: BracketMatch): string {
   }
 
   return "#7b8797";
+}
+
+function qualificationSecurityColor(security: QualificationSecurity): string {
+  if (security === "locked-slot") {
+    return "#23845a";
+  }
+
+  if (security === "qualified-floating") {
+    return "#d79a19";
+  }
+
+  return "#c74747";
 }
 
 function localizedNote(note: string): string {

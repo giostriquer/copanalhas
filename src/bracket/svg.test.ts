@@ -30,6 +30,12 @@ describe("renderBracketSvg", () => {
     expect(svg).toContain('data-flag-team-code="GER"');
     expect(svg).toContain('data-flag-asset="de.svg"');
     expect(svg).toContain("data:image/svg+xml;base64,");
+    expect(svg).toContain('data-qualification-security="locked-slot"');
+    expect(svg).toContain('stroke="#23845a"');
+    expect(svg).toContain('data-qualification-security="qualified-floating"');
+    expect(svg).toContain('stroke="#d79a19"');
+    expect(svg).toContain('data-qualification-security="not-secured"');
+    expect(svg).toContain('stroke="#c74747"');
     expect(svg).toContain("Alemanha");
     expect(svg).toContain('data-flag-team-code="MAR"');
     expect(svg).toContain('data-flag-asset="ma.svg"');
@@ -107,20 +113,38 @@ function bracketState(): BracketState {
             label: "#74",
             state: "provisional",
             home: { label: "GER", teamCode: "GER", teamName: "Germany", sourceSlot: "1E" },
-            away: { label: "MAR", teamCode: "MAR", teamName: "Morocco", sourceSlot: "3C" }
+            away: {
+              label: "MAR",
+              teamCode: "MAR",
+              teamName: "Morocco",
+              sourceSlot: "3C",
+              qualificationSecurity: "not-secured"
+            }
           },
           {
             id: "r32-75",
             label: "#75",
             state: "provisional",
-            home: { label: "NED", teamCode: "NED", teamName: "Netherlands", sourceSlot: "1F" },
+            home: {
+              label: "NED",
+              teamCode: "NED",
+              teamName: "Netherlands",
+              sourceSlot: "1F",
+              qualificationSecurity: "qualified-floating"
+            },
             away: { label: "2C", sourceSlot: "2C" }
           },
           {
             id: "r32-76",
             label: "#76",
             state: "provisional",
-            home: { label: "BRA", teamCode: "BRA", teamName: "Brazil", sourceSlot: "1C" },
+            home: {
+              label: "BRA",
+              teamCode: "BRA",
+              teamName: "Brazil",
+              sourceSlot: "1C",
+              qualificationSecurity: "locked-slot"
+            },
             away: { label: "2F", sourceSlot: "2F" }
           },
           {
