@@ -43,6 +43,8 @@ describe("renderLeaderboardDashboardSvg", () => {
     expect(svg).toContain("Resultado");
     expect(svg).toContain("Perto");
     expect(svg).toContain("Jogos");
+    expect(svg).toContain("Premiação: 1k");
+    expect(svg).toContain("PS: Se o anguish ganhar eu darei unblock nele como premiação no lugar dos 60%.");
     expect(svg).toContain("#FFDF00");
     expect(svg).toContain("#002776");
     expect(svg).not.toContain(">Resul<");

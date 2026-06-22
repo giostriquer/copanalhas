@@ -14,7 +14,7 @@ const headerHeight = 124;
 const tableTop = 190;
 const rowHeight = 48;
 const minHeight = 720;
-const footerHeight = 128;
+const footerHeight = 156;
 const font = "Inter, Arial, sans-serif";
 const brazilYellow = "#FFDF00";
 const brazilBlue = "#002776";
@@ -103,10 +103,11 @@ function renderRows(
 
 function renderFooter(y: number): string[] {
   return [
-    `<rect x="${margin}" y="${y - 28}" width="${tableWidth}" height="82" rx="8" fill="#001847" stroke="${panelStroke}"/>`,
-    text("Premiação: 1º lugar 60% | 2º lugar 30% | 3º lugar 10%", margin + 26, y, 17, "#f8fafc", 850),
+    `<rect x="${margin}" y="${y - 28}" width="${tableWidth}" height="112" rx="8" fill="#001847" stroke="${panelStroke}"/>`,
+    text("Premiação: 1k | 1º lugar 60% | 2º lugar 30% | 3º lugar 10%", margin + 26, y, 17, "#f8fafc", 850),
     text("Desempate: pontos, solo, exatos, resultados, perto e ID do jogador.", margin + 26, y + 28, 13, "#bfdbfe", 750),
-    text(FOOTBALL_DATA_ATTRIBUTION, width - margin - 26, y + 28, 13, "#bfdbfe", 750, "end")
+    text("PS: Se o anguish ganhar eu darei unblock nele como premiação no lugar dos 60%.", margin + 26, y + 56, 13, brazilYellow, 850),
+    text(FOOTBALL_DATA_ATTRIBUTION, width - margin - 26, y + 76, 13, "#bfdbfe", 750, "end")
   ];
 }
 
