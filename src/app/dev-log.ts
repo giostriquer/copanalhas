@@ -102,7 +102,7 @@ export function formatPredictionInteractionLog(result: PredictionInteractionResu
       "[prediction] accepted",
       `user=${result.prediction.userId}`,
       `match=${result.prediction.matchId}`,
-      `score=${result.prediction.homeScore}-${result.prediction.awayScore}`,
+      "score=<redacted>",
       `message=${result.prediction.messageId}`
     ].join(" ");
   }
@@ -274,11 +274,15 @@ function formatOptions(options: Record<string, string>): string {
     return "none";
   }
 
-  return entries.map(([key, value]) => `${safeLogValue(key)}:${safeLogValue(value)}`).join(",");
+  return entries.map(([key, value]) => `${safeLogValue(key)}:${safeLogOptionValue(key, value)}`).join(",");
 }
 
 function formatNullable(value: string | null): string {
   return value === null ? "null" : safeLogValue(value);
+}
+
+function safeLogOptionValue(key: string, value: string): string {
+  return key.toLowerCase().includes("score") ? "<redacted>" : safeLogValue(value);
 }
 
 function safeLogValue(value: string): string {

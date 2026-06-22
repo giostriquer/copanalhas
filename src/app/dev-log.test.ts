@@ -27,7 +27,7 @@ describe("dev log formatting", () => {
     ).toBe("[2026-06-11T12:34:56.789Z][health] discord=online guild=guild-1 channel=channel-1");
   });
 
-  test("formats operator command outcomes with routing and options", () => {
+  test("formats operator command outcomes with routing and redacted score options", () => {
     expect(
       formatOperatorCommandLog(
         {
@@ -47,7 +47,7 @@ describe("dev log formatting", () => {
         }
       )
     ).toBe(
-      "[operator] subcommand=result user=operator-1 guild=guild-1 channel=channel-1 options=match:wc2026-001,score:2-1 -> replied ephemeral=true"
+      "[operator] subcommand=result user=operator-1 guild=guild-1 channel=channel-1 options=match:wc2026-001,score:<redacted> -> replied ephemeral=true"
     );
   });
 
@@ -94,22 +94,25 @@ describe("dev log formatting", () => {
     );
   });
 
-  test("formats prediction interaction outcomes with match and score context", () => {
+  test("formats prediction interaction outcomes with match context and redacted scores", () => {
+    const prediction = {
+      userId: "user-1",
+      matchId: "wc2026-001",
+      messageId: "interaction-1",
+      homeScore: 2,
+      awayScore: 1,
+      submittedAt: "2026-06-10T12:00:00.000Z",
+      updatedAt: null,
+      parserVersion: "prediction-modal-v1"
+    };
+
     expect(
       formatPredictionInteractionLog({
         action: "accepted",
-        prediction: {
-          userId: "user-1",
-          matchId: "wc2026-001",
-          messageId: "interaction-1",
-          homeScore: 2,
-          awayScore: 1,
-          submittedAt: "2026-06-10T12:00:00.000Z",
-          updatedAt: null,
-          parserVersion: "prediction-modal-v1"
-        }
+        prediction
       })
-    ).toBe("[prediction] accepted user=user-1 match=wc2026-001 score=2-1 message=interaction-1");
+    ).toBe("[prediction] accepted user=user-1 match=wc2026-001 score=<redacted> message=interaction-1");
+    expect(prediction).toMatchObject({ homeScore: 2, awayScore: 1 });
   });
 
   test("formats automation and dashboard lifecycle logs", () => {
