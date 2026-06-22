@@ -33,9 +33,9 @@ describe("renderBracketSvg", () => {
     expect(svg).toContain('data-qualification-security="locked-slot"');
     expect(svg).toContain('stroke="#23845a"');
     expect(svg).toContain('data-qualification-security="qualified-floating"');
-    expect(svg).toContain('stroke="#d79a19"');
+    expect(svg).toContain('stroke="#f2b705"');
     expect(svg).toContain('data-qualification-security="not-secured"');
-    expect(svg).toContain('stroke="#c74747"');
+    expect(svg).toContain('stroke="#d92d20"');
     expect(svg).toContain("Alemanha");
     expect(svg).toContain('data-flag-team-code="MAR"');
     expect(svg).toContain('data-flag-asset="ma.svg"');

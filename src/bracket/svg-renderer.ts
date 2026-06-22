@@ -567,10 +567,10 @@ function qualificationSecurityColor(security: QualificationSecurity): string {
   }
 
   if (security === "qualified-floating") {
-    return "#d79a19";
+    return "#f2b705";
   }
 
-  return "#c74747";
+  return "#d92d20";
 }
 
 function localizedNote(note: string): string {
