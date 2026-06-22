@@ -30,7 +30,11 @@ describe("parseCopanalhasConfig", () => {
         matchStartRoleId: null,
         matchStartAlertDeleteAfterMinutes: 180,
         matchStartAlertLeadMinutes: 5,
-        matchStartAlertGraceMinutes: 5
+        matchStartAlertGraceMinutes: 5,
+        recapCodexEnabled: false,
+        recapCodexCommand: "codex",
+        recapCodexOutputDir: "./data/recap-copy",
+        recapCodexTimeoutMs: 120000
       }
     });
   });
@@ -61,7 +65,11 @@ describe("parseCopanalhasConfig", () => {
         matchStartRoleId: null,
         matchStartAlertDeleteAfterMinutes: 180,
         matchStartAlertLeadMinutes: 5,
-        matchStartAlertGraceMinutes: 5
+        matchStartAlertGraceMinutes: 5,
+        recapCodexEnabled: false,
+        recapCodexCommand: "codex",
+        recapCodexOutputDir: "./data/recap-copy",
+        recapCodexTimeoutMs: 120000
       }
     });
   });
@@ -84,7 +92,11 @@ describe("parseCopanalhasConfig", () => {
         COPANALHAS_MATCH_START_ROLE_ID: "role-canalhas",
         COPANALHAS_MATCH_START_DELETE_AFTER_MINUTES: "210",
         COPANALHAS_MATCH_START_LEAD_MINUTES: "3",
-        COPANALHAS_MATCH_START_GRACE_MINUTES: "7"
+        COPANALHAS_MATCH_START_GRACE_MINUTES: "7",
+        COPANALHAS_RECAP_CODEX_ENABLED: "true",
+        COPANALHAS_RECAP_CODEX_COMMAND: "codex.cmd",
+        COPANALHAS_RECAP_CODEX_OUTPUT_DIR: "./tmp/recap-copy",
+        COPANALHAS_RECAP_CODEX_TIMEOUT_MS: "90000"
       })
     ).toEqual({
       ok: true,
@@ -101,7 +113,11 @@ describe("parseCopanalhasConfig", () => {
         matchStartRoleId: "role-canalhas",
         matchStartAlertDeleteAfterMinutes: 210,
         matchStartAlertLeadMinutes: 3,
-        matchStartAlertGraceMinutes: 7
+        matchStartAlertGraceMinutes: 7,
+        recapCodexEnabled: true,
+        recapCodexCommand: "codex.cmd",
+        recapCodexOutputDir: "./tmp/recap-copy",
+        recapCodexTimeoutMs: 90000
       })
     });
   });
@@ -183,6 +199,20 @@ describe("parseCopanalhasConfig", () => {
         "COPANALHAS_MATCH_START_LEAD_MINUTES must be a non-negative integer",
         "COPANALHAS_MATCH_START_GRACE_MINUTES must be a positive integer"
       ]
+    });
+  });
+
+  test("rejects invalid recap codex timeout", () => {
+    expect(
+      parseCopanalhasConfig({
+        DISCORD_BOT_TOKEN: "token-value",
+        DISCORD_GUILD_ID: "guild-1",
+        DISCORD_CHANNEL_ID: "channel-1",
+        COPANALHAS_RECAP_CODEX_TIMEOUT_MS: "0"
+      })
+    ).toEqual({
+      ok: false,
+      errors: ["COPANALHAS_RECAP_CODEX_TIMEOUT_MS must be a positive integer"]
     });
   });
 

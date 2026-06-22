@@ -45,6 +45,13 @@ interface MatchStats {
   predictions: ScorePrediction[];
 }
 
+interface PeopleAwardCandidate {
+  award: ChaosPeopleAward;
+  active: boolean;
+  score: number;
+  order: number;
+}
+
 const negativeAwardMinimumFinishedPredictions = 5;
 
 export function buildChaosDashboardModel(
@@ -68,6 +75,12 @@ export function buildChaosDashboardModel(
   });
   const week = weekForDate(options.now, options.timeZone);
   const leaderOfWeek = buildLeaderOfWeek(rankedRows, options.avatarDataUris ?? new Map());
+  const weeklyMovement = buildWeeklyMovement({
+    currentRows: currentSnapshotRows,
+    leaderboardRows: rankedRows,
+    previousRows: options.previousWeekRows,
+    displayNames: options.displayNames ?? new Map()
+  });
 
   return {
     title: "Copanalhas Recap",
@@ -82,18 +95,14 @@ export function buildChaosDashboardModel(
     },
     leaderboardTop: rankedRows.slice(0, 5),
     ...(leaderOfWeek ? { leaderOfWeek } : {}),
-    weeklyMovement: buildWeeklyMovement({
-      currentRows: currentSnapshotRows,
-      leaderboardRows: rankedRows,
-      previousRows: options.previousWeekRows,
-      displayNames: options.displayNames ?? new Map()
-    }),
+    weeklyMovement,
     peopleAwards: buildPeopleAwards({
       leaderboardRows: rankedRows,
       predictions: options.predictions,
       results: options.results,
       scoredPredictions,
-      displayNames: options.displayNames ?? new Map()
+      displayNames: options.displayNames ?? new Map(),
+      weeklyMovement
     }),
     matchAwards: buildMatchAwards(matchStats)
   };
@@ -147,84 +156,185 @@ function buildPeopleAwards(options: {
   results: readonly MatchResult[];
   scoredPredictions: ReturnType<typeof scoreMatch>;
   displayNames: ReadonlyMap<string, string>;
+  weeklyMovement: ChaosWeeklyMovement;
 }): ChaosPeopleAward[] {
   const statsByUser = userFinishedStats(options);
-
-  return [
-    awardFromLeaderboard(
-      "profeta-isolado",
-      "Profeta isolado",
-      options.leaderboardRows,
-      (row) => row.soloCount,
-      "solos",
-      "Cravou sozinho e deixou a mesa olhando torto."
+  const candidates: PeopleAwardCandidate[] = [
+    ...movementAwardCandidates(options.weeklyMovement),
+    fixedAwardCandidate(
+      100,
+      awardFromLeaderboard(
+        "profeta-isolado",
+        "Profeta isolado",
+        options.leaderboardRows,
+        (row) => row.soloCount,
+        "solos",
+        "Cravou sozinho e deixou a mesa olhando torto."
+      )
     ),
-    awardFromLeaderboard(
-      "exatinho-de-condominio",
-      "Exatinho de condominio",
-      options.leaderboardRows,
-      (row) => row.exactCount,
-      "exatos",
-      "Acertou, mas com testemunhas demais."
+    fixedAwardCandidate(
+      110,
+      awardFromLeaderboard(
+        "exatinho-de-condominio",
+        "Exatinho de condominio",
+        options.leaderboardRows,
+        (row) => row.exactCount,
+        "exatos",
+        "Acertou, mas com testemunhas demais."
+      )
     ),
-    awardFromLeaderboard(
-      "quase-inteligente",
-      "Quase inteligente",
-      options.leaderboardRows,
-      (row) => row.closestCount,
-      "pertos",
-      "Errou com conviccao estatisticamente aceitavel."
+    fixedAwardCandidate(
+      120,
+      awardFromLeaderboard(
+        "quase-inteligente",
+        "Quase inteligente",
+        options.leaderboardRows,
+        (row) => row.closestCount,
+        "pertos",
+        "Errou com conviccao estatisticamente aceitavel."
+      )
     ),
-    awardFromPredictionCounts(
-      "cientista-do-empate",
-      "Cientista do empate",
-      options.predictions,
-      options.displayNames,
-      (prediction) => outcomeForScore(prediction.homeScore, prediction.awayScore) === "draw",
-      "empates",
-      "Viu empate onde a vida talvez nao tenha pedido."
+    fixedAwardCandidate(
+      130,
+      awardFromPredictionCounts(
+        "cientista-do-empate",
+        "Cientista do empate",
+        options.predictions,
+        options.displayNames,
+        (prediction) => outcomeForScore(prediction.homeScore, prediction.awayScore) === "draw",
+        "empates",
+        "Viu empate onde a vida talvez nao tenha pedido."
+      )
     ),
-    awardFromUserStats(
-      "inimigo-do-obvio",
-      "Inimigo do obvio",
-      statsByUser,
-      options.displayNames,
-      (stats) => stats.wrongOutcomes,
-      "resultados errados",
-      "Escolheu o lado errado com energia."
+    fixedAwardCandidate(
+      140,
+      awardFromUserStats(
+        "inimigo-do-obvio",
+        "Inimigo do obvio",
+        statsByUser,
+        options.displayNames,
+        (stats) => stats.wrongOutcomes,
+        "resultados errados",
+        "Escolheu o lado errado com energia."
+      )
     ),
-    awardFromUserStats(
-      "mao-de-alface-estatistica",
-      "Mao de alface estatistica",
-      statsByUser,
-      options.displayNames,
-      (stats) =>
-        stats.finishedPredictions === 0 ? 0 : stats.totalDistance / stats.finishedPredictions,
-      "erro medio",
-      "A bola foi para um lado, o palpite para outro bairro.",
-      1
+    fixedAwardCandidate(
+      150,
+      awardFromUserStats(
+        "mao-de-alface-estatistica",
+        "Mao de alface estatistica",
+        statsByUser,
+        options.displayNames,
+        (stats) =>
+          stats.finishedPredictions === 0 ? 0 : stats.totalDistance / stats.finishedPredictions,
+        "erro medio",
+        "A bola foi para um lado, o palpite para outro bairro.",
+        1
+      )
     ),
-    awardFromUserStats(
-      "cravou-nada-falou-tudo",
-      "Cravou nada, falou tudo",
-      statsByUser,
-      options.displayNames,
-      (stats) => stats.zeroPointPredictions,
-      "zeros",
-      "Presenca confirmada, pontos nem tanto."
+    fixedAwardCandidate(
+      160,
+      awardFromUserStats(
+        "cravou-nada-falou-tudo",
+        "Cravou nada, falou tudo",
+        statsByUser,
+        options.displayNames,
+        (stats) => stats.zeroPointPredictions,
+        "zeros",
+        "Presenca confirmada, pontos nem tanto."
+      )
     ),
-    awardFromUserStats(
-      "teto-solar-aberto",
-      "Teto solar aberto",
-      statsByUser,
-      options.displayNames,
-      (stats) =>
-        stats.finishedPredictions === 0 ? 0 : stats.predictedGoals / stats.finishedPredictions,
-      "gols previstos/jogo",
-      "Todo jogo parecia final de futsal.",
-      1
+    fixedAwardCandidate(
+      170,
+      awardFromUserStats(
+        "teto-solar-aberto",
+        "Teto solar aberto",
+        statsByUser,
+        options.displayNames,
+        (stats) =>
+          stats.finishedPredictions === 0 ? 0 : stats.predictedGoals / stats.finishedPredictions,
+        "gols previstos/jogo",
+        "Todo jogo parecia final de futsal.",
+        1
+      )
     )
   ];
+
+  return selectPeopleAwards(candidates, 8);
+}
+
+function movementAwardCandidates(movement: ChaosWeeklyMovement): PeopleAwardCandidate[] {
+  if (movement.status !== "ready") {
+    return [];
+  }
+
+  const climber = movement.climbers[0];
+  const faller = movement.fallers[0];
+  const candidates: PeopleAwardCandidate[] = [];
+
+  if (climber) {
+    candidates.push({
+      order: 10,
+      active: true,
+      score: 60 + climber.movement,
+      award: {
+        key: "foguete-da-semana",
+        title: "Foguete da semana",
+        subject: climber.displayName,
+        value: `+${climber.movement} posicoes`,
+        subtitle: "Subiu na tabela antes que alguem pedisse VAR."
+      }
+    });
+  }
+
+  if (faller) {
+    candidates.push({
+      order: 20,
+      active: true,
+      score: 60 + Math.abs(faller.movement),
+      award: {
+        key: "escorregador-da-semana",
+        title: "Escorregador da semana",
+        subject: faller.displayName,
+        value: `${faller.movement} posicoes`,
+        subtitle: "Desceu com estilo e ainda fingiu controle."
+      }
+    });
+  }
+
+  return candidates;
+}
+
+function fixedAwardCandidate(order: number, award: ChaosPeopleAward): PeopleAwardCandidate {
+  return {
+    award,
+    order,
+    active: isActivePeopleAward(award),
+    score: isActivePeopleAward(award) ? 10 : 0
+  };
+}
+
+function selectPeopleAwards(
+  candidates: readonly PeopleAwardCandidate[],
+  limit: number
+): ChaosPeopleAward[] {
+  const active = candidates
+    .filter((candidate) => candidate.active)
+    .toSorted((left, right) => right.score - left.score || left.order - right.order);
+  const inactive = candidates
+    .filter((candidate) => !candidate.active)
+    .toSorted((left, right) => left.order - right.order);
+
+  return [...active, ...inactive].slice(0, limit).map((candidate) => candidate.award);
+}
+
+function isActivePeopleAward(award: ChaosPeopleAward): boolean {
+  return (
+    award.subject !== "Sem vitima ainda" &&
+    award.subject !== "Aguardando mais vergonha" &&
+    !award.value.startsWith("0 ") &&
+    !award.value.startsWith("min ")
+  );
 }
 
 function buildMatchAwards(matchStats: readonly MatchStats[]): ChaosMatchAward[] {

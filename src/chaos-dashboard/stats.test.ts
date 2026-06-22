@@ -125,6 +125,59 @@ describe("chaos dashboard stats", () => {
     });
   });
 
+  test("promotes data-specific people awards when weekly movement has stronger stories", () => {
+    const model = buildChaosDashboardModel({
+      matches: fixtureMatches,
+      predictions: fixturePredictions,
+      results: fixtureResults,
+      displayNames: new Map([
+        ["user-a", "Guibexa"],
+        ["user-b", "SEVERAO DO HEXA"],
+        ["user-c", "Anghexa"]
+      ]),
+      previousWeekRows: [
+        {
+          userId: "user-a",
+          rank: 3,
+          points: 0,
+          soloCount: 0,
+          exactCount: 0,
+          outcomeCount: 0,
+          closestCount: 0
+        },
+        {
+          userId: "user-b",
+          rank: 1,
+          points: 3,
+          soloCount: 0,
+          exactCount: 1,
+          outcomeCount: 0,
+          closestCount: 0
+        },
+        {
+          userId: "user-c",
+          rank: 2,
+          points: 2,
+          soloCount: 0,
+          exactCount: 0,
+          outcomeCount: 1,
+          closestCount: 0
+        }
+      ],
+      now: new Date("2026-06-24T15:30:00.000Z"),
+      timeZone: "UTC"
+    });
+
+    expect(model.peopleAwards).toHaveLength(8);
+    expect(model.peopleAwards.map((award) => award.key)).toEqual(
+      expect.arrayContaining(["foguete-da-semana", "escorregador-da-semana"])
+    );
+    expect(model.peopleAwards.find((award) => award.key === "foguete-da-semana")).toMatchObject({
+      subject: "Guibexa",
+      value: "+2 posicoes"
+    });
+  });
+
   test("creates weekly snapshot rows using shared leaderboard ranks", () => {
     expect(
       createWeeklySnapshotRows([

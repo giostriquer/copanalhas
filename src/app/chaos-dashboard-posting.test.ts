@@ -4,6 +4,7 @@ import { describe, expect, test, vi } from "vitest";
 
 import { updateChaosRecaps } from "./chaos-dashboard-posting.js";
 import type { ChaosDashboardMessage } from "../chaos-dashboard/format.js";
+import type { ChaosRecapCopyInput } from "../chaos-dashboard/recap-copy.js";
 import type {
   StoredChaosDashboardPost,
   StoredChaosWeeklySnapshotRow,
@@ -209,6 +210,76 @@ describe("updateChaosRecaps", () => {
     expect(resolveUserAvatarDataUris).toHaveBeenCalledOnce();
     expect(renderedSvg).toContain("Lider da Semana");
     expect(renderedSvg).toContain('href="data:image/png;base64,leader-avatar"');
+  });
+
+  test("applies generated recap copy before rendering the image", async () => {
+    let renderedSvg = "";
+    const generateChaosRecapCopy = vi.fn(async (input: ChaosRecapCopyInput) => {
+      expect(input.periodKey).toBe("group-week-1");
+      expect(input.awards.length).toBeGreaterThan(0);
+
+      return {
+        version: 1 as const,
+        periodKey: input.periodKey,
+        cards: [
+          {
+            key: input.awards[0]!.key,
+            title: "Oraculo do Zap",
+            subtitle: "Transformou dado bom em zoeira auditavel."
+          }
+        ]
+      };
+    });
+
+    const result = await updateChaosRecaps({
+      ...baseOptionsWithCompletedGroupWeekOne(),
+      listChaosDashboardPosts: () => [],
+      recordChaosDashboardPost: vi.fn(),
+      listChaosWeeklySnapshotRows: () => existingSnapshotRows(),
+      recordChaosWeeklySnapshotRows: vi.fn(),
+      generateChaosRecapCopy,
+      renderPng: vi.fn(async (svg) => {
+        renderedSvg = svg;
+        return Buffer.from("png");
+      }),
+      upsertChaosDashboardMessage: vi.fn(async () => "chaos-message-1")
+    });
+
+    expect(generateChaosRecapCopy).toHaveBeenCalledOnce();
+    expect(renderedSvg).toContain("Oraculo do Zap");
+    expect(renderedSvg).toContain("Transformou dado bom em");
+    expect(renderedSvg).toContain("zoeira auditavel.");
+    expect(result.posted[0]).toMatchObject({
+      periodKey: "group-week-1",
+      copyState: "applied"
+    });
+  });
+
+  test("falls back to deterministic recap copy when generation fails", async () => {
+    let renderedSvg = "";
+
+    const result = await updateChaosRecaps({
+      ...baseOptionsWithCompletedGroupWeekOne(),
+      listChaosDashboardPosts: () => [],
+      recordChaosDashboardPost: vi.fn(),
+      listChaosWeeklySnapshotRows: () => existingSnapshotRows(),
+      recordChaosWeeklySnapshotRows: vi.fn(),
+      generateChaosRecapCopy: vi.fn(async () => {
+        throw new Error("codex unavailable");
+      }),
+      renderPng: vi.fn(async (svg) => {
+        renderedSvg = svg;
+        return Buffer.from("png");
+      }),
+      upsertChaosDashboardMessage: vi.fn(async () => "chaos-message-1")
+    });
+
+    expect(renderedSvg).toContain("Profeta isolado");
+    expect(result.posted[0]).toMatchObject({
+      periodKey: "group-week-1",
+      copyState: "fallback",
+      copyError: "codex unavailable"
+    });
   });
 });
 

@@ -254,5 +254,24 @@ describe("dev log formatting", () => {
     ).toBe(
       "[dashboard] recap posts=1 posted=0 edited=1 replaced=0 skipped=0 incomplete=0 alreadyPosted=0 periods=group-week-1 errors=group-week-1:sharp failed badly"
     );
+
+    expect(
+      formatChaosDashboardLog({
+        action: "updated",
+        posted: [
+          {
+            periodKey: "group-week-1",
+            messageId: "chaos-message-1",
+            action: "posted",
+            renderState: "image",
+            copyState: "fallback",
+            copyError: "codex failed with Bot secret-token"
+          }
+        ],
+        skipped: []
+      })
+    ).toBe(
+      "[dashboard] recap posts=1 posted=1 edited=0 replaced=0 skipped=0 incomplete=0 alreadyPosted=0 periods=group-week-1 copyApplied=0 copyFallback=1 copyErrors=group-week-1:codex failed with Bot [redacted]"
+    );
   });
 });

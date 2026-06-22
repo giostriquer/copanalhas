@@ -158,6 +158,10 @@ function config(): CopanalhasConfig {
     footballDataToken: null,
     resultSyncEnabled: false,
     resultSyncFirstCheckMinutes: 110,
-    resultSyncRetryMinutes: 1
+    resultSyncRetryMinutes: 1,
+    recapCodexEnabled: false,
+    recapCodexCommand: "codex",
+    recapCodexOutputDir: "./data/recap-copy",
+    recapCodexTimeoutMs: 120000
   };
 }

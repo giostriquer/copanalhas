@@ -228,6 +228,9 @@ export function formatChaosDashboardLog(result: UpdateChaosDashboardResult): str
     postCounts[post.action] += 1;
   }
 
+  const copyApplied = result.posted.filter((post) => post.copyState === "applied").length;
+  const copyFallback = result.posted.filter((post) => post.copyState === "fallback").length;
+
   for (const skipped of result.skipped) {
     if (skipped.reason === "already-posted") {
       skippedCounts.alreadyPosted += 1;
@@ -248,10 +251,19 @@ export function formatChaosDashboardLog(result: UpdateChaosDashboardResult): str
     result.posted.length > 0
       ? `periods=${result.posted.map((post) => safeLogValue(post.periodKey)).join(",")}`
       : null,
+    copyApplied + copyFallback > 0
+      ? `copyApplied=${copyApplied} copyFallback=${copyFallback}`
+      : null,
     result.posted.some((post) => post.renderError)
       ? `errors=${result.posted
           .filter((post) => post.renderError)
           .map((post) => `${safeLogValue(post.periodKey)}:${safeLogMessage(post.renderError ?? "")}`)
+          .join(",")}`
+      : null,
+    result.posted.some((post) => post.copyError)
+      ? `copyErrors=${result.posted
+          .filter((post) => post.copyError)
+          .map((post) => `${safeLogValue(post.periodKey)}:${safeLogMessage(post.copyError ?? "")}`)
           .join(",")}`
       : null
   ]

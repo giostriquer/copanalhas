@@ -10,6 +10,10 @@ import {
   createWeeklySnapshotRows
 } from "../chaos-dashboard/stats.js";
 import {
+  applyChaosRecapCopyArtifact,
+  type GenerateChaosRecapCopy
+} from "../chaos-dashboard/recap-copy.js";
+import {
   filterPredictionsForChaosRecapPeriod,
   filterResultsForChaosRecapPeriod,
   listChaosRecapPeriods,
@@ -49,6 +53,7 @@ export interface UpdateChaosDashboardOptions {
   ): void;
   resolveUserDisplayNames?(userIds: readonly string[]): Promise<ReadonlyMap<string, string>>;
   resolveUserAvatarDataUris?(userIds: readonly string[]): Promise<ReadonlyMap<string, string>>;
+  generateChaosRecapCopy?: GenerateChaosRecapCopy;
   renderPng(svg: string): Promise<Buffer>;
   upsertChaosDashboardMessage(
     message: ChaosDashboardMessage,
@@ -68,6 +73,8 @@ export interface UpdatedChaosDashboardPost {
   action: "posted" | "edited" | "replaced";
   renderState: "image" | "text-fallback";
   renderError?: string;
+  copyState?: "applied" | "fallback";
+  copyError?: string;
 }
 
 export interface SkippedChaosRecapPeriod {
@@ -168,7 +175,7 @@ async function updateChaosRecapPeriod(input: {
     );
   }
 
-  const model = buildChaosDashboardModel({
+  let model = buildChaosDashboardModel({
     matches: input.periodMatches,
     predictions: input.periodPredictions,
     results: input.periodResults,
@@ -182,6 +189,34 @@ async function updateChaosRecapPeriod(input: {
     now: input.updatedAt,
     timeZone: input.options.timeZone
   });
+  let copyState: UpdatedChaosDashboardPost["copyState"];
+  let copyError: string | undefined;
+
+  if (input.options.generateChaosRecapCopy) {
+    try {
+      const artifact = await input.options.generateChaosRecapCopy({
+        periodKey: model.period.key,
+        periodLabel: model.period.label,
+        awards: model.peopleAwards
+      });
+      const copyResult = applyChaosRecapCopyArtifact(
+        model.peopleAwards,
+        artifact,
+        model.period.key
+      );
+
+      model = {
+        ...model,
+        peopleAwards: copyResult.awards
+      };
+      copyState = copyResult.state;
+      copyError = copyResult.error;
+    } catch (error) {
+      copyState = "fallback";
+      copyError = errorMessage(error);
+    }
+  }
+
   let message: ChaosDashboardMessage;
   let renderState: UpdatedChaosDashboardPost["renderState"] = "image";
   let renderError: string | undefined;
@@ -216,7 +251,9 @@ async function updateChaosRecapPeriod(input: {
     messageId,
     action: postAction,
     renderState,
-    ...(renderError ? { renderError } : {})
+    ...(renderError ? { renderError } : {}),
+    ...(copyState ? { copyState } : {}),
+    ...(copyError ? { copyError } : {})
   };
 }
 

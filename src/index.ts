@@ -1,5 +1,6 @@
 import { pathToFileURL } from "node:url";
 import type { Buffer } from "node:buffer";
+import { resolve } from "node:path";
 
 import {
   startCopanalhasBotRuntime,
@@ -12,6 +13,8 @@ import { renderBracketPng } from "./bracket/png.js";
 import type { BracketDashboardMessage } from "./bracket/format.js";
 import { renderChaosDashboardPng } from "./chaos-dashboard/png.js";
 import type { ChaosDashboardMessage } from "./chaos-dashboard/format.js";
+import { createCodexRecapCopyProvider } from "./chaos-dashboard/codex-copy.js";
+import type { GenerateChaosRecapCopy } from "./chaos-dashboard/recap-copy.js";
 import { loadLocalEnvFile } from "./config/env.js";
 import { createMatchDayMessage, type MatchCardMessage } from "./discord/components.js";
 import { parseCopanalhasConfig, type CopanalhasConfig } from "./discord/config.js";
@@ -94,6 +97,7 @@ export interface CliDependencies {
     existingMessageId: string | null
   ): Promise<string>;
   renderChaosDashboardPng?(svg: string): Promise<Buffer>;
+  generateChaosRecapCopy?: GenerateChaosRecapCopy;
   resolveDiscordDisplayNames?(
     config: CopanalhasConfig,
     userIds: readonly string[]
@@ -296,6 +300,16 @@ async function startBot(dependencies: CliDependencies): Promise<void> {
   const store = dependencies.openDatabase(configResult.config.databasePath);
   const now = dependencies.now ?? (() => new Date());
   const writeBotLine = (line: string) => dependencies.writeLine(formatRuntimeLogLine(now(), line));
+  const generateChaosRecapCopy =
+    dependencies.generateChaosRecapCopy ??
+    (configResult.config.recapCodexEnabled
+      ? createCodexRecapCopyProvider({
+          command: configResult.config.recapCodexCommand,
+          outputDir: resolve(configResult.config.recapCodexOutputDir),
+          schemaPath: resolve("src", "chaos-dashboard", "recap-copy.schema.json"),
+          timeoutMs: configResult.config.recapCodexTimeoutMs
+        })
+      : undefined);
 
   writeBotLine("Starting Discord collector for configured channel.");
 
@@ -350,6 +364,7 @@ async function startBot(dependencies: CliDependencies): Promise<void> {
         configResult.config,
         userIds
       ),
+    ...(generateChaosRecapCopy ? { generateChaosRecapCopy } : {}),
     now,
     writeLine: dependencies.writeLine
   });

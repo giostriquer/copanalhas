@@ -16,6 +16,10 @@ export interface CopanalhasConfig {
   matchStartAlertDeleteAfterMinutes?: number;
   matchStartAlertLeadMinutes?: number;
   matchStartAlertGraceMinutes?: number;
+  recapCodexEnabled: boolean;
+  recapCodexCommand: string;
+  recapCodexOutputDir: string;
+  recapCodexTimeoutMs: number;
 }
 
 export type CopanalhasConfigResult =
@@ -56,6 +60,12 @@ export function parseCopanalhasConfig(
   );
   const matchStartAlertGraceMinutes = parsePositiveInteger(
     clean(env.COPANALHAS_MATCH_START_GRACE_MINUTES) ?? "5"
+  );
+  const recapCodexEnabled = clean(env.COPANALHAS_RECAP_CODEX_ENABLED)?.toLowerCase() === "true";
+  const recapCodexCommand = clean(env.COPANALHAS_RECAP_CODEX_COMMAND) ?? "codex";
+  const recapCodexOutputDir = clean(env.COPANALHAS_RECAP_CODEX_OUTPUT_DIR) ?? "./data/recap-copy";
+  const recapCodexTimeoutMs = parsePositiveInteger(
+    clean(env.COPANALHAS_RECAP_CODEX_TIMEOUT_MS) ?? "120000"
   );
 
   if (!discordToken) {
@@ -102,6 +112,10 @@ export function parseCopanalhasConfig(
     errors.push("COPANALHAS_MATCH_START_GRACE_MINUTES must be a positive integer");
   }
 
+  if (recapCodexTimeoutMs === undefined) {
+    errors.push("COPANALHAS_RECAP_CODEX_TIMEOUT_MS must be a positive integer");
+  }
+
   if (
     errors.length > 0 ||
     !discordToken ||
@@ -112,7 +126,8 @@ export function parseCopanalhasConfig(
     resultSyncRetryMinutes === undefined ||
     matchStartAlertDeleteAfterMinutes === undefined ||
     matchStartAlertLeadMinutes === undefined ||
-    matchStartAlertGraceMinutes === undefined
+    matchStartAlertGraceMinutes === undefined ||
+    recapCodexTimeoutMs === undefined
   ) {
     return { ok: false, errors };
   }
@@ -136,7 +151,11 @@ export function parseCopanalhasConfig(
       matchStartRoleId,
       matchStartAlertDeleteAfterMinutes,
       matchStartAlertLeadMinutes,
-      matchStartAlertGraceMinutes
+      matchStartAlertGraceMinutes,
+      recapCodexEnabled,
+      recapCodexCommand,
+      recapCodexOutputDir,
+      recapCodexTimeoutMs
     }
   };
 }

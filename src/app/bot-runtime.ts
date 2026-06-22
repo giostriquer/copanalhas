@@ -60,6 +60,7 @@ import type {
 import type { LeaderboardDashboardMessage } from "../leaderboard/format.js";
 import type { BracketDashboardMessage } from "../bracket/format.js";
 import type { ChaosDashboardMessage } from "../chaos-dashboard/format.js";
+import type { GenerateChaosRecapCopy } from "../chaos-dashboard/recap-copy.js";
 import type { StandingsDashboardMessage } from "../standings/format.js";
 import type {
   NewScoringRun,
@@ -192,6 +193,7 @@ export interface StartCopanalhasBotRuntimeOptions {
     existingMessageId: string | null
   ): Promise<string>;
   renderChaosDashboardPng?(svg: string): Promise<Buffer>;
+  generateChaosRecapCopy?: GenerateChaosRecapCopy;
   syncFinishedResults?(
     options: SyncFinishedResultsOptions
   ): Promise<SyncFinishedResultsResult>;
@@ -451,6 +453,9 @@ function createOperatorCommandOptions(
         : {}),
       ...(options.resolveUserAvatarDataUris
         ? { resolveUserAvatarDataUris: options.resolveUserAvatarDataUris }
+        : {}),
+      ...(options.generateChaosRecapCopy
+        ? { generateChaosRecapCopy: options.generateChaosRecapCopy }
         : {}),
       renderPng: options.renderChaosDashboardPng,
       upsertChaosDashboardMessage: options.upsertChaosDashboardMessage

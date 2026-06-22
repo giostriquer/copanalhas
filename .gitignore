@@ -16,6 +16,7 @@ tmp/
 *.db
 *.sqlite
 *.sqlite3
+data/recap-copy/
 logs/
 .superpowers/
 
