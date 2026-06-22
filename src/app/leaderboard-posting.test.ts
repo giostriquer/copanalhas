@@ -176,6 +176,38 @@ describe("updateLeaderboardDashboard", () => {
     expect(renderedSvg).not.toContain("user-2");
   });
 
+  test("resolves avatar data for leaderboard users", async () => {
+    let renderedSvg = "";
+    const resolveUserAvatarDataUris = vi.fn(async (userIds: readonly string[]) => {
+      expect(userIds).toEqual(["user-1", "user-2"]);
+
+      return new Map([["user-1", "data:image/png;base64,avatar-one"]]);
+    });
+
+    await updateLeaderboardDashboard({
+      guildId: "guild-1",
+      channelId: "channel-1",
+      predictions: [
+        prediction("user-2", "wc2026-001", 1, 1),
+        prediction("user-1", "wc2026-002", 2, 0)
+      ],
+      results: [],
+      timeZone: "UTC",
+      now: () => new Date("2026-06-11T23:35:00.000Z"),
+      listLeaderboardPosts: () => [],
+      recordLeaderboardPost: vi.fn(),
+      resolveUserAvatarDataUris,
+      renderPng: vi.fn(async (svg) => {
+        renderedSvg = svg;
+        return Buffer.from("png");
+      }),
+      upsertLeaderboardMessage: vi.fn(async () => "leaderboard-message-1")
+    });
+
+    expect(resolveUserAvatarDataUris).toHaveBeenCalledOnce();
+    expect(renderedSvg).toContain('href="data:image/png;base64,avatar-one"');
+  });
+
   test("records a replacement when the adapter returns a new message id", async () => {
     const records: StoredLeaderboardPost[] = [existingPost()];
     const upsertLeaderboardMessage = vi.fn(async () => "replacement-message");

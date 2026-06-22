@@ -392,6 +392,9 @@ function createOperatorCommandOptions(
       ...(options.resolveUserDisplayNames
         ? { resolveUserDisplayNames: options.resolveUserDisplayNames }
         : {}),
+      ...(options.resolveUserAvatarDataUris
+        ? { resolveUserAvatarDataUris: options.resolveUserAvatarDataUris }
+        : {}),
       renderPng: options.renderLeaderboardPng,
       upsertLeaderboardMessage: options.upsertLeaderboardMessage
     });

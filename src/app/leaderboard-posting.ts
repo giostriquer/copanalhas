@@ -19,6 +19,7 @@ export interface UpdateLeaderboardDashboardOptions {
   listLeaderboardPosts(): StoredLeaderboardPost[];
   recordLeaderboardPost(post: StoredLeaderboardPost): void;
   resolveUserDisplayNames?(userIds: readonly string[]): Promise<ReadonlyMap<string, string>>;
+  resolveUserAvatarDataUris?(userIds: readonly string[]): Promise<ReadonlyMap<string, string>>;
   renderPng(svg: string): Promise<Buffer>;
   upsertLeaderboardMessage(
     message: LeaderboardDashboardMessage,
@@ -47,7 +48,9 @@ export async function updateLeaderboardDashboard(
     scoreMatch(result, [...options.predictions])
   );
   const rows = buildLeaderboard(scoredPredictions, options.predictions);
-  const displayNames = await resolveLeaderboardDisplayNames(options, rows.map((row) => row.userId));
+  const userIds = rows.map((row) => row.userId);
+  const displayNames = await resolveLeaderboardDisplayNames(options, userIds);
+  const avatarDataUris = await resolveLeaderboardAvatarDataUris(options, userIds);
   const updatedAt = new Date(timestamp);
   let message: LeaderboardDashboardMessage;
   let renderState: UpdateLeaderboardDashboardResult["renderState"] = "image";
@@ -57,6 +60,7 @@ export async function updateLeaderboardDashboard(
     const svg = renderLeaderboardDashboardSvg({
       rows,
       displayNames,
+      avatarDataUris,
       generatedAtLabel: formatLeaderboardDashboardTimestamp(updatedAt, options.timeZone)
     });
     const png = await options.renderPng(svg);
@@ -116,6 +120,21 @@ async function resolveLeaderboardDisplayNames(
 
   try {
     return await options.resolveUserDisplayNames(userIds);
+  } catch {
+    return new Map();
+  }
+}
+
+async function resolveLeaderboardAvatarDataUris(
+  options: Pick<UpdateLeaderboardDashboardOptions, "resolveUserAvatarDataUris">,
+  userIds: readonly string[]
+): Promise<ReadonlyMap<string, string>> {
+  if (!options.resolveUserAvatarDataUris || userIds.length === 0) {
+    return new Map();
+  }
+
+  try {
+    return await options.resolveUserAvatarDataUris(userIds);
   } catch {
     return new Map();
   }

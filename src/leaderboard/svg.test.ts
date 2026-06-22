@@ -29,6 +29,7 @@ describe("renderLeaderboardDashboardSvg", () => {
         ["user-1", "Giova"],
         ["user-2", "Ana"]
       ]),
+      avatarDataUris: new Map([["user-1", "data:image/png;base64,avatar-one"]]),
       generatedAtLabel: "2026-06-11 23:30 UTC"
     });
 
@@ -43,6 +44,11 @@ describe("renderLeaderboardDashboardSvg", () => {
     expect(svg).toContain("Resultado");
     expect(svg).toContain("Perto");
     expect(svg).toContain("Jogos");
+    expect(svg).toContain('aria-label="Bandeira do Brasil"');
+    expect(svg).toContain('id="leaderboard-avatar-user-1"');
+    expect(svg).toContain('href="data:image/png;base64,avatar-one"');
+    expect(svg).toContain('x="1374"');
+    expect(svg).not.toContain('x="1424"');
     expect(svg).toContain("Premiação: 1k");
     expect(svg).toContain("PS: Se o anguish ganhar eu darei unblock nele como premiação no lugar dos 60%.");
     expect(svg).toContain("#FFDF00");
