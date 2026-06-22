@@ -10,6 +10,8 @@ import { formatRuntimeAsyncErrorLog, formatRuntimeLogLine } from "./app/dev-log.
 import type { MatchStartAlertMessage } from "./app/match-start-alerts.js";
 import { renderBracketPng } from "./bracket/png.js";
 import type { BracketDashboardMessage } from "./bracket/format.js";
+import { renderChaosDashboardPng } from "./chaos-dashboard/png.js";
+import type { ChaosDashboardMessage } from "./chaos-dashboard/format.js";
 import { loadLocalEnvFile } from "./config/env.js";
 import { createMatchDayMessage, type MatchCardMessage } from "./discord/components.js";
 import { parseCopanalhasConfig, type CopanalhasConfig } from "./discord/config.js";
@@ -40,6 +42,7 @@ import {
 import { computeGroupStandings, type StandingsResult } from "./standings/standings.js";
 import { upsertDiscordLeaderboardMessage } from "./discord/leaderboard-posting.js";
 import { upsertDiscordBracketMessage } from "./discord/bracket-posting.js";
+import { upsertDiscordChaosDashboardMessage } from "./discord/chaos-dashboard-posting.js";
 import type { LeaderboardDashboardMessage } from "./leaderboard/format.js";
 import { openCopanalhasDatabase } from "./storage/database.js";
 import { getMatchdayDateForInstant, isMatchOnMatchday } from "./worldcup/matchday.js";
@@ -81,6 +84,11 @@ export interface CliDependencies {
     existingMessageId: string | null
   ): Promise<string>;
   renderBracketPng?(svg: string): Promise<Buffer>;
+  upsertChaosDashboardMessage?(
+    message: ChaosDashboardMessage,
+    existingMessageId: string | null
+  ): Promise<string>;
+  renderChaosDashboardPng?(svg: string): Promise<Buffer>;
   resolveDiscordDisplayNames?(
     config: CopanalhasConfig,
     userIds: readonly string[]
@@ -316,6 +324,12 @@ async function startBot(dependencies: CliDependencies): Promise<void> {
       ((message, existingMessageId) =>
         upsertDiscordBracketMessage(configResult.config, message, existingMessageId)),
     renderBracketPng: dependencies.renderBracketPng ?? renderBracketPng,
+    upsertChaosDashboardMessage:
+      dependencies.upsertChaosDashboardMessage ??
+      ((message, existingMessageId) =>
+        upsertDiscordChaosDashboardMessage(configResult.config, message, existingMessageId)),
+    renderChaosDashboardPng:
+      dependencies.renderChaosDashboardPng ?? renderChaosDashboardPng,
     resolveUserDisplayNames: (userIds) =>
       (dependencies.resolveDiscordDisplayNames ?? fetchDiscordDisplayNames)(
         configResult.config,

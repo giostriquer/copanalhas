@@ -27,6 +27,8 @@ describe("startCopanalhasBotRuntime", () => {
     const upsertLeaderboardMessage = vi.fn(async () => "leaderboard-message-1");
     const upsertBracketMessage = vi.fn(async () => "bracket-message-1");
     const renderBracketPng = vi.fn(async () => Buffer.from("png"));
+    const upsertChaosDashboardMessage = vi.fn(async () => "chaos-message-1");
+    const renderChaosDashboardPng = vi.fn(async () => Buffer.from("png"));
     const writeLine = vi.fn();
 
     const runtime = await startCopanalhasBotRuntime({
@@ -41,6 +43,8 @@ describe("startCopanalhasBotRuntime", () => {
       upsertLeaderboardMessage,
       upsertBracketMessage,
       renderBracketPng,
+      upsertChaosDashboardMessage,
+      renderChaosDashboardPng,
       now: () => new Date("2026-06-11T21:15:00.000Z"),
       writeLine
     });
@@ -63,7 +67,8 @@ describe("startCopanalhasBotRuntime", () => {
           upsertResult: expect.any(Function),
           updateStandingsDashboard: expect.any(Function),
           updateLeaderboardDashboard: expect.any(Function),
-          updateBracketDashboard: expect.any(Function)
+          updateBracketDashboard: expect.any(Function),
+          updateChaosDashboard: expect.any(Function)
         }),
         registerCommands: expect.any(Function)
       })
@@ -75,6 +80,8 @@ describe("startCopanalhasBotRuntime", () => {
     expect(store.recordLeaderboardPost).toHaveBeenCalledOnce();
     expect(upsertBracketMessage).toHaveBeenCalledOnce();
     expect(store.recordBracketPost).toHaveBeenCalledOnce();
+    expect(upsertChaosDashboardMessage).toHaveBeenCalledOnce();
+    expect(store.recordChaosDashboardPost).toHaveBeenCalledOnce();
     expect(writeLine).toHaveBeenCalledWith(
       "[2026-06-11T21:15:00.000Z][dashboard] standings posts=2 posted=2 edited=0 replaced=0"
     );
@@ -83,6 +90,9 @@ describe("startCopanalhasBotRuntime", () => {
     );
     expect(writeLine).toHaveBeenCalledWith(
       "[2026-06-11T21:15:00.000Z][dashboard] bracket action=posted message=bracket-message-1 phase=provisional render=image"
+    );
+    expect(writeLine).toHaveBeenCalledWith(
+      "[2026-06-11T21:15:00.000Z][dashboard] chaos action=posted message=chaos-message-1 week=2026-06-08 render=image"
     );
     expect(writeLine).toHaveBeenCalledWith(
       "[2026-06-11T21:15:00.000Z][auto-post] date=2026-06-11 windowDays=3 posted=8 skipped=0"
@@ -94,7 +104,7 @@ describe("startCopanalhasBotRuntime", () => {
       "[2026-06-11T21:15:00.000Z][health] nextMatchday=2026-06-11 matches=2 posted=2/2"
     );
     expect(writeLine).toHaveBeenCalledWith(
-      "[2026-06-11T21:15:00.000Z][health] dashboards standings=2/2 leaderboard=present bracket=present lastLeaderboard=2026-06-11T21:15:00.000Z lastBracket=2026-06-11T21:15:00.000Z"
+      "[2026-06-11T21:15:00.000Z][health] dashboards standings=2/2 leaderboard=present bracket=present chaos=present lastLeaderboard=2026-06-11T21:15:00.000Z lastBracket=2026-06-11T21:15:00.000Z lastChaos=2026-06-11T21:15:00.000Z"
     );
 
     await runtime.stop();
@@ -400,6 +410,8 @@ describe("startCopanalhasBotRuntime", () => {
     const upsertLeaderboardMessage = vi.fn(async () => "leaderboard-message-1");
     const upsertBracketMessage = vi.fn(async () => "bracket-message-1");
     const renderBracketPng = vi.fn(async () => Buffer.from("png"));
+    const upsertChaosDashboardMessage = vi.fn(async () => "chaos-message-1");
+    const renderChaosDashboardPng = vi.fn(async () => Buffer.from("png"));
     let now = new Date("2026-06-11T21:00:00.000Z");
     const syncFinishedResults = vi.fn(async () => ({
       action: "synced" as const,
@@ -428,6 +440,8 @@ describe("startCopanalhasBotRuntime", () => {
       upsertLeaderboardMessage,
       upsertBracketMessage,
       renderBracketPng,
+      upsertChaosDashboardMessage,
+      renderChaosDashboardPng,
       syncFinishedResults,
       now: () => now,
       writeLine: vi.fn()
@@ -436,6 +450,7 @@ describe("startCopanalhasBotRuntime", () => {
     upsertStandingsMessage.mockClear();
     upsertLeaderboardMessage.mockClear();
     upsertBracketMessage.mockClear();
+    upsertChaosDashboardMessage.mockClear();
     syncFinishedResults.mockClear();
 
     now = new Date("2026-06-11T21:15:00.000Z");
@@ -445,6 +460,7 @@ describe("startCopanalhasBotRuntime", () => {
     expect(upsertStandingsMessage).toHaveBeenCalledTimes(2);
     expect(upsertLeaderboardMessage).toHaveBeenCalledOnce();
     expect(upsertBracketMessage).toHaveBeenCalledOnce();
+    expect(upsertChaosDashboardMessage).toHaveBeenCalledOnce();
   });
 
   test("isolates bracket refresh failures from standings and leaderboard refreshes", async () => {
@@ -994,6 +1010,8 @@ function createStore(): BotRuntimeStore {
   const standingsPosts: ReturnType<BotRuntimeStore["listStandingsPosts"]> = [];
   const leaderboardPosts: ReturnType<BotRuntimeStore["listLeaderboardPosts"]> = [];
   const bracketPosts: ReturnType<BotRuntimeStore["listBracketPosts"]> = [];
+  const chaosDashboardPosts: ReturnType<BotRuntimeStore["listChaosDashboardPosts"]> = [];
+  const chaosWeeklySnapshotRows: ReturnType<BotRuntimeStore["listChaosWeeklySnapshotRows"]> = [];
 
   return {
     migrate: vi.fn(),
@@ -1072,6 +1090,32 @@ function createStore(): BotRuntimeStore {
         (stored) => `${stored.guildId}|${stored.channelId}`,
         (next) => `${next.guildId}|${next.channelId}`
       );
+    }),
+    listChaosDashboardPosts: vi.fn(() => chaosDashboardPosts),
+    recordChaosDashboardPost: vi.fn((post) => {
+      upsertBy(
+        chaosDashboardPosts,
+        post,
+        (stored) => `${stored.guildId}|${stored.channelId}`,
+        (next) => `${next.guildId}|${next.channelId}`
+      );
+    }),
+    listChaosWeeklySnapshotRows: vi.fn(() => chaosWeeklySnapshotRows),
+    recordChaosWeeklySnapshotRows: vi.fn((weekStart, guildId, channelId, rows, createdAt) => {
+      for (const row of rows) {
+        upsertBy(
+          chaosWeeklySnapshotRows,
+          {
+            ...row,
+            weekStart,
+            guildId,
+            channelId,
+            createdAt
+          },
+          (stored) => `${stored.weekStart}|${stored.guildId}|${stored.channelId}|${stored.userId}`,
+          (next) => `${next.weekStart}|${next.guildId}|${next.channelId}|${next.userId}`
+        );
+      }
     }),
     insertScoringRun: vi.fn()
   };

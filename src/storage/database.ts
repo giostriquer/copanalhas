@@ -2,6 +2,7 @@ import { DatabaseSync } from "node:sqlite";
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 
+import type { ChaosWeeklySnapshotRow } from "../chaos-dashboard/types.js";
 import type { StandingsPostKey } from "../standings/format.js";
 import type { WorldCupMatch } from "../worldcup/types.js";
 
@@ -60,6 +61,21 @@ export interface StoredBracketPost {
   messageId: string;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface StoredChaosDashboardPost {
+  guildId: string;
+  channelId: string;
+  messageId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface StoredChaosWeeklySnapshotRow extends ChaosWeeklySnapshotRow {
+  weekStart: string;
+  guildId: string;
+  channelId: string;
+  createdAt: string;
 }
 
 export interface StoredPredictionRevealPost {
@@ -171,6 +187,30 @@ export class CopanalhasDatabase {
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL,
         PRIMARY KEY (guild_id, channel_id)
+      ) STRICT;
+
+      CREATE TABLE IF NOT EXISTS chaos_dashboard_posts (
+        guild_id TEXT NOT NULL,
+        channel_id TEXT NOT NULL,
+        message_id TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        PRIMARY KEY (guild_id, channel_id)
+      ) STRICT;
+
+      CREATE TABLE IF NOT EXISTS chaos_weekly_snapshots (
+        week_start TEXT NOT NULL,
+        guild_id TEXT NOT NULL,
+        channel_id TEXT NOT NULL,
+        user_id TEXT NOT NULL,
+        rank INTEGER NOT NULL,
+        points INTEGER NOT NULL,
+        solo_count INTEGER NOT NULL,
+        exact_count INTEGER NOT NULL,
+        outcome_count INTEGER NOT NULL,
+        closest_count INTEGER NOT NULL,
+        created_at TEXT NOT NULL,
+        PRIMARY KEY (week_start, guild_id, channel_id, user_id)
       ) STRICT;
 
       CREATE TABLE IF NOT EXISTS prediction_reveal_posts (
@@ -671,6 +711,117 @@ export class CopanalhasDatabase {
     }));
   }
 
+  recordChaosDashboardPost(post: StoredChaosDashboardPost): void {
+    this.database
+      .prepare(`
+        INSERT INTO chaos_dashboard_posts (
+          guild_id,
+          channel_id,
+          message_id,
+          created_at,
+          updated_at
+        )
+        VALUES (?, ?, ?, ?, ?)
+        ON CONFLICT(guild_id, channel_id) DO UPDATE SET
+          message_id = excluded.message_id,
+          created_at = excluded.created_at,
+          updated_at = excluded.updated_at
+      `)
+      .run(post.guildId, post.channelId, post.messageId, post.createdAt, post.updatedAt);
+  }
+
+  listChaosDashboardPosts(): StoredChaosDashboardPost[] {
+    const rows = this.database
+      .prepare("SELECT * FROM chaos_dashboard_posts ORDER BY guild_id, channel_id")
+      .all() as unknown as ChaosDashboardPostRow[];
+
+    return rows.map((row) => ({
+      guildId: row.guild_id,
+      channelId: row.channel_id,
+      messageId: row.message_id,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at
+    }));
+  }
+
+  recordChaosWeeklySnapshotRows(
+    weekStart: string,
+    guildId: string,
+    channelId: string,
+    rows: readonly ChaosWeeklySnapshotRow[],
+    createdAt: string
+  ): void {
+    const statement = this.database.prepare(`
+      INSERT INTO chaos_weekly_snapshots (
+        week_start,
+        guild_id,
+        channel_id,
+        user_id,
+        rank,
+        points,
+        solo_count,
+        exact_count,
+        outcome_count,
+        closest_count,
+        created_at
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(week_start, guild_id, channel_id, user_id) DO UPDATE SET
+        rank = excluded.rank,
+        points = excluded.points,
+        solo_count = excluded.solo_count,
+        exact_count = excluded.exact_count,
+        outcome_count = excluded.outcome_count,
+        closest_count = excluded.closest_count,
+        created_at = excluded.created_at
+    `);
+
+    for (const row of rows) {
+      statement.run(
+        weekStart,
+        guildId,
+        channelId,
+        row.userId,
+        row.rank,
+        row.points,
+        row.soloCount,
+        row.exactCount,
+        row.outcomeCount,
+        row.closestCount,
+        createdAt
+      );
+    }
+  }
+
+  listChaosWeeklySnapshotRows(
+    weekStart: string,
+    guildId: string,
+    channelId: string
+  ): StoredChaosWeeklySnapshotRow[] {
+    const rows = this.database
+      .prepare(`
+        SELECT *
+        FROM chaos_weekly_snapshots
+        WHERE week_start = ? AND guild_id = ? AND channel_id = ?
+        ORDER BY rank, user_id
+      `)
+      .all(weekStart, guildId, channelId) as unknown as ChaosWeeklySnapshotRowRecord[];
+
+    return rows.map((row) => ({
+      weekStart: row.week_start,
+      guildId: row.guild_id,
+      channelId: row.channel_id,
+      userId: row.user_id,
+      rank: row.rank,
+      points: row.points,
+      soloCount: row.solo_count,
+      exactCount: row.exact_count,
+      outcomeCount: row.outcome_count,
+      closestCount: row.closest_count,
+      createdAt: row.created_at
+    }));
+  }
+
   insertScoringRun(run: NewScoringRun): StoredScoringRun {
     const result = this.database
       .prepare("INSERT INTO scoring_runs (created_at, match_id, summary_json) VALUES (?, ?, ?)")
@@ -807,6 +958,28 @@ interface BracketPostRow {
   message_id: string;
   created_at: string;
   updated_at: string;
+}
+
+interface ChaosDashboardPostRow {
+  guild_id: string;
+  channel_id: string;
+  message_id: string;
+  created_at: string;
+  updated_at: string;
+}
+
+interface ChaosWeeklySnapshotRowRecord {
+  week_start: string;
+  guild_id: string;
+  channel_id: string;
+  user_id: string;
+  rank: number;
+  points: number;
+  solo_count: number;
+  exact_count: number;
+  outcome_count: number;
+  closest_count: number;
+  created_at: string;
 }
 
 interface PredictionRevealPostRow {

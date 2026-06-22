@@ -449,6 +449,116 @@ describe("CopanalhasDatabase", () => {
     store.close();
   });
 
+  test("records chaos dashboard posts by guild and channel", () => {
+    const store = openCopanalhasDatabase(":memory:");
+    store.migrate();
+
+    store.recordChaosDashboardPost({
+      guildId: "guild-1",
+      channelId: "channel-1",
+      messageId: "chaos-message-1",
+      createdAt: "2026-06-22T12:00:00.000Z",
+      updatedAt: "2026-06-22T12:00:00.000Z"
+    });
+    store.recordChaosDashboardPost({
+      guildId: "guild-1",
+      channelId: "channel-1",
+      messageId: "chaos-message-2",
+      createdAt: "2026-06-22T12:00:00.000Z",
+      updatedAt: "2026-06-22T12:05:00.000Z"
+    });
+
+    expect(store.listChaosDashboardPosts()).toEqual([
+      {
+        guildId: "guild-1",
+        channelId: "channel-1",
+        messageId: "chaos-message-2",
+        createdAt: "2026-06-22T12:00:00.000Z",
+        updatedAt: "2026-06-22T12:05:00.000Z"
+      }
+    ]);
+    store.close();
+  });
+
+  test("records chaos weekly snapshot rows by week, guild, and channel", () => {
+    const store = openCopanalhasDatabase(":memory:");
+    store.migrate();
+
+    store.recordChaosWeeklySnapshotRows(
+      "2026-06-22",
+      "guild-1",
+      "channel-1",
+      [
+        {
+          userId: "user-a",
+          rank: 1,
+          points: 5,
+          soloCount: 1,
+          exactCount: 0,
+          outcomeCount: 0,
+          closestCount: 0
+        },
+        {
+          userId: "user-b",
+          rank: 2,
+          points: 3,
+          soloCount: 0,
+          exactCount: 1,
+          outcomeCount: 0,
+          closestCount: 0
+        }
+      ],
+      "2026-06-22T12:00:00.000Z"
+    );
+    store.recordChaosWeeklySnapshotRows(
+      "2026-06-22",
+      "guild-1",
+      "channel-1",
+      [
+        {
+          userId: "user-a",
+          rank: 1,
+          points: 10,
+          soloCount: 2,
+          exactCount: 0,
+          outcomeCount: 0,
+          closestCount: 0
+        }
+      ],
+      "2026-06-22T12:05:00.000Z"
+    );
+
+    expect(store.listChaosWeeklySnapshotRows("2026-06-22", "guild-1", "channel-1")).toEqual([
+      {
+        weekStart: "2026-06-22",
+        guildId: "guild-1",
+        channelId: "channel-1",
+        userId: "user-a",
+        rank: 1,
+        points: 10,
+        soloCount: 2,
+        exactCount: 0,
+        outcomeCount: 0,
+        closestCount: 0,
+        createdAt: "2026-06-22T12:05:00.000Z"
+      },
+      {
+        weekStart: "2026-06-22",
+        guildId: "guild-1",
+        channelId: "channel-1",
+        userId: "user-b",
+        rank: 2,
+        points: 3,
+        soloCount: 0,
+        exactCount: 1,
+        outcomeCount: 0,
+        closestCount: 0,
+        createdAt: "2026-06-22T12:00:00.000Z"
+      }
+    ]);
+    store.close();
+  });
+
   test("records scoring runs with JSON summaries", () => {
     const store = openCopanalhasDatabase(":memory:");
     store.migrate();

@@ -10,6 +10,7 @@ import { buildLeaderboard, scoreMatch, type MatchResult } from "../scoring/scori
 import type {
   PostedMatchCardSource,
   StoredBracketPost,
+  StoredChaosDashboardPost,
   StoredLeaderboardPost,
   StoredPrediction,
   StoredResult,
@@ -25,6 +26,7 @@ import { formatTeamName } from "../worldcup/team-display.js";
 import type { UpdateStandingsDashboardResult } from "../app/standings-posting.js";
 import type { UpdateLeaderboardDashboardResult } from "../app/leaderboard-posting.js";
 import type { UpdateBracketDashboardResult } from "../app/bracket-posting.js";
+import type { UpdateChaosDashboardResult } from "../app/chaos-dashboard-posting.js";
 import type { RepostPredictionRevealResult } from "../app/prediction-reveal-posting.js";
 import type { ResultSyncSkippedMatch } from "../results/sync.js";
 import { copanalhasCommandName } from "./commands.js";
@@ -38,6 +40,7 @@ export type OperatorSubcommand =
   | "standings"
   | "leaderboard"
   | "bracket"
+  | "painel-caos"
   | "sync-results"
   | "meus-palpites"
   | "predictions"
@@ -87,6 +90,8 @@ export interface OperatorCommandOptions {
   updateLeaderboardDashboard(): Promise<UpdateLeaderboardDashboardResult>;
   listBracketPosts(): StoredBracketPost[];
   updateBracketDashboard(): Promise<UpdateBracketDashboardResult>;
+  listChaosDashboardPosts(): StoredChaosDashboardPost[];
+  updateChaosDashboard(): Promise<UpdateChaosDashboardResult>;
   syncResultsNow(): Promise<RuntimeResultSyncStatus>;
   repostPredictionReveal(matchId: string): Promise<RepostPredictionRevealResult>;
   updatePredictionResultReveals?(): Promise<unknown>;
@@ -233,6 +238,7 @@ export async function handleOperatorCommand(
     await options.updateStandingsDashboard();
     await options.updateLeaderboardDashboard();
     await options.updateBracketDashboard();
+    await options.updateChaosDashboard();
 
     return reply(
       [
@@ -244,7 +250,8 @@ export async function handleOperatorCommand(
         `Match start alerts: ${matchStartAlerts}`,
         "Standings refreshed.",
         "Leaderboard refreshed.",
-        "Bracket refreshed."
+        "Bracket refreshed.",
+        "Painel do Caos refreshed."
       ].join("\n")
     );
   }
@@ -274,7 +281,12 @@ export async function handleOperatorCommand(
           options.guildId,
           options.channelId
         ),
-        ...formatBracketStatus(options.listBracketPosts(), options.guildId, options.channelId)
+        ...formatBracketStatus(options.listBracketPosts(), options.guildId, options.channelId),
+        ...formatChaosDashboardStatus(
+          options.listChaosDashboardPosts(),
+          options.guildId,
+          options.channelId
+        )
       ].join("\n")
     );
   }
@@ -308,6 +320,16 @@ export async function handleOperatorCommand(
       );
     } catch (error) {
       return reply(`Failed to update bracket dashboard: ${errorMessage(error)}.`);
+    }
+  }
+
+  if (command.subcommand === "painel-caos") {
+    try {
+      const result = await options.updateChaosDashboard();
+
+      return reply(`Updated chaos dashboard: ${result.post.action} (${result.renderState}).`);
+    } catch (error) {
+      return reply(`Failed to update chaos dashboard: ${errorMessage(error)}.`);
     }
   }
 
@@ -406,6 +428,7 @@ export async function handleOperatorCommand(
     await options.updateStandingsDashboard();
     await options.updateLeaderboardDashboard();
     await options.updateBracketDashboard();
+    await options.updateChaosDashboard();
     await options.updatePredictionResultReveals?.();
 
     return reply(`Recorded result ${match.id} ${parsedScore.score.normalizedText}.`);
@@ -628,6 +651,7 @@ function parseOperatorSubcommand(value: string): OperatorSubcommand | undefined 
     value === "standings" ||
     value === "leaderboard" ||
     value === "bracket" ||
+    value === "painel-caos" ||
     value === "sync-results" ||
     value === "meus-palpites" ||
     value === "predictions" ||
@@ -794,6 +818,21 @@ function formatBracketStatus(
   return [
     `Bracket post: ${matchingPost ? "present" : "missing"}`,
     `Bracket last updated: ${matchingPost?.updatedAt ?? "never"}`
+  ];
+}
+
+function formatChaosDashboardStatus(
+  posts: StoredChaosDashboardPost[],
+  guildId: string,
+  channelId: string
+): string[] {
+  const matchingPost = posts.find(
+    (post) => post.guildId === guildId && post.channelId === channelId
+  );
+
+  return [
+    `Chaos dashboard: ${matchingPost ? "present" : "missing"}`,
+    `Chaos dashboard last updated: ${matchingPost?.updatedAt ?? "never"}`
   ];
 }
 

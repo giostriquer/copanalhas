@@ -103,6 +103,12 @@ describe("handleOperatorCommand", () => {
       bracketPhase: "provisional" as const,
       renderState: "image" as const
     }));
+    const updateChaosDashboard = vi.fn(async () => ({
+      action: "updated" as const,
+      post: { messageId: "chaos-message-1", action: "edited" as const },
+      weekStart: "2026-06-22",
+      renderState: "image" as const
+    }));
 
     const result = await handleOperatorCommand(
       command("reset-test-date", { date: "2026-06-11" }),
@@ -114,7 +120,8 @@ describe("handleOperatorCommand", () => {
         clearMatchStartAlertsForMatches,
         updateStandingsDashboard,
         updateLeaderboardDashboard,
-        updateBracketDashboard
+        updateBracketDashboard,
+        updateChaosDashboard
       })
     );
 
@@ -129,7 +136,8 @@ describe("handleOperatorCommand", () => {
         "Match start alerts: 5",
         "Standings refreshed.",
         "Leaderboard refreshed.",
-        "Bracket refreshed."
+        "Bracket refreshed.",
+        "Painel do Caos refreshed."
       ].join("\n"),
       ephemeral: true
     });
@@ -144,6 +152,7 @@ describe("handleOperatorCommand", () => {
     expect(updateStandingsDashboard).toHaveBeenCalledOnce();
     expect(updateLeaderboardDashboard).toHaveBeenCalledOnce();
     expect(updateBracketDashboard).toHaveBeenCalledOnce();
+    expect(updateChaosDashboard).toHaveBeenCalledOnce();
   });
 
   test("status reports today's automation state and recent catch-up results", async () => {
@@ -169,9 +178,10 @@ describe("handleOperatorCommand", () => {
         "Next result-sync check: 2026-06-11T20:50:00.000Z (2 pending)",
         "Last auto-post: posted 1, skipped 1 across 3 days from 2026-06-11",
         "Last result sync: waiting for 2 pending matches; next check 2026-06-11T20:50:00.000Z",
-        "Dashboards: standings 1/2, leaderboard present, bracket present",
+        "Dashboards: standings 1/2, leaderboard present, bracket present, chaos present",
         "Last leaderboard update: 2026-06-11T18:00:00.000Z",
         "Last bracket update: 2026-06-11T18:05:00.000Z",
+        "Last chaos update: 2026-06-11T18:10:00.000Z",
         "Data: 72 matches loaded, 0 missing kickoff times"
       ].join("\n"),
       ephemeral: true
@@ -274,6 +284,44 @@ describe("handleOperatorCommand", () => {
     expect(result).toEqual({
       action: "replied",
       content: "Failed to update bracket dashboard: Discord upload failed.",
+      ephemeral: true
+    });
+  });
+
+  test("painel-caos posts or updates the chaos dashboard", async () => {
+    const updateChaosDashboard = vi.fn(async () => ({
+      action: "updated" as const,
+      post: { messageId: "chaos-message-1", action: "edited" as const },
+      weekStart: "2026-06-22",
+      renderState: "image" as const
+    }));
+
+    const result = await handleOperatorCommand(
+      command("painel-caos"),
+      options({ updateChaosDashboard })
+    );
+
+    expect(result).toEqual({
+      action: "replied",
+      content: "Updated chaos dashboard: edited (image).",
+      ephemeral: true
+    });
+    expect(updateChaosDashboard).toHaveBeenCalledOnce();
+  });
+
+  test("painel-caos returns a private failure reply when refresh fails", async () => {
+    const result = await handleOperatorCommand(
+      command("painel-caos"),
+      options({
+        updateChaosDashboard: vi.fn(async () => {
+          throw new Error("Discord upload failed");
+        })
+      })
+    );
+
+    expect(result).toEqual({
+      action: "replied",
+      content: "Failed to update chaos dashboard: Discord upload failed.",
       ephemeral: true
     });
   });
@@ -775,7 +823,8 @@ function command(
     | "predictions"
     | "reveal"
     | "repost-reveal"
-    | "bracket",
+    | "bracket"
+    | "painel-caos",
   commandOptions: Record<string, string> = {},
   overrides: Partial<OperatorCommandInput> = {}
 ): OperatorCommandInput {
@@ -821,6 +870,13 @@ function options(overrides: Partial<OperatorCommandOptions> = {}): OperatorComma
       bracketPhase: "provisional" as const,
       renderState: "image" as const
     })),
+    listChaosDashboardPosts: vi.fn(() => []),
+    updateChaosDashboard: vi.fn(async () => ({
+      action: "updated" as const,
+      post: { messageId: "chaos-message-1", action: "edited" as const },
+      weekStart: "2026-06-22",
+      renderState: "image" as const
+    })),
     syncResultsNow: vi.fn(async () => ({
       action: "disabled" as const,
       reason: "disabled" as const
@@ -841,7 +897,8 @@ function discordCommandInteraction(
     | "predictions"
     | "reveal"
     | "repost-reveal"
-    | "bracket",
+    | "bracket"
+    | "painel-caos",
   events: string[] = []
 ) {
   return {
@@ -988,6 +1045,10 @@ function operatorHealthSnapshot(): OperatorHealthSnapshot {
     bracketPost: {
       present: true,
       lastUpdatedAt: "2026-06-11T18:05:00.000Z"
+    },
+    chaosDashboardPost: {
+      present: true,
+      lastUpdatedAt: "2026-06-11T18:10:00.000Z"
     },
     data: {
       matchesLoaded: 72,

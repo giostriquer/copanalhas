@@ -1,5 +1,6 @@
 import type { UpdateLeaderboardDashboardResult } from "./leaderboard-posting.js";
 import type { UpdateBracketDashboardResult } from "./bracket-posting.js";
+import type { UpdateChaosDashboardResult } from "./chaos-dashboard-posting.js";
 import type { UpdateStandingsDashboardResult } from "./standings-posting.js";
 import type {
   OperatorAutocompleteInput,
@@ -197,6 +198,19 @@ export function formatBracketDashboardLog(result: UpdateBracketDashboardResult):
     `action=${result.post.action}`,
     `message=${result.post.messageId}`,
     `phase=${result.bracketPhase}`,
+    `render=${result.renderState}`,
+    result.renderError ? `error=${safeLogMessage(result.renderError)}` : null
+  ]
+    .filter((part): part is string => part !== null)
+    .join(" ");
+}
+
+export function formatChaosDashboardLog(result: UpdateChaosDashboardResult): string {
+  return [
+    "[dashboard] chaos",
+    `action=${result.post.action}`,
+    `message=${result.post.messageId}`,
+    `week=${result.weekStart}`,
     `render=${result.renderState}`,
     result.renderError ? `error=${safeLogMessage(result.renderError)}` : null
   ]

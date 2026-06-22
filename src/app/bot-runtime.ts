@@ -9,6 +9,7 @@ import {
 import {
   formatBracketDashboardLog,
   formatAutoPostLog,
+  formatChaosDashboardLog,
   formatDiscordAsyncErrorLog,
   formatLeaderboardDashboardLog,
   formatOperatorAutocompleteLog,
@@ -28,6 +29,7 @@ import {
 } from "./operator-health.js";
 import { updateLeaderboardDashboard } from "./leaderboard-posting.js";
 import { updateBracketDashboard } from "./bracket-posting.js";
+import { updateChaosDashboard } from "./chaos-dashboard-posting.js";
 import { postDueMatchCards } from "./match-card-posting.js";
 import {
   postDuePredictionReveals,
@@ -57,10 +59,13 @@ import type {
 } from "../discord/operator-commands.js";
 import type { LeaderboardDashboardMessage } from "../leaderboard/format.js";
 import type { BracketDashboardMessage } from "../bracket/format.js";
+import type { ChaosDashboardMessage } from "../chaos-dashboard/format.js";
 import type { StandingsDashboardMessage } from "../standings/format.js";
 import type {
   NewScoringRun,
   StoredBracketPost,
+  StoredChaosDashboardPost,
+  StoredChaosWeeklySnapshotRow,
   StoredMatchStartAlert,
   StoredLeaderboardPost,
   StoredPostedMatchCard,
@@ -114,6 +119,23 @@ export interface BotRuntimeStore {
   recordLeaderboardPost(post: StoredLeaderboardPost): void;
   listBracketPosts(): StoredBracketPost[];
   recordBracketPost(post: StoredBracketPost): void;
+  listChaosDashboardPosts(): StoredChaosDashboardPost[];
+  recordChaosDashboardPost(post: StoredChaosDashboardPost): void;
+  listChaosWeeklySnapshotRows(
+    weekStart: string,
+    guildId: string,
+    channelId: string
+  ): StoredChaosWeeklySnapshotRow[];
+  recordChaosWeeklySnapshotRows(
+    weekStart: string,
+    guildId: string,
+    channelId: string,
+    rows: readonly Omit<
+      StoredChaosWeeklySnapshotRow,
+      "weekStart" | "guildId" | "channelId" | "createdAt"
+    >[],
+    createdAt: string
+  ): void;
   insertScoringRun(run: NewScoringRun): unknown;
 }
 
@@ -164,6 +186,11 @@ export interface StartCopanalhasBotRuntimeOptions {
     existingMessageId: string | null
   ): Promise<string>;
   renderBracketPng?(svg: string): Promise<Buffer>;
+  upsertChaosDashboardMessage?(
+    message: ChaosDashboardMessage,
+    existingMessageId: string | null
+  ): Promise<string>;
+  renderChaosDashboardPng?(svg: string): Promise<Buffer>;
   syncFinishedResults?(
     options: SyncFinishedResultsOptions
   ): Promise<SyncFinishedResultsResult>;
@@ -217,6 +244,9 @@ export async function startCopanalhasBotRuntime(
   await operatorCommandOptions.updateLeaderboardDashboard();
   if (hasBracketDashboardDependencies(options)) {
     await runBracketDashboardRefresh(options, operatorCommandOptions.updateBracketDashboard);
+  }
+  if (hasChaosDashboardDependencies(options)) {
+    await runChaosDashboardRefresh(options, operatorCommandOptions.updateChaosDashboard);
   }
   await runAutoPost(options, operatorCommandOptions, autoPostState);
   await runPredictionReveals(options);
@@ -273,6 +303,32 @@ function hasBracketDashboardDependencies(
   return (
     typeof options.upsertBracketMessage === "function" &&
     typeof options.renderBracketPng === "function"
+  );
+}
+
+async function runChaosDashboardRefresh(
+  options: StartCopanalhasBotRuntimeOptions,
+  updateChaosDashboardForRuntime: () => Promise<unknown>
+): Promise<void> {
+  try {
+    await updateChaosDashboardForRuntime();
+  } catch (error) {
+    writeRuntimeLine(
+      options,
+      formatRuntimeAsyncErrorLog({ scope: "chaos-dashboard", error })
+    );
+  }
+}
+
+function hasChaosDashboardDependencies(
+  options: StartCopanalhasBotRuntimeOptions
+): options is StartCopanalhasBotRuntimeOptions &
+  Required<
+    Pick<StartCopanalhasBotRuntimeOptions, "upsertChaosDashboardMessage" | "renderChaosDashboardPng">
+  > {
+  return (
+    typeof options.upsertChaosDashboardMessage === "function" &&
+    typeof options.renderChaosDashboardPng === "function"
   );
 }
 
@@ -361,10 +417,47 @@ function createOperatorCommandOptions(
 
     return result;
   };
+  const updateChaosDashboardForRuntime = async () => {
+    if (!hasChaosDashboardDependencies(options)) {
+      throw new Error("Chaos dashboard dependencies are not configured.");
+    }
+
+    const result = await updateChaosDashboard({
+      guildId: options.config.guildId,
+      channelId: options.config.channelId,
+      matches: options.matches,
+      predictions: options.store.listPredictions(),
+      results: options.store.listResults(),
+      timeZone: options.config.timezone,
+      now: options.now,
+      listChaosDashboardPosts: () => options.store.listChaosDashboardPosts(),
+      recordChaosDashboardPost: (post) => options.store.recordChaosDashboardPost(post),
+      listChaosWeeklySnapshotRows: (weekStart, guildId, channelId) =>
+        options.store.listChaosWeeklySnapshotRows(weekStart, guildId, channelId),
+      recordChaosWeeklySnapshotRows: (weekStart, guildId, channelId, rows, createdAt) =>
+        options.store.recordChaosWeeklySnapshotRows(
+          weekStart,
+          guildId,
+          channelId,
+          rows,
+          createdAt
+        ),
+      ...(options.resolveUserDisplayNames
+        ? { resolveUserDisplayNames: options.resolveUserDisplayNames }
+        : {}),
+      renderPng: options.renderChaosDashboardPng,
+      upsertChaosDashboardMessage: options.upsertChaosDashboardMessage
+    });
+
+    writeRuntimeLine(options, formatChaosDashboardLog(result));
+
+    return result;
+  };
   const resultSyncRefreshers = {
     updateStandingsDashboard: updateStandingsDashboardForRuntime,
     updateLeaderboardDashboard: updateLeaderboardDashboardForRuntime,
-    updateBracketDashboard: updateBracketDashboardForRuntime
+    updateBracketDashboard: updateBracketDashboardForRuntime,
+    updateChaosDashboard: updateChaosDashboardForRuntime
   };
 
   return {
@@ -407,6 +500,8 @@ function createOperatorCommandOptions(
     updateLeaderboardDashboard: updateLeaderboardDashboardForRuntime,
     listBracketPosts: () => options.store.listBracketPosts(),
     updateBracketDashboard: updateBracketDashboardForRuntime,
+    listChaosDashboardPosts: () => options.store.listChaosDashboardPosts(),
+    updateChaosDashboard: updateChaosDashboardForRuntime,
     updatePredictionResultReveals: async () => runPredictionResultReveals(options),
     repostPredictionReveal: (matchId) =>
       repostPredictionReveal({
@@ -595,7 +690,10 @@ async function runResultSync(
   options: StartCopanalhasBotRuntimeOptions,
   operatorCommandOptions: Pick<
     OperatorCommandOptions,
-    "updateStandingsDashboard" | "updateLeaderboardDashboard" | "updateBracketDashboard"
+    | "updateStandingsDashboard"
+    | "updateLeaderboardDashboard"
+    | "updateBracketDashboard"
+    | "updateChaosDashboard"
   >,
   state: ResultSyncRuntimeState,
   runOptions: { force?: boolean } = {}
@@ -688,6 +786,9 @@ async function runResultSync(
     await operatorCommandOptions.updateLeaderboardDashboard();
     if (hasBracketDashboardDependencies(options)) {
       await runBracketDashboardRefresh(options, operatorCommandOptions.updateBracketDashboard);
+    }
+    if (hasChaosDashboardDependencies(options)) {
+      await runChaosDashboardRefresh(options, operatorCommandOptions.updateChaosDashboard);
     }
     await runPredictionResultReveals(options);
     await runMatchStartAlerts(options);
@@ -807,6 +908,12 @@ function createOperatorHealthSnapshot(
       (post) =>
         post.guildId === options.config.guildId && post.channelId === options.config.channelId
     );
+  const chaosDashboardPost = options.store
+    .listChaosDashboardPosts()
+    .find(
+      (post) =>
+        post.guildId === options.config.guildId && post.channelId === options.config.channelId
+    );
 
   return {
     discord: {
@@ -855,6 +962,10 @@ function createOperatorHealthSnapshot(
     bracketPost: {
       present: bracketPost !== undefined,
       lastUpdatedAt: bracketPost?.updatedAt ?? null
+    },
+    chaosDashboardPost: {
+      present: chaosDashboardPost !== undefined,
+      lastUpdatedAt: chaosDashboardPost?.updatedAt ?? null
     },
     data: {
       matchesLoaded: options.matches.length,

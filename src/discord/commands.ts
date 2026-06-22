@@ -67,6 +67,9 @@ export function createCopanalhasCommand() {
       subcommand.setName("bracket").setDescription("Post or update the World Cup bracket")
     )
     .addSubcommand((subcommand) =>
+      subcommand.setName("painel-caos").setDescription("Post or update the Painel do Caos")
+    )
+    .addSubcommand((subcommand) =>
       subcommand
         .setName("sync-results")
         .setDescription("Force an immediate Football Data result sync")

@@ -3,6 +3,7 @@ import { describe, expect, test } from "vitest";
 import {
   formatAutoPostLog,
   formatBracketDashboardLog,
+  formatChaosDashboardLog,
   formatDiscordAsyncErrorLog,
   formatLeaderboardDashboardLog,
   formatOperatorAutocompleteLog,
@@ -210,6 +211,27 @@ describe("dev log formatting", () => {
       })
     ).toBe(
       "[dashboard] bracket action=edited message=bracket-message-1 phase=blocked render=text-fallback error=sharp failed badly"
+    );
+
+    expect(
+      formatChaosDashboardLog({
+        action: "updated",
+        post: { messageId: "chaos-message-1", action: "posted" },
+        weekStart: "2026-06-22",
+        renderState: "image"
+      })
+    ).toBe("[dashboard] chaos action=posted message=chaos-message-1 week=2026-06-22 render=image");
+
+    expect(
+      formatChaosDashboardLog({
+        action: "updated",
+        post: { messageId: "chaos-message-1", action: "edited" },
+        weekStart: "2026-06-22",
+        renderState: "text-fallback",
+        renderError: "sharp failed badly"
+      })
+    ).toBe(
+      "[dashboard] chaos action=edited message=chaos-message-1 week=2026-06-22 render=text-fallback error=sharp failed badly"
     );
   });
 });

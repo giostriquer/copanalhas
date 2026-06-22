@@ -112,6 +112,7 @@ While `bot` is running, use `/copanalhas` for normal operator work:
 - `/copanalhas status`
 - `/copanalhas leaderboard`
 - `/copanalhas bracket`
+- `/copanalhas painel-caos`
 - `/copanalhas meus-palpites`
 - `/copanalhas predictions match:wc2026-001`
 - `/copanalhas reveal match:wc2026-001`
@@ -136,15 +137,16 @@ result-sync action, standings post health, leaderboard post health, and bracket
 post health. Use it after starting the bot to confirm that catch-up ran and the
 process is ready for members.
 
-The main public dashboard is four persistent messages in the configured
+The main public dashboard is five persistent messages in the configured
 channel:
 
 - World Cup 2026 Group Standings, Groups A-F
 - World Cup 2026 Group Standings, Groups G-L
 - Copanalhas Leaderboard
 - World Cup 2026 Bracket
+- Painel do Caos
 
-The standings, leaderboard, and bracket dashboard messages are edited in place.
+The standings, leaderboard, bracket, and chaos dashboard messages are edited in place.
 Startup posts or repairs missing dashboard messages. Automatic result sync,
 manual result entry, forced result sync, and `reset-test-date` refresh the
 affected dashboards so the channel does not fill with new scoreboard messages.
@@ -168,6 +170,15 @@ results are complete, final Round of 32 slots use the reviewed FIFA
 qualification resolver. If FIFA tiebreakers still need manual review, the
 bracket reports that blocked state instead of guessing. Operators can run
 `/copanalhas bracket` to refresh only the bracket dashboard.
+
+The chaos dashboard is a deterministic PNG generated from reviewed match data,
+stored predictions, stored final results, and the official scoring output. It
+shows a permanent `Painel do Caos` with the top leaderboard rows, calendar-week
+movement, roast-style people awards, and match-level chaos stats. It stores only
+the persistent Discord message pointer and lightweight weekly leaderboard
+baselines needed to compare movement; it does not store raw private message
+content. Operators can run `/copanalhas painel-caos` to refresh only this
+dashboard.
 
 Prediction reveal posts are automatic. Every minute, the bot checks for matches
 whose prediction cutoff has passed, groups matches that share the same cutoff
@@ -193,8 +204,8 @@ late result sync. If the bot misses the early window, it can still catch up for
 `reset-test-date` is the broader smoke-test reset. It clears posted-card dedupe
 records, predictions, prediction reveal records, match-start alert records, and
 results for matches on the selected date, then refreshes standings, leaderboard,
-and bracket dashboards so temporary manual results do not keep affecting public
-tables or the bracket image.
+bracket, and chaos dashboards so temporary manual results do not keep affecting
+public tables or generated images.
 
 `meus-palpites` is member-facing and private. It defaults to the active
 operational matchday and shows only that matchday's predictions for the caller.
