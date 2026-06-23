@@ -48,7 +48,7 @@ export function renderStandingsDashboardSvg(
     text(STANDINGS_DASHBOARD_TITLE, margin + 68, 56, 38, brazilBlue, 900),
     text(options.label, margin + 68, 88, 17, brazilBlue, 800),
     text(`Atualizado: ${options.generatedAtLabel}`, width - margin, 58, 15, brazilBlue, 800, "end"),
-    text("J V E D GP GC SG Pts", width - margin, 88, 15, brazilBlue, 800, "end"),
+    text("Pts J V E D GP GC SG", width - margin, 88, 15, brazilBlue, 800, "end"),
     ...options.groups.map((group, index) => {
       const standing = standingsByGroup.get(group);
 
@@ -82,6 +82,7 @@ function renderColumnHeaders(x: number, y: number): string[] {
 
   return [
     text("Seleção", cols.team, y, 11, "#93c5fd", 900),
+    text("Pts", cols.points, y, 11, "#93c5fd", 900, "middle"),
     text("J", cols.played, y, 11, "#93c5fd", 900, "middle"),
     text("V", cols.wins, y, 11, "#93c5fd", 900, "middle"),
     text("E", cols.draws, y, 11, "#93c5fd", 900, "middle"),
@@ -89,7 +90,6 @@ function renderColumnHeaders(x: number, y: number): string[] {
     text("GP", cols.goalsFor, y, 11, "#93c5fd", 900, "middle"),
     text("GC", cols.goalsAgainst, y, 11, "#93c5fd", 900, "middle"),
     text("SG", cols.goalDifference, y, 11, "#93c5fd", 900, "middle"),
-    text("Pts", cols.points, y, 11, "#93c5fd", 900, "middle"),
     `<line x1="${x + 18}" y1="${y + 14}" x2="${x + cardWidth - 18}" y2="${y + 14}" stroke="#1d4ed8"/>`
   ];
 }
@@ -103,21 +103,25 @@ function renderStandingRow(
   const rowFill = index % 2 === 0 ? "#00358f" : "#003077";
   const accent = index < 2 ? brazilGreen : index === 2 ? brazilYellow : "#ef4444";
   const cols = columnPositions(x - 14);
+  const rowTop = y - 24;
+  const rowCenterY = rowTop + 17;
+  const textY = rowCenterY + 5;
+  const flagY = rowCenterY - flagHeight / 2;
 
   return [
-    `<rect x="${x}" y="${y - 24}" width="${cardWidth - 28}" height="34" rx="6" fill="${rowFill}"/>`,
-    `<rect x="${x}" y="${y - 24}" width="5" height="34" rx="2.5" fill="${accent}"/>`,
-    text(String(row.rank), x + 20, y - 2, 12, brazilYellow, 900, "middle"),
-    renderFlagImage(row.teamCode, x + 34, y - 21),
-    text(truncate(formatTeamName({ code: row.teamCode, name: row.teamName }), 18), cols.team, y - 1, 13, "#f8fafc", 900),
-    text(String(row.played), cols.played, y - 1, 12, "#dbeafe", 850, "middle"),
-    text(String(row.wins), cols.wins, y - 1, 12, "#dbeafe", 850, "middle"),
-    text(String(row.draws), cols.draws, y - 1, 12, "#dbeafe", 850, "middle"),
-    text(String(row.losses), cols.losses, y - 1, 12, "#dbeafe", 850, "middle"),
-    text(String(row.goalsFor), cols.goalsFor, y - 1, 12, "#dbeafe", 850, "middle"),
-    text(String(row.goalsAgainst), cols.goalsAgainst, y - 1, 12, "#dbeafe", 850, "middle"),
-    text(formatGoalDifference(row.goalDifference), cols.goalDifference, y - 1, 12, "#dbeafe", 850, "middle"),
-    text(String(row.points), cols.points, y - 1, 14, "#ffffff", 900, "middle")
+    `<rect x="${x}" y="${rowTop}" width="${cardWidth - 28}" height="34" rx="6" fill="${rowFill}"/>`,
+    `<rect x="${x}" y="${rowTop}" width="5" height="34" rx="2.5" fill="${accent}"/>`,
+    text(String(row.rank), x + 20, textY, 12, brazilYellow, 900, "middle"),
+    renderFlagImage(row.teamCode, x + 34, flagY),
+    text(truncate(formatTeamName({ code: row.teamCode, name: row.teamName }), 18), cols.team, textY, 13, "#f8fafc", 900),
+    text(String(row.points), cols.points, textY, 14, "#ffffff", 900, "middle"),
+    text(String(row.played), cols.played, textY, 12, "#dbeafe", 850, "middle"),
+    text(String(row.wins), cols.wins, textY, 12, "#dbeafe", 850, "middle"),
+    text(String(row.draws), cols.draws, textY, 12, "#dbeafe", 850, "middle"),
+    text(String(row.losses), cols.losses, textY, 12, "#dbeafe", 850, "middle"),
+    text(String(row.goalsFor), cols.goalsFor, textY, 12, "#dbeafe", 850, "middle"),
+    text(String(row.goalsAgainst), cols.goalsAgainst, textY, 12, "#dbeafe", 850, "middle"),
+    text(formatGoalDifference(row.goalDifference), cols.goalDifference, textY, 12, "#dbeafe", 850, "middle")
   ];
 }
 
@@ -136,14 +140,14 @@ interface ColumnPositions {
 function columnPositions(x: number): ColumnPositions {
   return {
     team: x + 78,
-    played: x + 236,
-    wins: x + 264,
-    draws: x + 292,
-    losses: x + 320,
-    goalsFor: x + 352,
-    goalsAgainst: x + 386,
-    goalDifference: x + 420,
-    points: x + 444
+    points: x + 236,
+    played: x + 268,
+    wins: x + 296,
+    draws: x + 324,
+    losses: x + 352,
+    goalsFor: x + 382,
+    goalsAgainst: x + 412,
+    goalDifference: x + 442
   };
 }
 

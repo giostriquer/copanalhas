@@ -22,6 +22,7 @@ describe("renderStandingsDashboardSvg", () => {
     expect(svg).toContain("Copa do Mundo 2026");
     expect(svg).toContain("Grupos A-F");
     expect(svg).toContain("Atualizado: 2026-06-11 23:30 UTC");
+    expect(svg).toContain("Pts J V E D GP GC SG");
     expect(svg).toContain("Grupo A");
     expect(svg).toContain("Grupo F");
     expect(svg).toContain("México");
@@ -41,6 +42,33 @@ describe("renderStandingsDashboardSvg", () => {
     expect(svg).toContain("Football data provided by the Football-Data.org API.");
   });
 
+  test("places points before match stats and aligns row rank, flag, and team name", () => {
+    const standings = computeGroupStandings(WORLD_CUP_2026_SEED.matches, [
+      result("wc2026-001", 2, 1)
+    ]);
+    const svg = renderStandingsDashboardSvg({
+      standings,
+      groups: ["A"],
+      label: "Grupo A",
+      generatedAtLabel: "2026-06-11 23:30 UTC"
+    });
+
+    expect(svg).toContain(
+      '<text x="280" y="226" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="11" font-weight="900" fill="#93c5fd">Pts</text>'
+    );
+    expect(svg).toContain(
+      '<text x="312" y="226" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="11" font-weight="900" fill="#93c5fd">J</text>'
+    );
+    expect(svg.indexOf(">Pts</text>")).toBeLessThan(svg.indexOf(">J</text>"));
+    expect(svg).toContain(
+      '<text x="78" y="262" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="900" fill="#FFDF00">1</text>'
+    );
+    expect(svg).toContain('<image x="92" y="248" width="25" height="18"');
+    expect(svg).toContain(
+      '<text x="122" y="262" text-anchor="start" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="900" fill="#f8fafc">México</text>'
+    );
+  });
+
   test("escapes team names before writing SVG text", () => {
     const svg = renderStandingsDashboardSvg({
       standings: [
@@ -51,7 +79,7 @@ describe("renderStandingsDashboardSvg", () => {
               rank: 1,
               group: "A",
               teamCode: "XXX",
-          teamName: "A <B> & C",
+              teamName: "A <B> & C",
               played: 0,
               wins: 0,
               draws: 0,
