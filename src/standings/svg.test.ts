@@ -59,6 +59,9 @@ describe("renderStandingsDashboardSvg", () => {
     expect(svg).toContain(
       '<text x="312" y="226" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="11" font-weight="900" fill="#93c5fd">J</text>'
     );
+    expect(svg).toContain(
+      '<text x="474" y="226" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="11" font-weight="900" fill="#93c5fd">SG</text>'
+    );
     expect(svg.indexOf(">Pts</text>")).toBeLessThan(svg.indexOf(">J</text>"));
     expect(svg).toContain(
       '<text x="78" y="262" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="900" fill="#FFDF00">1</text>'
@@ -66,6 +69,9 @@ describe("renderStandingsDashboardSvg", () => {
     expect(svg).toContain('<image x="92" y="248" width="25" height="18"');
     expect(svg).toContain(
       '<text x="122" y="262" text-anchor="start" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="900" fill="#f8fafc">México</text>'
+    );
+    expect(svg).toContain(
+      '<text x="474" y="262" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="850" fill="#dbeafe">+1</text>'
     );
   });
 

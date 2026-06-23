@@ -145,9 +145,9 @@ function columnPositions(x: number): ColumnPositions {
     wins: x + 296,
     draws: x + 324,
     losses: x + 352,
-    goalsFor: x + 382,
-    goalsAgainst: x + 412,
-    goalDifference: x + 442
+    goalsFor: x + 378,
+    goalsAgainst: x + 406,
+    goalDifference: x + 430
   };
 }
 
