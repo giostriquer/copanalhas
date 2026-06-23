@@ -178,14 +178,22 @@ export function formatResultSyncErrorLog(input: {
 
 export function formatStandingsDashboardLog(result: UpdateStandingsDashboardResult): string {
   const counts = countDashboardActions(result.posts.map((post) => post.action));
+  const imageCount = result.posts.filter((post) => post.renderState === "image").length;
+  const fallbackCount = result.posts.length - imageCount;
+  const errorCount = result.posts.filter((post) => post.renderError).length;
 
   return [
     "[dashboard] standings",
     `posts=${result.posts.length}`,
     `posted=${counts.posted}`,
     `edited=${counts.edited}`,
-    `replaced=${counts.replaced}`
-  ].join(" ");
+    `replaced=${counts.replaced}`,
+    `image=${imageCount}`,
+    `fallback=${fallbackCount}`,
+    errorCount > 0 ? `errors=${errorCount}` : null
+  ]
+    .filter((part): part is string => part !== null)
+    .join(" ");
 }
 
 export function formatLeaderboardDashboardLog(result: UpdateLeaderboardDashboardResult): string {

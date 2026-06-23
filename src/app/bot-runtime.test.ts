@@ -83,7 +83,7 @@ describe("startCopanalhasBotRuntime", () => {
     expect(upsertChaosDashboardMessage).not.toHaveBeenCalled();
     expect(store.recordChaosDashboardPost).not.toHaveBeenCalled();
     expect(writeLine).toHaveBeenCalledWith(
-      "[2026-06-11T21:15:00.000Z][dashboard] standings posts=2 posted=2 edited=0 replaced=0"
+      "[2026-06-11T21:15:00.000Z][dashboard] standings posts=2 posted=2 edited=0 replaced=0 image=0 fallback=2"
     );
     expect(writeLine).toHaveBeenCalledWith(
       "[2026-06-11T21:15:00.000Z][dashboard] leaderboard action=posted message=leaderboard-message-1 render=image"
@@ -682,7 +682,7 @@ describe("startCopanalhasBotRuntime", () => {
       "[2026-06-11T21:15:00.000Z][result-sync] range=2026-06-11..2026-06-11 synced stored=1 skipped=0"
     );
     expect(writeLine).toHaveBeenCalledWith(
-      "[2026-06-11T21:15:00.000Z][dashboard] standings posts=2 posted=2 edited=0 replaced=0"
+      "[2026-06-11T21:15:00.000Z][dashboard] standings posts=2 posted=2 edited=0 replaced=0 image=0 fallback=2"
     );
     expect(writeLine).toHaveBeenCalledWith(
       "[2026-06-11T21:15:00.000Z][dashboard] leaderboard action=posted message=leaderboard-message-1 render=image"

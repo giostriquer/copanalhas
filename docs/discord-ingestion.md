@@ -140,8 +140,8 @@ process is ready for members.
 The main public dashboard surface starts with four persistent messages in the
 configured channel:
 
-- World Cup 2026 Group Standings, Groups A-F
-- World Cup 2026 Group Standings, Groups G-L
+- Copa do Mundo 2026 group standings, Groups A-F
+- Copa do Mundo 2026 group standings, Groups G-L
 - Copanalhas Leaderboard
 - World Cup 2026 Bracket
 
@@ -151,6 +151,11 @@ message so members can compare week and phase artifacts side by side.
 Startup posts or repairs missing dashboard messages. Automatic result sync,
 manual result entry, forced result sync, and `reset-test-date` refresh the
 affected dashboards so the channel does not fill with new scoreboard messages.
+The standings dashboard is a deterministic PNG generated from local fixtures and
+stored final results, split across Groups A-F and Groups G-L. It uses Portuguese
+team display names, local SVG flag assets from `flag-icons`, full group-table
+columns, visible Football-Data attribution, and a text fallback if image
+rendering fails.
 The bracket dashboard is a deterministic PNG generated from reviewed match data
 and stored final results, with visible Football-Data attribution when API-backed
 sync may be used. The image renders the knockout path from the Round of 32 edges

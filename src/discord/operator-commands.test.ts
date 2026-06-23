@@ -199,8 +199,8 @@ describe("handleOperatorCommand", () => {
     const updateStandingsDashboard = vi.fn(async () => ({
       action: "updated" as const,
       posts: [
-        { postKey: "groups_a_f" as const, messageId: "message-a", action: "posted" as const },
-        { postKey: "groups_g_l" as const, messageId: "message-b", action: "posted" as const }
+        { postKey: "groups_a_f" as const, messageId: "message-a", action: "posted" as const, renderState: "image" as const },
+        { postKey: "groups_g_l" as const, messageId: "message-b", action: "posted" as const, renderState: "image" as const }
       ]
     }));
 
@@ -534,8 +534,8 @@ describe("handleOperatorCommand", () => {
     const updateStandingsDashboard = vi.fn(async () => ({
       action: "updated" as const,
       posts: [
-        { postKey: "groups_a_f" as const, messageId: "message-a", action: "edited" as const },
-        { postKey: "groups_g_l" as const, messageId: "message-b", action: "edited" as const }
+        { postKey: "groups_a_f" as const, messageId: "message-a", action: "edited" as const, renderState: "image" as const },
+        { postKey: "groups_g_l" as const, messageId: "message-b", action: "edited" as const, renderState: "image" as const }
       ]
     }));
     const updateLeaderboardDashboard = vi.fn(async () => ({

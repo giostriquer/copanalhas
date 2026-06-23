@@ -178,6 +178,7 @@ export interface StartCopanalhasBotRuntimeOptions {
     message: StandingsDashboardMessage,
     existingMessageId: string | null
   ): Promise<string>;
+  renderStandingsPng?(svg: string): Promise<Buffer>;
   upsertLeaderboardMessage(
     message: LeaderboardDashboardMessage,
     existingMessageId: string | null
@@ -362,6 +363,7 @@ function createOperatorCommandOptions(
       now: options.now,
       listStandingsPosts: () => options.store.listStandingsPosts(),
       recordStandingsPost: (post) => options.store.recordStandingsPost(post),
+      ...(options.renderStandingsPng ? { renderPng: options.renderStandingsPng } : {}),
       upsertStandingsMessage: options.upsertStandingsMessage
     });
 

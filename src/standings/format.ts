@@ -1,3 +1,5 @@
+import type { Buffer } from "node:buffer";
+
 import type { GroupStandingRow, GroupStandings } from "./standings.js";
 import { formatCompactTeamName } from "../worldcup/team-display.js";
 
@@ -7,12 +9,15 @@ export interface CreateStandingsDashboardMessagesOptions {
   standings: readonly GroupStandings[];
   updatedAt: Date;
   timeZone: string;
+  pngByKey?: ReadonlyMap<StandingsPostKey, Buffer>;
+  renderErrors?: ReadonlyMap<StandingsPostKey, string>;
 }
 
 export interface StandingsDashboardMessage {
   key: StandingsPostKey;
   content: string;
   embeds: StandingsDashboardEmbed[];
+  files: Array<{ attachment: Buffer; name: string }>;
 }
 
 export interface StandingsDashboardEmbed {
@@ -23,9 +28,22 @@ export interface StandingsDashboardEmbed {
   };
 }
 
-const dashboardGroups: Array<{ key: StandingsPostKey; label: string; groups: string[] }> = [
-  { key: "groups_a_f", label: "Groups A-F", groups: ["A", "B", "C", "D", "E", "F"] },
-  { key: "groups_g_l", label: "Groups G-L", groups: ["G", "H", "I", "J", "K", "L"] }
+export const STANDINGS_DASHBOARD_TITLE = "Copa do Mundo 2026";
+export const FOOTBALL_DATA_ATTRIBUTION = "Football data provided by the Football-Data.org API.";
+
+export const dashboardGroups: Array<{ key: StandingsPostKey; label: string; groups: string[]; attachmentName: string }> = [
+  {
+    key: "groups_a_f",
+    label: "Grupos A-F",
+    groups: ["A", "B", "C", "D", "E", "F"],
+    attachmentName: "copanalhas-standings-groups-a-f.png"
+  },
+  {
+    key: "groups_g_l",
+    label: "Grupos G-L",
+    groups: ["G", "H", "I", "J", "K", "L"],
+    attachmentName: "copanalhas-standings-groups-g-l.png"
+  }
 ];
 const cellWidth = 22;
 const teamNameWidth = 14;
@@ -36,17 +54,41 @@ export function createStandingsDashboardMessages(
   const standingsByGroup = new Map(options.standings.map((standing) => [standing.group, standing]));
   const updatedText = formatDashboardTimestamp(options.updatedAt, options.timeZone);
 
-  return dashboardGroups.map((dashboard) => ({
-    key: dashboard.key,
-    content: [
-      "World Cup 2026 Group Standings",
-      `Updated: ${updatedText}`,
-      dashboard.label,
-      renderDashboardTable(dashboard.groups, standingsByGroup),
-      "Columns: TEAM PTS GD"
-    ].join("\n"),
-    embeds: []
-  }));
+  return dashboardGroups.map((dashboard) => {
+    const png = options.pngByKey?.get(dashboard.key);
+
+    if (png) {
+      return {
+        key: dashboard.key,
+        content: [
+          `**${STANDINGS_DASHBOARD_TITLE} - ${dashboard.label}**`,
+          `Atualizado: ${updatedText}`,
+          "Imagem atualizada.",
+          FOOTBALL_DATA_ATTRIBUTION
+        ].join("\n"),
+        embeds: [],
+        files: [{ attachment: png, name: dashboard.attachmentName }]
+      };
+    }
+
+    const renderError = options.renderErrors?.get(dashboard.key);
+
+    return {
+      key: dashboard.key,
+      content: [
+        "World Cup 2026 Group Standings",
+        `Updated: ${updatedText}`,
+        renderError
+          ? `Dashboard image render failed: ${renderError}`
+          : "Imagem indisponivel no momento; usando fallback de texto.",
+        dashboard.label,
+        renderDashboardTable(dashboard.groups, standingsByGroup),
+        "Columns: TEAM PTS GD"
+      ].join("\n"),
+      embeds: [],
+      files: []
+    };
+  });
 }
 
 function renderDashboardTable(

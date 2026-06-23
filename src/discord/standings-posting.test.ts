@@ -1,3 +1,5 @@
+import { Buffer } from "node:buffer";
+
 import { describe, expect, test, vi } from "vitest";
 
 import {
@@ -43,7 +45,9 @@ describe("upsertDiscordStandingsMessageWithClient", () => {
     expect(client.channels.fetch).toHaveBeenCalledWith("channel-1");
     expect(edit).toHaveBeenCalledWith({
       content: message().content,
-      embeds: message().embeds
+      embeds: message().embeds,
+      files: message().files,
+      attachments: []
     });
     expect(send).not.toHaveBeenCalled();
     expect(client.destroy).toHaveBeenCalledOnce();
@@ -70,7 +74,8 @@ describe("upsertDiscordStandingsMessageWithClient", () => {
 
     expect(send).toHaveBeenCalledWith({
       content: message().content,
-      embeds: message().embeds
+      embeds: message().embeds,
+      files: message().files
     });
     expect(client.destroy).toHaveBeenCalledOnce();
   });
@@ -99,7 +104,8 @@ describe("upsertDiscordStandingsMessageWithClient", () => {
     expect(fetch).not.toHaveBeenCalled();
     expect(send).toHaveBeenCalledWith({
       content: message().content,
-      embeds: message().embeds
+      embeds: message().embeds,
+      files: message().files
     });
   });
 });
@@ -127,7 +133,8 @@ function message(): StandingsDashboardMessage {
   return {
     key: "groups_a_f",
     content: "World Cup 2026 Group Standings\nGroups A-F\n```text\n# Team Pts\n```",
-    embeds: []
+    embeds: [],
+    files: [{ attachment: Buffer.from("png"), name: "copanalhas-standings-groups-a-f.png" }]
   };
 }
 

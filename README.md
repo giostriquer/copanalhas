@@ -66,8 +66,9 @@ previous operational matchday.
 On startup, the bot immediately catches up the configured auto-post window if
 the configured auto-post time has already passed, refreshes standings, and runs
 result sync with a small lookback window when result sync is enabled. The main
-public dashboard is three persistent posts: group standings A-F, group standings
-G-L, and the Copanalhas player leaderboard.
+public dashboard includes persistent generated-image posts for group standings
+A-F, group standings G-L, the Copanalhas player leaderboard, and the knockout
+bracket.
 When a prediction window closes, the bot posts one compact reveal message in the
 matchday card thread, grouping matches that locked at the same time. After a
 result is stored, that same thread message is edited into a result receipt with

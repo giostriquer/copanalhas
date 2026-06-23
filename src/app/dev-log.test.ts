@@ -180,11 +180,17 @@ describe("dev log formatting", () => {
       formatStandingsDashboardLog({
         action: "updated",
         posts: [
-          { postKey: "groups_a_f", messageId: "message-a", action: "edited" },
-          { postKey: "groups_g_l", messageId: "message-b", action: "replaced" }
+          { postKey: "groups_a_f", messageId: "message-a", action: "edited", renderState: "image" },
+          {
+            postKey: "groups_g_l",
+            messageId: "message-b",
+            action: "replaced",
+            renderState: "text-fallback",
+            renderError: "sharp failed"
+          }
         ]
       })
-    ).toBe("[dashboard] standings posts=2 posted=0 edited=1 replaced=1");
+    ).toBe("[dashboard] standings posts=2 posted=0 edited=1 replaced=1 image=1 fallback=1 errors=1");
 
     expect(
       formatLeaderboardDashboardLog({

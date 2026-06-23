@@ -21,7 +21,7 @@ export interface DiscordStandingsChannel {
 
 export interface DiscordEditableStandingsMessage {
   id: string;
-  edit(message: DiscordStandingsMessagePayload): Promise<DiscordStandingsSentMessage>;
+  edit(message: DiscordStandingsEditPayload): Promise<DiscordStandingsSentMessage>;
 }
 
 export interface DiscordStandingsSentMessage {
@@ -31,6 +31,11 @@ export interface DiscordStandingsSentMessage {
 export interface DiscordStandingsMessagePayload {
   content: string;
   embeds: StandingsDashboardMessage["embeds"];
+  files: StandingsDashboardMessage["files"];
+}
+
+export interface DiscordStandingsEditPayload extends DiscordStandingsMessagePayload {
+  attachments: [];
 }
 
 export async function upsertDiscordStandingsMessage(
@@ -67,7 +72,7 @@ export async function upsertDiscordStandingsMessageWithClient(
     if (existingMessageId && channel.messages) {
       try {
         const existingMessage = await channel.messages.fetch(existingMessageId);
-        const editedMessage = await existingMessage.edit(payload);
+        const editedMessage = await existingMessage.edit(toDiscordEditPayload(payload));
 
         return editedMessage.id;
       } catch {
@@ -84,7 +89,17 @@ export async function upsertDiscordStandingsMessageWithClient(
 function toDiscordPayload(message: StandingsDashboardMessage): DiscordStandingsMessagePayload {
   return {
     content: message.content,
-    embeds: message.embeds
+    embeds: message.embeds,
+    files: message.files
+  };
+}
+
+function toDiscordEditPayload(
+  payload: DiscordStandingsMessagePayload
+): DiscordStandingsEditPayload {
+  return {
+    ...payload,
+    attachments: []
   };
 }
 

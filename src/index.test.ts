@@ -224,8 +224,8 @@ describe("runCli", () => {
     const output = lines.join("\n");
 
     expect(output).toContain("World Cup 2026 Group Standings");
-    expect(output).toContain("Groups A-F");
-    expect(output).toContain("Groups G-L");
+    expect(output).toContain("Grupos A-F");
+    expect(output).toContain("Grupos G-L");
     expect(output).toContain("| GROUP A                | GROUP B                | GROUP C                |");
     expect(output).toContain("México");
     expect(output).toContain("Bósnia e Herz.");
@@ -296,7 +296,7 @@ describe("runCli", () => {
     expect(startInterval).toHaveBeenCalled();
     expect(lines).toEqual([
       "[2026-06-11T12:00:00.000Z][bot] Starting Discord collector for configured channel.",
-      "[2026-06-11T12:00:00.000Z][dashboard] standings posts=2 posted=2 edited=0 replaced=0",
+      "[2026-06-11T12:00:00.000Z][dashboard] standings posts=2 posted=2 edited=0 replaced=0 image=2 fallback=0",
       "[2026-06-11T12:00:00.000Z][dashboard] leaderboard action=posted message=leaderboard-message-1 render=image",
       "[2026-06-11T12:00:00.000Z][dashboard] bracket action=posted message=bracket-message-1 phase=provisional render=image",
       "[2026-06-11T12:00:00.000Z][dashboard] recap posts=0 posted=0 edited=0 replaced=0 skipped=3 incomplete=3 alreadyPosted=0",
