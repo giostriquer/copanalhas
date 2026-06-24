@@ -6,6 +6,7 @@ export interface ChaosDashboardModel {
   period: ChaosRecapPeriodSummary;
   week: ChaosWeek;
   totals: ChaosTotals;
+  leaderboardRows: ChaosLeaderboardRow[];
   leaderboardTop: ChaosLeaderboardRow[];
   leaderOfWeek?: ChaosLeaderOfWeek;
   apostazuOfWeek?: ChaosApostazuOfWeek;

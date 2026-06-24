@@ -102,6 +102,7 @@ export function buildChaosDashboardModel(
       finishedPredictions: options.predictions.filter((prediction) => resultIds.has(prediction.matchId))
         .length
     },
+    leaderboardRows: rankedRows,
     leaderboardTop: rankedRows.slice(0, 5),
     ...(leaderOfWeek ? { leaderOfWeek } : {}),
     ...(apostazuOfWeek ? { apostazuOfWeek } : {}),

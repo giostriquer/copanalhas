@@ -2,7 +2,6 @@ import type {
   ChaosDashboardModel,
   ChaosLeaderboardRow,
   ChaosMatchAward,
-  ChaosMovementRow,
   ChaosPeopleAward
 } from "./types.js";
 
@@ -27,9 +26,6 @@ const brazilPanelStroke = "#1e64d1";
 const brazilGreen = "#009C3B";
 
 export function renderChaosDashboardSvg(model: ChaosDashboardModel): string {
-  const profileTop = contentTop + 276;
-  const hasApostazuCard = Boolean(model.apostazuOfWeek);
-
   return [
     `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" role="img" aria-label="${escapeAttribute(model.title)}">`,
     `<rect width="100%" height="100%" fill="${brazilBlue}"/>`,
@@ -46,21 +42,36 @@ export function renderChaosDashboardSvg(model: ChaosDashboardModel): string {
       600,
       "end"
     ),
-    renderPanel(leftX, contentTop, leftWidth, panelHeight, "Placar Principal", [
-      ...renderLeaderboard(model.leaderboardTop, leftX + 18, contentTop + 56),
-      ...renderLeaderCard(model.leaderOfWeek, leftX + 18, profileTop),
-      ...renderApostazuCard(model.apostazuOfWeek, leftX + 18, profileTop + 130),
-      ...renderMovement(
-        model.weeklyMovement,
-        leftX + 18,
-        contentTop + (hasApostazuCard ? 556 : 436),
-        hasApostazuCard ? 4 : 6
-      )
-    ]),
+    renderPanel(leftX, contentTop, leftWidth, panelHeight, "Placar Principal", renderLeftPanel(model)),
     renderPanel(centerX, contentTop, centerWidth, panelHeight, "Genios e Copazus", renderPeopleAwards(model.peopleAwards)),
     renderPanel(rightX, contentTop, rightWidth, panelHeight, "Highlights", renderMatchAwards(model.matchAwards)),
     "</svg>"
   ].join("");
+}
+
+function renderLeftPanel(model: ChaosDashboardModel): string[] {
+  const x = leftX + 18;
+  let cursorY = contentTop + 54;
+  const parts: string[] = [];
+  const leaderParts = renderLeaderCard(model.leaderOfWeek, x, cursorY);
+
+  if (leaderParts.length > 0) {
+    parts.push(...leaderParts);
+    cursorY += 130;
+  }
+
+  const apostazuParts = renderApostazuCard(model.apostazuOfWeek, x, cursorY);
+
+  if (apostazuParts.length > 0) {
+    parts.push(...apostazuParts);
+    cursorY += 130;
+  }
+
+  if (parts.length > 0) {
+    cursorY += 18;
+  }
+
+  return [...parts, ...renderWeeklyPointsTable(model.leaderboardRows, x, cursorY)];
 }
 
 function renderLeaderCard(
@@ -195,71 +206,47 @@ function renderMiniStat(input: {
   ];
 }
 
-function renderLeaderboard(rows: readonly ChaosLeaderboardRow[], x: number, y: number): string[] {
-  if (rows.length === 0) {
-    return [text("Ainda nao ha partidas pontuadas.", x, y, 16, "#f3f4f6", 800)];
-  }
-
-  const parts = [
-    text("#", x, y, 10, "#9ca3af", 800, "middle"),
-    text("Jogador", x + 26, y, 10, "#9ca3af", 800),
-    text("Pts", x + 198, y, 10, "#9ca3af", 800, "middle"),
-    text("Solo", x + 238, y, 9, "#9ca3af", 800, "middle"),
-    text("Exato", x + 278, y, 9, "#9ca3af", 800, "middle"),
-    text("Resultado", x + 326, y, 8, "#9ca3af", 800, "middle"),
-    text("Perto", x + 382, y, 9, "#9ca3af", 800, "middle")
-  ];
-
-  rows.slice(0, 5).forEach((row, index) => {
-    const rowY = y + 34 + index * 38;
-
-    parts.push(
-      `<rect x="${x - 8}" y="${rowY - 23}" width="${leftWidth - 20}" height="30" rx="6" fill="${index === 0 ? "#0047ab" : "#00358f"}"/>`,
-      text(String(row.rank), x, rowY, 14, brazilYellow, 900, "middle"),
-      text(truncate(row.displayName, 22), x + 26, rowY, 13, "#f3f4f6", 850),
-      text(String(row.points), x + 198, rowY, 14, "#f3f4f6", 900, "middle"),
-      text(String(row.soloCount), x + 238, rowY, 12, "#d1d5db", 800, "middle"),
-      text(String(row.exactCount), x + 278, rowY, 12, "#d1d5db", 800, "middle"),
-      text(String(row.outcomeCount), x + 326, rowY, 12, "#d1d5db", 800, "middle"),
-      text(String(row.closestCount), x + 382, rowY, 12, "#d1d5db", 800, "middle")
-    );
-  });
-
-  return parts;
-}
-
-function renderMovement(
-  movement: ChaosDashboardModel["weeklyMovement"],
+function renderWeeklyPointsTable(
+  rows: readonly ChaosLeaderboardRow[],
   x: number,
-  y: number,
-  maxRows = 6
+  y: number
 ): string[] {
-  const parts = [
-    text("Sobe e Desce da Semana", x, y, 18, "#ffffff", 900)
-  ];
-
-  if (movement.status === "no-history") {
-    return [...parts, text(movement.message, x, y + 34, 14, "#d1d5db", 700)];
-  }
-
-  const rows = [
-    ...movement.climbers.map((row) => ({ ...row, marker: `+${row.movement}` })),
-    ...movement.fallers.map((row) => ({ ...row, marker: String(row.movement) })),
-    ...movement.newcomers.map((row) => ({ ...row, marker: "novo" }))
-  ].slice(0, maxRows);
+  const parts = [text("Pontos da Semana", x, y, 18, "#ffffff", 900)];
 
   if (rows.length === 0) {
-    return [...parts, text("Ninguem se mexeu. A vergonha ficou estavel.", x, y + 34, 14, "#d1d5db", 700)];
+    return [...parts, text("Ainda nao ha partidas pontuadas.", x, y + 34, 14, "#d1d5db", 700)];
   }
+
+  const rowStartY = y + 58;
+  const panelBottom = contentTop + panelHeight - 18;
+  const rowHeight = Math.max(21, Math.min(26, Math.floor((panelBottom - rowStartY) / rows.length)));
+  const rowFontSize = rowHeight <= 22 ? 10 : 11;
+  const nameMaxLength = rowHeight <= 22 ? 18 : 21;
+
+  parts.push(
+    text("#", x, y + 30, 9, "#9ca3af", 800, "middle"),
+    text("Jogador", x + 24, y + 30, 9, "#9ca3af", 800),
+    text("Pts", x + 198, y + 30, 9, "#9ca3af", 800, "middle"),
+    text("S", x + 238, y + 30, 9, "#9ca3af", 800, "middle"),
+    text("E", x + 270, y + 30, 9, "#9ca3af", 800, "middle"),
+    text("R", x + 302, y + 30, 9, "#9ca3af", 800, "middle"),
+    text("P", x + 334, y + 30, 9, "#9ca3af", 800, "middle"),
+    text("J", x + 374, y + 30, 9, "#9ca3af", 800, "middle")
+  );
 
   rows.forEach((row, index) => {
-    const rowY = y + 36 + index * 31;
-    const color = row.movement > 0 ? "#22c55e" : row.movement < 0 ? "#ef4444" : brazilYellow;
+    const rowY = rowStartY + index * rowHeight;
 
     parts.push(
-      text(row.marker, x, rowY, 14, color, 900),
-      text(truncate(row.displayName, 30), x + 58, rowY, 13, "#f3f4f6", 800),
-      text(`#${row.rank}`, x + 330, rowY, 12, "#9ca3af", 800)
+      `<rect x="${x - 8}" y="${rowY - 17}" width="${leftWidth - 20}" height="${rowHeight - 3}" rx="5" fill="${index === 0 ? "#0047ab" : "#00358f"}"/>`,
+      text(String(row.rank), x, rowY, 11, brazilYellow, 900, "middle"),
+      text(truncate(row.displayName, nameMaxLength), x + 24, rowY, rowFontSize, "#f3f4f6", 850),
+      text(String(row.points), x + 198, rowY, 12, "#f3f4f6", 900, "middle"),
+      text(String(row.soloCount), x + 238, rowY, 10, "#d1d5db", 800, "middle"),
+      text(String(row.exactCount), x + 270, rowY, 10, "#d1d5db", 800, "middle"),
+      text(String(row.outcomeCount), x + 302, rowY, 10, "#d1d5db", 800, "middle"),
+      text(String(row.closestCount), x + 334, rowY, 10, "#d1d5db", 800, "middle"),
+      text(String(row.matchesScored), x + 374, rowY, 10, "#d1d5db", 800, "middle")
     );
   });
 

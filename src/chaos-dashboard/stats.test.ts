@@ -39,6 +39,7 @@ describe("chaos dashboard stats", () => {
       points: 5,
       soloCount: 1
     });
+    expect(model.leaderboardRows.map((row) => row.userId)).toEqual(["user-a", "user-c", "user-b"]);
     expect(model.leaderOfWeek).toMatchObject({
       userId: "user-a",
       displayName: "Guibexa",

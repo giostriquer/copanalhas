@@ -2,6 +2,7 @@ import { describe, expect, test } from "vitest";
 
 import { renderChaosDashboardSvg } from "./svg.js";
 import { sampleChaosDashboardModel } from "./test-helpers.js";
+import type { ChaosLeaderboardRow } from "./types.js";
 
 describe("chaos dashboard SVG renderer", () => {
   test("renders the main sections and evidence labels", () => {
@@ -26,6 +27,7 @@ describe("chaos dashboard SVG renderer", () => {
     expect(svg).not.toContain("Premios da Zoacao");
     expect(svg).not.toContain("Caos dos Jogos");
     expect(svg).not.toContain("Zoeira estatistica");
+    expect(svg).not.toContain("Sobe e Desce da Semana");
   });
 
   test("wraps award subtitles without colliding with value text", () => {
@@ -102,21 +104,48 @@ describe("chaos dashboard SVG renderer", () => {
     expect(zerosX - apostazuNameX).toBeGreaterThanOrEqual(150);
   });
 
+  test("renders profile cards above the full weekly points table", () => {
+    const leaderboardRows = Array.from({ length: 7 }, (_, index) =>
+      leaderboardRow(index + 1, `Jogador ${index + 1}`, 20 - index)
+    );
+    const svg = renderChaosDashboardSvg(
+      sampleChaosDashboardModel({
+        leaderboardTop: leaderboardRows.slice(0, 5),
+        leaderboardRows,
+        peopleAwards: [],
+        matchAwards: [],
+        weeklyMovement: { status: "no-history", message: "Sem historico semanal ainda." }
+      })
+    );
+
+    expect(svg).toContain("Pontos da Semana");
+    expect(svg).toContain("Jogador 7");
+    expect(svg).not.toContain("Sobe e Desce da Semana");
+    expect(svg).not.toContain("Sem historico semanal ainda.");
+
+    const tableTitleY = textY(svg, "Pontos da Semana");
+    const leaderTitleY = textY(svg, "Lider da Semana");
+    const apostazuTitleY = textY(svg, "Apostazu da Semana");
+
+    expect(tableTitleY).toBeGreaterThan(leaderTitleY);
+    expect(tableTitleY).toBeGreaterThan(apostazuTitleY);
+  });
+
   test("escapes user and match text before writing SVG", () => {
+    const dangerousRow: ChaosLeaderboardRow = {
+      userId: "user-a",
+      displayName: "Nome <perigoso>",
+      rank: 1,
+      points: 5,
+      soloCount: 1,
+      exactCount: 0,
+      outcomeCount: 0,
+      closestCount: 0,
+      matchesScored: 1
+    };
     const model = sampleChaosDashboardModel({
-      leaderboardTop: [
-        {
-          userId: "user-a",
-          displayName: "Nome <perigoso>",
-          rank: 1,
-          points: 5,
-          soloCount: 1,
-          exactCount: 0,
-          outcomeCount: 0,
-          closestCount: 0,
-          matchesScored: 1
-        }
-      ]
+      leaderboardRows: [dangerousRow],
+      leaderboardTop: [dangerousRow]
     });
 
     expect(renderChaosDashboardSvg(model)).toContain("Nome &lt;perigoso&gt;");
@@ -143,4 +172,18 @@ function textX(svg: string, value: string): number {
   }
 
   return Number(match[1]);
+}
+
+function leaderboardRow(rank: number, displayName: string, points: number): ChaosLeaderboardRow {
+  return {
+    userId: `user-${rank}`,
+    displayName,
+    rank,
+    points,
+    soloCount: rank % 2,
+    exactCount: rank,
+    outcomeCount: 7 - rank,
+    closestCount: rank % 3,
+    matchesScored: 12
+  };
 }

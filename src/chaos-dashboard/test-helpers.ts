@@ -3,6 +3,20 @@ import type { ChaosDashboardModel } from "./types.js";
 export function sampleChaosDashboardModel(
   overrides: Partial<ChaosDashboardModel> = {}
 ): ChaosDashboardModel {
+  const leaderboardRows = [
+    {
+      userId: "user-a",
+      displayName: "Guibexa",
+      rank: 1,
+      points: 23,
+      soloCount: 1,
+      exactCount: 4,
+      outcomeCount: 3,
+      closestCount: 0,
+      matchesScored: 12
+    }
+  ];
+
   return {
     title: "Copanalhas Recap",
     generatedAtLabel: "2026-06-24 12:30 GMT-3",
@@ -20,19 +34,8 @@ export function sampleChaosDashboardModel(
       predictions: 144,
       finishedPredictions: 120
     },
-    leaderboardTop: [
-      {
-        userId: "user-a",
-        displayName: "Guibexa",
-        rank: 1,
-        points: 23,
-        soloCount: 1,
-        exactCount: 4,
-        outcomeCount: 3,
-        closestCount: 0,
-        matchesScored: 12
-      }
-    ],
+    leaderboardRows,
+    leaderboardTop: leaderboardRows.slice(0, 5),
     leaderOfWeek: {
       userId: "user-a",
       displayName: "Guibexa",
