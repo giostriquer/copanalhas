@@ -4,11 +4,31 @@ import { join } from "node:path";
 
 import { describe, expect, test } from "vitest";
 
-import { createCodexRecapCopyProvider } from "./codex-copy.js";
+import { createCodexProcessSpec, createCodexRecapCopyProvider } from "./codex-copy.js";
 import type { CodexRecapCopyRunRequest } from "./codex-copy.js";
 import type { ChaosPeopleAward } from "./types.js";
 
 describe("codex recap copy provider", () => {
+  test("wraps codex execution through cmd.exe on Windows", () => {
+    const request: CodexRecapCopyRunRequest = {
+      command: "codex",
+      args: ["exec", "-"],
+      cwd: "E:\\dev\\copanalhas\\data\\recap-copy",
+      env: {},
+      stdin: "prompt",
+      timeoutMs: 1000
+    };
+
+    expect(createCodexProcessSpec(request, "win32")).toEqual({
+      command: "cmd.exe",
+      args: ["/d", "/s", "/c", "codex", "exec", "-"]
+    });
+    expect(createCodexProcessSpec(request, "linux")).toEqual({
+      command: "codex",
+      args: ["exec", "-"]
+    });
+  });
+
   test("runs codex exec with sanitized facts, read-only sandbox, and a schema output file", async () => {
     const outputDir = await mkdtemp(join(tmpdir(), "copanalhas-codex-copy-"));
     let request: CodexRecapCopyRunRequest | undefined;

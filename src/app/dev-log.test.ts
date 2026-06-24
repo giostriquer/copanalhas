@@ -240,7 +240,7 @@ describe("dev log formatting", () => {
         ]
       })
     ).toBe(
-      "[dashboard] recap posts=1 posted=1 edited=0 replaced=0 skipped=2 incomplete=2 alreadyPosted=0 periods=group-week-1"
+      "[dashboard] recap posts=1 posted=1 edited=0 replaced=0 skipped=2 incomplete=2 alreadyPosted=0 periods=group-week-1 copyApplied=0 copyFallback=0 copyDisabled=1"
     );
 
     expect(
@@ -258,7 +258,7 @@ describe("dev log formatting", () => {
         skipped: []
       })
     ).toBe(
-      "[dashboard] recap posts=1 posted=0 edited=1 replaced=0 skipped=0 incomplete=0 alreadyPosted=0 periods=group-week-1 errors=group-week-1:sharp failed badly"
+      "[dashboard] recap posts=1 posted=0 edited=1 replaced=0 skipped=0 incomplete=0 alreadyPosted=0 periods=group-week-1 copyApplied=0 copyFallback=0 copyDisabled=1 errors=group-week-1:sharp failed badly"
     );
 
     expect(
@@ -277,7 +277,7 @@ describe("dev log formatting", () => {
         skipped: []
       })
     ).toBe(
-      "[dashboard] recap posts=1 posted=1 edited=0 replaced=0 skipped=0 incomplete=0 alreadyPosted=0 periods=group-week-1 copyApplied=0 copyFallback=1 copyErrors=group-week-1:codex failed with Bot [redacted]"
+      "[dashboard] recap posts=1 posted=1 edited=0 replaced=0 skipped=0 incomplete=0 alreadyPosted=0 periods=group-week-1 copyApplied=0 copyFallback=1 copyDisabled=0 copyErrors=group-week-1:codex failed with Bot [redacted]"
     );
   });
 });

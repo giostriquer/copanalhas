@@ -19,6 +19,11 @@ export interface CodexRecapCopyRunResult {
   stderr: string;
 }
 
+export interface CodexProcessSpec {
+  command: string;
+  args: string[];
+}
+
 export interface CodexRecapCopyProviderOptions {
   command: string;
   outputDir: string;
@@ -76,7 +81,8 @@ async function runCodexExec(
   request: CodexRecapCopyRunRequest
 ): Promise<CodexRecapCopyRunResult> {
   return new Promise((resolve, reject) => {
-    const child = spawn(request.command, request.args, {
+    const processSpec = createCodexProcessSpec(request);
+    const child = spawn(processSpec.command, processSpec.args, {
       cwd: request.cwd,
       env: request.env,
       shell: false,
@@ -121,6 +127,23 @@ async function runCodexExec(
     });
     child.stdin.end(request.stdin);
   });
+}
+
+export function createCodexProcessSpec(
+  request: Pick<CodexRecapCopyRunRequest, "command" | "args">,
+  platform: NodeJS.Platform = process.platform
+): CodexProcessSpec {
+  if (platform === "win32") {
+    return {
+      command: "cmd.exe",
+      args: ["/d", "/s", "/c", request.command, ...request.args]
+    };
+  }
+
+  return {
+    command: request.command,
+    args: [...request.args]
+  };
 }
 
 function sanitizedCodexEnv(env: NodeJS.ProcessEnv): NodeJS.ProcessEnv {

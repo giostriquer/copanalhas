@@ -168,7 +168,7 @@ describe("startCopanalhasBotRuntime", () => {
       })
     );
     expect(writeLine).toHaveBeenCalledWith(
-      "[2026-06-24T15:30:00.000Z][dashboard] recap posts=1 posted=1 edited=0 replaced=0 skipped=2 incomplete=2 alreadyPosted=0 periods=group-week-1"
+      "[2026-06-24T15:30:00.000Z][dashboard] recap posts=1 posted=1 edited=0 replaced=0 skipped=2 incomplete=2 alreadyPosted=0 periods=group-week-1 copyApplied=0 copyFallback=0 copyDisabled=1"
     );
   });
 

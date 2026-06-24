@@ -124,6 +124,17 @@ Useful operator commands while the bot is running:
 - `COPANALHAS_MATCH_START_GRACE_MINUTES`: startup/tick grace window for posting
   a just-started match ping, default `5`.
 
+## Recap Copy
+
+- `COPANALHAS_RECAP_CODEX_ENABLED`: set to `true` to let the bot run
+  `codex exec` for alternate `Genios e Copazus` card titles/subtitles. Leave it
+  `false` for deterministic built-in copy.
+- `COPANALHAS_RECAP_CODEX_COMMAND`: Codex executable to spawn, default `codex`.
+- `COPANALHAS_RECAP_CODEX_OUTPUT_DIR`: directory for generated JSON artifacts,
+  default `./data/recap-copy`.
+- `COPANALHAS_RECAP_CODEX_TIMEOUT_MS`: timeout for copy generation, default
+  `120000`.
+
 ## Result Sync
 
 - `FOOTBALL_DATA_TOKEN`: enables the provider client when present.

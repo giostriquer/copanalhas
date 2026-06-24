@@ -238,6 +238,7 @@ export function formatChaosDashboardLog(result: UpdateChaosDashboardResult): str
 
   const copyApplied = result.posted.filter((post) => post.copyState === "applied").length;
   const copyFallback = result.posted.filter((post) => post.copyState === "fallback").length;
+  const copyDisabled = result.posted.filter((post) => post.copyState === undefined).length;
 
   for (const skipped of result.skipped) {
     if (skipped.reason === "already-posted") {
@@ -259,8 +260,8 @@ export function formatChaosDashboardLog(result: UpdateChaosDashboardResult): str
     result.posted.length > 0
       ? `periods=${result.posted.map((post) => safeLogValue(post.periodKey)).join(",")}`
       : null,
-    copyApplied + copyFallback > 0
-      ? `copyApplied=${copyApplied} copyFallback=${copyFallback}`
+    result.posted.length > 0
+      ? `copyApplied=${copyApplied} copyFallback=${copyFallback} copyDisabled=${copyDisabled}`
       : null,
     result.posted.some((post) => post.renderError)
       ? `errors=${result.posted
