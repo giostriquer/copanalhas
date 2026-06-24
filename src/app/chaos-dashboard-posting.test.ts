@@ -111,6 +111,25 @@ describe("updateChaosRecaps", () => {
     });
   });
 
+  test("refreshes only the requested recap period", async () => {
+    const posts: StoredChaosDashboardPost[] = [];
+
+    const result = await updateChaosRecaps({
+      ...baseOptionsWithCompletedThroughMatch(48),
+      periodKey: "group-week-2",
+      listChaosDashboardPosts: () => posts,
+      recordChaosDashboardPost: (post) => posts.push(post),
+      listChaosWeeklySnapshotRows: () => existingSnapshotRows(),
+      recordChaosWeeklySnapshotRows: vi.fn(),
+      renderPng: vi.fn(async () => Buffer.from("png")),
+      upsertChaosDashboardMessage: vi.fn(async () => "chaos-message-week-2")
+    });
+
+    expect(result.posted.map((post) => post.periodKey)).toEqual(["group-week-2"]);
+    expect(result.skipped).toEqual([]);
+    expect(posts.map((post) => post.periodKey)).toEqual(["group-week-2"]);
+  });
+
   test("records a replacement when the adapter returns a new message id", async () => {
     const posts: StoredChaosDashboardPost[] = [existingPost("group-week-1")];
 
@@ -302,6 +321,13 @@ describe("updateChaosRecaps", () => {
 });
 
 function baseOptionsWithCompletedGroupWeekOne(now = new Date("2026-06-24T15:30:00.000Z")) {
+  return baseOptionsWithCompletedThroughMatch(24, now);
+}
+
+function baseOptionsWithCompletedThroughMatch(
+  matchNumber: number,
+  now = new Date("2026-06-24T15:30:00.000Z")
+) {
   const firstMatch = WORLD_CUP_2026_SEED.matches[0]!;
 
   return {
@@ -313,7 +339,7 @@ function baseOptionsWithCompletedGroupWeekOne(now = new Date("2026-06-24T15:30:0
       prediction("user-b", firstMatch.id, 1, 0)
     ],
     results: WORLD_CUP_2026_SEED.matches
-      .filter((match) => match.matchNumber <= 24)
+      .filter((match) => match.matchNumber <= matchNumber)
       .map((match) =>
         match.id === firstMatch.id ? resultFor(match.id, 2, 1) : resultFor(match.id, 1, 0)
       ),

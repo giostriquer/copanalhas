@@ -1,5 +1,7 @@
 import { SlashCommandBuilder, type ApplicationCommandDataResolvable } from "discord.js";
 
+import { chaosRecapPeriodChoices } from "../chaos-dashboard/periods.js";
+
 export const copanalhasCommandName = "copanalhas";
 
 export interface CopanalhasCommandGuild {
@@ -67,7 +69,21 @@ export function createCopanalhasCommand() {
       subcommand.setName("bracket").setDescription("Post or update the World Cup bracket")
     )
     .addSubcommand((subcommand) =>
-      subcommand.setName("copanalhas-recap-painel").setDescription("Post or update the Copanalhas Recap")
+      subcommand
+        .setName("copanalhas-recap-painel")
+        .setDescription("Post or update the Copanalhas Recap")
+        .addStringOption((option) =>
+          option
+            .setName("period")
+            .setDescription("Week or period to refresh; omit to refresh all completed recaps")
+            .setRequired(false)
+            .addChoices(
+              ...chaosRecapPeriodChoices.map((period) => ({
+                name: period.label,
+                value: period.key
+              }))
+            )
+        )
     )
     .addSubcommand((subcommand) =>
       subcommand

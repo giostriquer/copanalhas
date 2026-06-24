@@ -60,6 +60,7 @@ import type {
 import type { LeaderboardDashboardMessage } from "../leaderboard/format.js";
 import type { BracketDashboardMessage } from "../bracket/format.js";
 import type { ChaosDashboardMessage } from "../chaos-dashboard/format.js";
+import type { ChaosRecapPeriodKey } from "../chaos-dashboard/periods.js";
 import type { GenerateChaosRecapCopy } from "../chaos-dashboard/recap-copy.js";
 import type { StandingsDashboardMessage } from "../standings/format.js";
 import type {
@@ -417,7 +418,10 @@ function createOperatorCommandOptions(
 
     return result;
   };
-  const updateChaosDashboardForRuntime = async (refreshExisting = true) => {
+  const updateChaosDashboardForRuntime = async (
+    refreshExisting = true,
+    periodKey?: ChaosRecapPeriodKey
+  ) => {
     if (!hasChaosDashboardDependencies(options)) {
       throw new Error("Chaos dashboard dependencies are not configured.");
     }
@@ -431,6 +435,7 @@ function createOperatorCommandOptions(
       timeZone: options.config.timezone,
       now: options.now,
       refreshExisting,
+      ...(periodKey ? { periodKey } : {}),
       listChaosDashboardPosts: () => options.store.listChaosDashboardPosts(),
       recordChaosDashboardPost: (post) => options.store.recordChaosDashboardPost(post),
       listChaosWeeklySnapshotRows: (weekStart, guildId, channelId) =>

@@ -51,6 +51,27 @@ describe("Copanalhas slash command definition", () => {
     }
   });
 
+  test("defines optional Copanalhas Recap period choices", () => {
+    const command = createCopanalhasCommand().toJSON();
+    const recapSubcommand = command.options?.find(
+      (option) => option.name === "copanalhas-recap-painel"
+    ) as { options?: Array<{ name: string; required?: boolean; choices?: unknown[] }> } | undefined;
+
+    expect(recapSubcommand?.options).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          name: "period",
+          required: false,
+          choices: expect.arrayContaining([
+            { name: "Fase de grupos - semana 1", value: "group-week-1" },
+            { name: "Fase de grupos - semana 2", value: "group-week-2" },
+            { name: "Fase de grupos - semana 3", value: "group-week-3" }
+          ])
+        })
+      ])
+    );
+  });
+
   test("registers commands on the configured guild", async () => {
     const set = vi.fn(async () => undefined);
 

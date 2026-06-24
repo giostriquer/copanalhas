@@ -87,6 +87,9 @@ Useful operator commands while the bot is running:
   date.
 - `/copanalhas clear-posted-date date:2026-06-11`: clear posted-card dedupe
   records for a date so it can be reposted during testing.
+- `/copanalhas copanalhas-recap-painel period:group-week-2`: refresh one
+  completed Copanalhas Recap period. Omit `period` to refresh/backfill all
+  completed periods.
 - `/copanalhas reset-test-date date:2026-06-11`: clear posted cards,
   predictions, reveal records, match-start alerts, and results for one test
   date, then refresh standings.

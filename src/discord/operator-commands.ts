@@ -27,6 +27,11 @@ import type { UpdateStandingsDashboardResult } from "../app/standings-posting.js
 import type { UpdateLeaderboardDashboardResult } from "../app/leaderboard-posting.js";
 import type { UpdateBracketDashboardResult } from "../app/bracket-posting.js";
 import type { UpdateChaosDashboardResult } from "../app/chaos-dashboard-posting.js";
+import {
+  chaosRecapPeriodChoices,
+  parseChaosRecapPeriodKey,
+  type ChaosRecapPeriodKey
+} from "../chaos-dashboard/periods.js";
 import type { RepostPredictionRevealResult } from "../app/prediction-reveal-posting.js";
 import type { ResultSyncSkippedMatch } from "../results/sync.js";
 import { copanalhasCommandName } from "./commands.js";
@@ -91,7 +96,10 @@ export interface OperatorCommandOptions {
   listBracketPosts(): StoredBracketPost[];
   updateBracketDashboard(): Promise<UpdateBracketDashboardResult>;
   listChaosDashboardPosts(): StoredChaosDashboardPost[];
-  updateChaosDashboard(refreshExisting?: boolean): Promise<UpdateChaosDashboardResult>;
+  updateChaosDashboard(
+    refreshExisting?: boolean,
+    periodKey?: ChaosRecapPeriodKey
+  ): Promise<UpdateChaosDashboardResult>;
   syncResultsNow(): Promise<RuntimeResultSyncStatus>;
   repostPredictionReveal(matchId: string): Promise<RepostPredictionRevealResult>;
   updatePredictionResultReveals?(): Promise<unknown>;
@@ -324,11 +332,21 @@ export async function handleOperatorCommand(
   }
 
   if (command.subcommand === "copanalhas-recap-painel") {
+    const periodKey = parseChaosRecapPeriodKey(command.options.period);
+
+    if (command.options.period && !periodKey) {
+      return reply(
+        `Unknown Copanalhas Recap period ${command.options.period}. Use ${formatChaosRecapPeriodKeys()}.`
+      );
+    }
+
     try {
-      const result = await options.updateChaosDashboard();
+      const result = periodKey
+        ? await options.updateChaosDashboard(true, periodKey)
+        : await options.updateChaosDashboard();
 
       return reply(
-        `Updated Copanalhas Recap: ${formatChaosRecapUpdateSummary(result)}.`
+        `Updated Copanalhas Recap${formatChaosRecapPeriodSuffix(periodKey)}: ${formatChaosRecapUpdateSummary(result)}.`
       );
     } catch (error) {
       return reply(`Failed to update Copanalhas Recap: ${errorMessage(error)}.`);
@@ -627,6 +645,12 @@ function readCommandOptions(
     return date ? { date } : {};
   }
 
+  if (subcommand === "copanalhas-recap-painel") {
+    const period = interaction.options.getString("period", false);
+
+    return period ? { period } : {};
+  }
+
   if (subcommand === "predictions" || subcommand === "reveal" || subcommand === "repost-reveal") {
     return {
       match: interaction.options.getString("match", true)
@@ -840,6 +864,28 @@ function formatChaosRecapUpdateSummary(result: UpdateChaosDashboardResult): stri
     `incomplete=${incomplete}`,
     `alreadyPosted=${alreadyPosted}`
   ].join(" ");
+}
+
+function formatChaosRecapPeriodSuffix(periodKey: ChaosRecapPeriodKey | undefined): string {
+  if (!periodKey) {
+    return "";
+  }
+
+  const label = chaosRecapPeriodChoices.find((period) => period.key === periodKey)?.label ?? periodKey;
+
+  return ` (${label})`;
+}
+
+function formatChaosRecapPeriodKeys(): string {
+  const keys = chaosRecapPeriodChoices.map((period) => period.key);
+  const last = keys.at(-1);
+  const first = keys.slice(0, -1);
+
+  if (!last) {
+    return "a valid period";
+  }
+
+  return `${first.join(", ")}, or ${last}`;
 }
 
 function formatChaosDashboardStatus(

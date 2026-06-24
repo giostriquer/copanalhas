@@ -39,10 +39,19 @@ const groupStagePeriods = [
   }
 ] as const satisfies readonly ChaosRecapPeriod[];
 
+export const chaosRecapPeriodChoices = groupStagePeriods.map((period) => ({
+  key: period.key,
+  label: period.label
+})) satisfies Array<{ key: ChaosRecapPeriodKey; label: string }>;
+
 export function listChaosRecapPeriods(matches: readonly WorldCupMatch[]): ChaosRecapPeriod[] {
   return groupStagePeriods.filter(
     (period) => matchesForChaosRecapPeriod(period, matches).length > 0
   );
+}
+
+export function parseChaosRecapPeriodKey(value: string | undefined): ChaosRecapPeriodKey | undefined {
+  return chaosRecapPeriodChoices.find((period) => period.key === value)?.key;
 }
 
 export function matchesForChaosRecapPeriod(

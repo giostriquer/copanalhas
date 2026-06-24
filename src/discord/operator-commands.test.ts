@@ -329,6 +329,51 @@ describe("handleOperatorCommand", () => {
     expect(updateChaosDashboard).toHaveBeenCalledWith();
   });
 
+  test("copanalhas-recap-painel can target one recap period", async () => {
+    const updateChaosDashboard = vi.fn(async () => ({
+      action: "updated" as const,
+      posted: [
+        {
+          periodKey: "group-week-2",
+          messageId: "chaos-message-2",
+          action: "edited" as const,
+          renderState: "image" as const
+        }
+      ],
+      skipped: []
+    }));
+
+    const result = await handleOperatorCommand(
+      command("copanalhas-recap-painel", { period: "group-week-2" }),
+      options({ updateChaosDashboard })
+    );
+
+    expect(result).toEqual({
+      action: "replied",
+      content:
+        "Updated Copanalhas Recap (Fase de grupos - semana 2): 1 recaps updated posted=0 edited=1 replaced=0 incomplete=0 alreadyPosted=0.",
+      ephemeral: true
+    });
+    expect(updateChaosDashboard).toHaveBeenCalledWith(true, "group-week-2");
+  });
+
+  test("copanalhas-recap-painel rejects unknown recap periods", async () => {
+    const updateChaosDashboard = vi.fn();
+
+    const result = await handleOperatorCommand(
+      command("copanalhas-recap-painel", { period: "unknown-week" }),
+      options({ updateChaosDashboard })
+    );
+
+    expect(result).toEqual({
+      action: "replied",
+      content:
+        "Unknown Copanalhas Recap period unknown-week. Use group-week-1, group-week-2, or group-week-3.",
+      ephemeral: true
+    });
+    expect(updateChaosDashboard).not.toHaveBeenCalled();
+  });
+
   test("copanalhas-recap-painel returns a private failure reply when refresh fails", async () => {
     const result = await handleOperatorCommand(
       command("copanalhas-recap-painel"),

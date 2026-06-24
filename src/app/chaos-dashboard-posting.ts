@@ -18,6 +18,7 @@ import {
   filterResultsForChaosRecapPeriod,
   listChaosRecapPeriods,
   matchesForChaosRecapPeriod,
+  type ChaosRecapPeriodKey,
   type ChaosRecapPeriod
 } from "../chaos-dashboard/periods.js";
 import type { ChaosWeeklySnapshotRow } from "../chaos-dashboard/types.js";
@@ -37,6 +38,7 @@ export interface UpdateChaosDashboardOptions {
   timeZone: string;
   now(): Date;
   refreshExisting?: boolean;
+  periodKey?: ChaosRecapPeriodKey;
   listChaosDashboardPosts(): StoredChaosDashboardPost[];
   recordChaosDashboardPost(post: StoredChaosDashboardPost): void;
   listChaosWeeklySnapshotRows(
@@ -87,7 +89,9 @@ export async function updateChaosRecaps(
 ): Promise<UpdateChaosDashboardResult> {
   const timestamp = options.now().toISOString();
   const updatedAt = new Date(timestamp);
-  const periods = listChaosRecapPeriods(options.matches);
+  const periods = listChaosRecapPeriods(options.matches).filter(
+    (period) => !options.periodKey || period.key === options.periodKey
+  );
   const posted: UpdatedChaosDashboardPost[] = [];
   const skipped: SkippedChaosRecapPeriod[] = [];
 
