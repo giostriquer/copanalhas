@@ -78,6 +78,7 @@ import type {
 } from "../storage/database.js";
 import type { WorldCupMatch } from "../worldcup/types.js";
 import { canSubmitPredictionAt } from "../worldcup/cutoff.js";
+import { resolveKnockoutMatchParticipants } from "../worldcup/knockout-resolution.js";
 import {
   getMatchdayDateForMatch,
   getMatchdayDateTimeParts,
@@ -208,8 +209,14 @@ export interface StartCopanalhasBotRuntimeOptions {
 export async function startCopanalhasBotRuntime(
   options: StartCopanalhasBotRuntimeOptions
 ): Promise<StartedBotRuntime> {
+  const seedMatches = options.matches.map(cloneRuntimeMatch);
+  options = {
+    ...options,
+    matches: seedMatches.map(cloneRuntimeMatch)
+  };
+
   options.store.migrate();
-  options.store.upsertMatches(options.matches);
+  refreshRuntimeMatches(options, seedMatches);
 
   const autoPostState: AutoPostRuntimeState = {
     lastRunDate: null,
@@ -230,7 +237,8 @@ export async function startCopanalhasBotRuntime(
         : {})
     },
     autoPostState,
-    resultSyncState
+    resultSyncState,
+    seedMatches
   );
   const predictionInteractionOptions = createPredictionInteractionOptions(options);
   const discordClient = await options.startDiscord(
@@ -258,7 +266,7 @@ export async function startCopanalhasBotRuntime(
   }
   await runAutoPost(options, operatorCommandOptions, autoPostState);
   await runPredictionReveals(options);
-  await runResultSync(options, operatorCommandOptions, resultSyncState);
+  await runResultSync(options, operatorCommandOptions, resultSyncState, {}, seedMatches);
   await runPredictionResultReveals(options);
   await runMatchStartAlerts(options);
   const startupHealth = createOperatorHealthSnapshot(options, autoPostState, resultSyncState);
@@ -270,7 +278,8 @@ export async function startCopanalhasBotRuntime(
     options,
     operatorCommandOptions,
     autoPostState,
-    resultSyncState
+    resultSyncState,
+    seedMatches
   );
 
   return {
@@ -427,7 +436,8 @@ function createPredictionInteractionOptions(
 function createOperatorCommandOptions(
   options: StartCopanalhasBotRuntimeOptions,
   autoPostState: AutoPostRuntimeState,
-  resultSyncState: ResultSyncRuntimeState
+  resultSyncState: ResultSyncRuntimeState,
+  seedMatches: readonly WorldCupMatch[]
 ): OperatorCommandOptions {
   const updateStandingsDashboardForRuntime = async () => {
     const result = await updateStandingsDashboard({
@@ -573,14 +583,25 @@ function createOperatorCommandOptions(
     clearPostedMatchCards: (date) =>
       options.store.clearPostedMatchCardsForDate(options.config.channelId, date),
     clearPredictionsForMatches: (matchIds) => options.store.clearPredictionsForMatches(matchIds),
-    clearResultsForMatches: (matchIds) => options.store.clearResultsForMatches(matchIds),
+    clearResultsForMatches: (matchIds) => {
+      const cleared = options.store.clearResultsForMatches(matchIds);
+
+      if (cleared > 0) {
+        refreshRuntimeMatches(options, seedMatches);
+      }
+
+      return cleared;
+    },
     clearPredictionRevealPostsForMatches: (matchIds) =>
       options.store.clearPredictionRevealPostsForMatches(matchIds),
     clearMatchStartAlertsForMatches: (matchIds) =>
       options.store.clearMatchStartAlertsForMatches(matchIds),
     listPredictions: () => options.store.listPredictions(),
     listResults: () => options.store.listResults(),
-    upsertResult: (result) => options.store.upsertResult(result),
+    upsertResult: async (result) => {
+      await options.store.upsertResult(result);
+      refreshRuntimeMatches(options, seedMatches);
+    },
     listStandingsPosts: () => options.store.listStandingsPosts(),
     updateStandingsDashboard: updateStandingsDashboardForRuntime,
     listLeaderboardPosts: () => options.store.listLeaderboardPosts(),
@@ -605,7 +626,7 @@ function createOperatorCommandOptions(
         recordPredictionRevealPost: (post) => options.store.recordPredictionRevealPost(post)
       }),
     syncResultsNow: async () =>
-      runResultSync(options, resultSyncRefreshers, resultSyncState, { force: true }),
+      runResultSync(options, resultSyncRefreshers, resultSyncState, { force: true }, seedMatches),
     logOperatorCommand: (input, result) =>
       writeRuntimeLine(options, formatOperatorCommandLog(input, result)),
     logOperatorAutocomplete: (input, result) =>
@@ -620,7 +641,8 @@ function startRuntimeIntervals(
   options: StartCopanalhasBotRuntimeOptions,
   operatorCommandOptions: OperatorCommandOptions,
   autoPostState: AutoPostRuntimeState,
-  resultSyncState: ResultSyncRuntimeState
+  resultSyncState: ResultSyncRuntimeState,
+  seedMatches: readonly WorldCupMatch[]
 ): RuntimeInterval[] {
   const intervals: RuntimeInterval[] = [];
 
@@ -640,7 +662,7 @@ function startRuntimeIntervals(
   if (options.config.resultSyncEnabled && options.config.footballDataToken) {
     intervals.push(
       options.startInterval(async () => {
-        await runResultSync(options, operatorCommandOptions, resultSyncState);
+        await runResultSync(options, operatorCommandOptions, resultSyncState, {}, seedMatches);
       }, resultSyncIntervalMs)
     );
   }
@@ -783,7 +805,8 @@ async function runResultSync(
     | "updateChaosDashboard"
   >,
   state: ResultSyncRuntimeState,
-  runOptions: { force?: boolean } = {}
+  runOptions: { force?: boolean } = {},
+  seedMatches: readonly WorldCupMatch[] = options.matches
 ): Promise<RuntimeResultSyncStatus> {
   if (!options.config.resultSyncEnabled) {
     state.lastResult = { action: "disabled", reason: "disabled" };
@@ -869,6 +892,7 @@ async function runResultSync(
   writeRuntimeLine(options, formatResultSyncLog(state.lastResult));
 
   if (syncResult.action === "synced" && syncResult.storedResults.length > 0) {
+    refreshRuntimeMatches(options, seedMatches);
     await operatorCommandOptions.updateStandingsDashboard();
     await operatorCommandOptions.updateLeaderboardDashboard();
     if (hasBracketDashboardDependencies(options)) {
@@ -1140,6 +1164,28 @@ function resultSyncPlanStatus(
 
 function latestTimestamp(timestamps: readonly string[]): string | null {
   return timestamps.toSorted().at(-1) ?? null;
+}
+
+function refreshRuntimeMatches(
+  options: StartCopanalhasBotRuntimeOptions,
+  seedMatches: readonly WorldCupMatch[]
+): void {
+  const resolvedMatches = resolveKnockoutMatchParticipants(
+    seedMatches,
+    options.store.listResults()
+  );
+
+  options.matches.splice(0, options.matches.length, ...resolvedMatches);
+  options.store.upsertMatches(options.matches);
+}
+
+function cloneRuntimeMatch(match: WorldCupMatch): WorldCupMatch {
+  return {
+    ...match,
+    homeTeam: { ...match.homeTeam },
+    awayTeam: { ...match.awayTeam },
+    externalIds: { ...match.externalIds }
+  };
 }
 
 function shouldLogResultSyncStatus(

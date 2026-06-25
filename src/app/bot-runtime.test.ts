@@ -11,6 +11,7 @@ import type {
   StoredResult
 } from "../storage/database.js";
 import { WORLD_CUP_2026_SEED } from "../worldcup/seed.js";
+import { isGroupStageMatch, type WorldCupMatch } from "../worldcup/types.js";
 
 describe("startCopanalhasBotRuntime", () => {
   test("composes storage, Discord handlers, operator commands, and scheduler", async () => {
@@ -108,6 +109,100 @@ describe("startCopanalhasBotRuntime", () => {
     );
 
     await runtime.stop();
+  });
+
+  test("resolves knockout participants from stored group results during startup", async () => {
+    const store = {
+      ...createStore(),
+      listResults: vi.fn(() => currentSeedProofStoredResults())
+    };
+    let operatorOptions: OperatorCommandOptions | undefined;
+    const startDiscord = vi.fn(async (_config, _onMessage, _predictionOptions, readyOptions) => {
+      operatorOptions = readyOptions.operatorCommandOptions;
+      return { destroy: vi.fn(async () => undefined) };
+    });
+
+    await startCopanalhasBotRuntime({
+      config: config(),
+      store,
+      matches: WORLD_CUP_2026_SEED.matches,
+      startDiscord,
+      startInterval: vi.fn(() => ({ stop: vi.fn() })),
+      sendMatchCard: vi.fn(async () => "discord-message-1"),
+      sendPredictionReveal: vi.fn(async () => ({
+        threadId: "thread-1",
+        messageId: "reveal-message-1"
+      })),
+      upsertStandingsMessage: vi.fn(async (message) => `standings-${message.key}`),
+      upsertLeaderboardMessage: vi.fn(async () => "leaderboard-message-1"),
+      renderLeaderboardPng: vi.fn(async () => Buffer.from("png")),
+      upsertBracketMessage: vi.fn(async () => "bracket-message-1"),
+      renderBracketPng: vi.fn(async () => Buffer.from("png")),
+      now: () => new Date("2026-06-28T15:00:00.000Z"),
+      writeLine: vi.fn()
+    });
+
+    const storedMatches = vi.mocked(store.upsertMatches).mock.calls.at(-1)?.[0] ?? [];
+
+    expect(matchByNumber(storedMatches, 73)).toMatchObject({
+      homeTeam: { code: "RSA", name: "South Africa" },
+      awayTeam: { code: "BIH", name: "Bosnia and Herzegovina" }
+    });
+    expect(matchByNumber(operatorOptions?.matches ?? [], 73)).toMatchObject({
+      homeTeam: { code: "RSA", name: "South Africa" },
+      awayTeam: { code: "BIH", name: "Bosnia and Herzegovina" }
+    });
+  });
+
+  test("reverts runtime knockout participants when stored results are cleared", async () => {
+    let results = currentSeedProofStoredResults();
+    const store = {
+      ...createStore(),
+      listResults: vi.fn(() => results),
+      clearResultsForMatches: vi.fn((matchIds: readonly string[]) => {
+        const before = results.length;
+        results = results.filter((result) => !matchIds.includes(result.matchId));
+
+        return before - results.length;
+      })
+    };
+    let operatorOptions: OperatorCommandOptions | undefined;
+    const startDiscord = vi.fn(async (_config, _onMessage, _predictionOptions, readyOptions) => {
+      operatorOptions = readyOptions.operatorCommandOptions;
+      return { destroy: vi.fn(async () => undefined) };
+    });
+
+    await startCopanalhasBotRuntime({
+      config: config(),
+      store,
+      matches: WORLD_CUP_2026_SEED.matches,
+      startDiscord,
+      startInterval: vi.fn(() => ({ stop: vi.fn() })),
+      sendMatchCard: vi.fn(async () => "discord-message-1"),
+      sendPredictionReveal: vi.fn(async () => ({
+        threadId: "thread-1",
+        messageId: "reveal-message-1"
+      })),
+      upsertStandingsMessage: vi.fn(async (message) => `standings-${message.key}`),
+      upsertLeaderboardMessage: vi.fn(async () => "leaderboard-message-1"),
+      renderLeaderboardPng: vi.fn(async () => Buffer.from("png")),
+      upsertBracketMessage: vi.fn(async () => "bracket-message-1"),
+      renderBracketPng: vi.fn(async () => Buffer.from("png")),
+      now: () => new Date("2026-06-28T15:00:00.000Z"),
+      writeLine: vi.fn()
+    });
+
+    expect(matchByNumber(operatorOptions?.matches ?? [], 73)).toMatchObject({
+      homeTeam: { code: "RSA" },
+      awayTeam: { code: "BIH" }
+    });
+
+    operatorOptions?.clearResultsForMatches(results.map((result) => result.matchId));
+
+    expect(matchByNumber(operatorOptions?.matches ?? [], 73)).toMatchObject({
+      homeTeam: { code: "2A", name: "2º Grupo A" },
+      awayTeam: { code: "2B", name: "2º Grupo B" }
+    });
   });
 
   test("posts completed recap periods during startup backfill", async () => {
@@ -1231,6 +1326,51 @@ function config(): CopanalhasConfig {
   };
 }
 
+const currentSeedRankOrderByGroup = {
+  A: ["MEX", "RSA", "KOR", "CZE"],
+  B: ["CAN", "BIH", "QAT", "SUI"],
+  C: ["BRA", "MAR", "HAI", "SCO"],
+  D: ["USA", "PAR", "AUS", "TUR"],
+  E: ["GER", "CUW", "CIV", "ECU"],
+  F: ["NED", "JPN", "SWE", "TUN"],
+  G: ["BEL", "EGY", "IRN", "NZL"],
+  H: ["ESP", "CPV", "KSA", "URU"],
+  I: ["FRA", "SEN", "IRQ", "NOR"],
+  J: ["ARG", "ALG", "AUT", "JOR"],
+  K: ["POR", "COD", "UZB", "COL"],
+  L: ["ENG", "CRO", "GHA", "PAN"]
+} as const satisfies Record<string, readonly string[]>;
+const currentSeedRankOrders: Readonly<Record<string, readonly string[]>> =
+  currentSeedRankOrderByGroup;
+
+function currentSeedProofStoredResults(): StoredResult[] {
+  return WORLD_CUP_2026_SEED.matches.filter(isGroupStageMatch).map((match) => {
+    const homeRank = currentSeedRank(match.group, match.homeTeam.code);
+    const awayRank = currentSeedRank(match.group, match.awayTeam.code);
+    const winnerIsHome = homeRank < awayRank;
+    const winnerRank = Math.min(homeRank, awayRank);
+    const loserRank = Math.max(homeRank, awayRank);
+    const winnerGoals = winnerRank === 3 && loserRank === 4 && match.group >= "E" ? 5 : 3;
+
+    return storedResult(
+      match.id,
+      winnerIsHome ? winnerGoals : 0,
+      winnerIsHome ? 0 : winnerGoals
+    );
+  });
+}
+
+function currentSeedRank(group: string, teamCode: string): number {
+  const order = currentSeedRankOrders[group];
+  const index = order?.indexOf(teamCode) ?? -1;
+
+  if (index < 0) {
+    throw new Error(`Missing proof-test rank for Group ${group} team ${teamCode}.`);
+  }
+
+  return index + 1;
+}
+
 function createStore(): BotRuntimeStore {
   const postedMatchCards: ReturnType<BotRuntimeStore["listPostedMatchCards"]> = [];
   const predictionRevealPosts: ReturnType<BotRuntimeStore["listPredictionRevealPosts"]> = [];
@@ -1349,16 +1489,26 @@ function createStore(): BotRuntimeStore {
   };
 }
 
-function storedResult(matchId: string): StoredResult {
+function storedResult(matchId: string, homeScore = 1, awayScore = 0): StoredResult {
   return {
     matchId,
-    homeScore: 1,
-    awayScore: 0,
+    homeScore,
+    awayScore,
     recordedAt: "2026-06-24T15:00:00.000Z",
     resultSource: "manual",
     externalMatchId: null,
     fetchedAt: null
   };
+}
+
+function matchByNumber(matches: readonly WorldCupMatch[], matchNumber: number): WorldCupMatch {
+  const match = matches.find((candidate) => candidate.matchNumber === matchNumber);
+
+  if (!match) {
+    throw new Error(`Missing match #${matchNumber}`);
+  }
+
+  return match;
 }
 
 function upsertBy<T>(
