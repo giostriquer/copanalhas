@@ -32,7 +32,7 @@ describe("createBracketState", () => {
     expect(state.rounds[1]?.matches[0]?.home.label).toBe("W-32-1");
     expect(state.rounds.find((round) => round.key === "third_place")?.matches[0]).toMatchObject({
       id: "third_place-1",
-      label: "Third-place play-off",
+      label: "#103",
       home: { label: "L-SF-1" },
       away: { label: "L-SF-2" }
     });
@@ -164,6 +164,11 @@ describe("createBracketState", () => {
       timeZone: "America/Sao_Paulo"
     });
     const roundOf32 = state.rounds.find((round) => round.key === "round_of_32");
+    const roundOf16 = state.rounds.find((round) => round.key === "round_of_16");
+    const quarterFinals = state.rounds.find((round) => round.key === "quarter_finals");
+    const semiFinals = state.rounds.find((round) => round.key === "semi_finals");
+    const thirdPlace = state.rounds.find((round) => round.key === "third_place");
+    const final = state.rounds.find((round) => round.key === "final");
 
     expect(roundOf32?.matches.find((match) => match.label === "#73")?.kickoffLabel).toBe(
       "28/06 16:00 GMT-3"
@@ -173,6 +178,21 @@ describe("createBracketState", () => {
     );
     expect(roundOf32?.matches.find((match) => match.label === "#85")?.kickoffLabel).toBe(
       "03/07 00:00 GMT-3"
+    );
+    expect(roundOf16?.matches.find((match) => match.label === "#89")?.kickoffLabel).toBe(
+      "04/07 18:00 GMT-3"
+    );
+    expect(quarterFinals?.matches.find((match) => match.label === "#97")?.kickoffLabel).toBe(
+      "09/07 17:00 GMT-3"
+    );
+    expect(semiFinals?.matches.find((match) => match.label === "#101")?.kickoffLabel).toBe(
+      "14/07 16:00 GMT-3"
+    );
+    expect(thirdPlace?.matches.find((match) => match.label === "#103")?.kickoffLabel).toBe(
+      "18/07 18:00 GMT-3"
+    );
+    expect(final?.matches.find((match) => match.label === "#104")?.kickoffLabel).toBe(
+      "19/07 16:00 GMT-3"
     );
   });
 

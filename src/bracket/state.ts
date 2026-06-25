@@ -127,7 +127,7 @@ function createProvisionalBracketState(
           )
         }))
       ),
-      ...visualSkeletonRounds()
+      ...visualSkeletonRounds(knockoutScheduleByNumber)
     ]
   };
 }
@@ -155,7 +155,7 @@ function createFinalBracketState(
           away: resolvedEntrant(fixture.awaySlot, fixture.awayTeam)
         }))
       ),
-      ...visualSkeletonRounds()
+      ...visualSkeletonRounds(knockoutScheduleByNumber)
     ]
   };
 }
@@ -249,9 +249,15 @@ function resolvedEntrant(slot: string, team: WorldCupTeam): BracketEntrant {
   };
 }
 
-function visualSkeletonRounds(): BracketRound[] {
+function visualSkeletonRounds(knockoutScheduleByNumber: ReadonlyMap<number, string>): BracketRound[] {
   return VISUAL_SKELETON_ROUNDS.map((template) =>
-    winnerRound(template.key, template.label, template.matchCount, template.sourcePrefix)
+    winnerRound(
+      template.key,
+      template.label,
+      template.matchNumbers,
+      template.sourcePrefix,
+      knockoutScheduleByNumber
+    )
   );
 }
 
@@ -262,16 +268,18 @@ function round(key: BracketRound["key"], label: string, matches: BracketMatch[])
 function winnerRound(
   key: BracketRound["key"],
   label: string,
-  count: number,
-  prefix: string
+  matchNumbers: readonly number[],
+  prefix: string,
+  knockoutScheduleByNumber: ReadonlyMap<number, string>
 ): BracketRound {
   return round(
     key,
     label,
-    Array.from({ length: count }, (_, index) => ({
+    matchNumbers.map((matchNumber, index) => ({
       id: `${key}-${index + 1}`,
-      label,
+      label: `#${matchNumber}`,
       state: "scheduled",
+      ...kickoffLabelForMatchNumber(matchNumber, knockoutScheduleByNumber),
       home: placeholder(`${prefix}-${index * 2 + 1}`),
       away: placeholder(`${prefix}-${index * 2 + 2}`)
     }))

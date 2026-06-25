@@ -12,7 +12,7 @@ export interface RoundOf32Template {
 export interface VisualSkeletonRoundTemplate {
   key: BracketRoundKey;
   label: string;
-  matchCount: number;
+  matchNumbers: readonly number[];
   sourcePrefix: string;
 }
 
@@ -36,9 +36,29 @@ export const ROUND_OF_32_TEMPLATES: readonly RoundOf32Template[] = [
 ];
 
 export const VISUAL_SKELETON_ROUNDS: readonly VisualSkeletonRoundTemplate[] = [
-  { key: "round_of_16", label: "Round of 16", matchCount: 8, sourcePrefix: "W-32" },
-  { key: "quarter_finals", label: "Quarter-finals", matchCount: 4, sourcePrefix: "W-16" },
-  { key: "semi_finals", label: "Semi-finals", matchCount: 2, sourcePrefix: "W-QF" },
-  { key: "third_place", label: "Third-place play-off", matchCount: 1, sourcePrefix: "L-SF" },
-  { key: "final", label: "Final", matchCount: 1, sourcePrefix: "W-SF" }
+  {
+    key: "round_of_16",
+    label: "Round of 16",
+    matchNumbers: [89, 90, 91, 92, 93, 94, 95, 96],
+    sourcePrefix: "W-32"
+  },
+  {
+    key: "quarter_finals",
+    label: "Quarter-finals",
+    matchNumbers: [97, 98, 99, 100],
+    sourcePrefix: "W-16"
+  },
+  {
+    key: "semi_finals",
+    label: "Semi-finals",
+    matchNumbers: [101, 102],
+    sourcePrefix: "W-QF"
+  },
+  {
+    key: "third_place",
+    label: "Third-place play-off",
+    matchNumbers: [103],
+    sourcePrefix: "L-SF"
+  },
+  { key: "final", label: "Final", matchNumbers: [104], sourcePrefix: "W-SF" }
 ];

@@ -101,12 +101,18 @@ export function renderReferenceBracketSvg(
   const matchesByNumber = new Map(
     roundOf32Matches.map((match) => [matchNumberFor(match), match] as const)
   );
+  const allMatchesByNumber = new Map(
+    state.rounds
+      .flatMap((round) => round.matches)
+      .map((match) => [matchNumberFor(match), match] as const)
+      .filter(([matchNumber]) => matchNumber > 0)
+  );
   const width = canvasWidth;
   const contentHeight = sideHeight();
   const height = headerHeight + contentHeight + footerHeight;
-  const leftLayout = layoutSide(bracketSides[0], matchesByNumber);
-  const rightLayout = layoutSide(bracketSides[1], matchesByNumber);
-  const centerLayout = layoutCenter(leftLayout, rightLayout);
+  const leftLayout = layoutSide(bracketSides[0], matchesByNumber, allMatchesByNumber);
+  const rightLayout = layoutSide(bracketSides[1], matchesByNumber, allMatchesByNumber);
+  const centerLayout = layoutCenter(leftLayout, rightLayout, allMatchesByNumber);
   const parts: string[] = [
     `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" role="img" aria-label="${escapeAttribute(title)}">`,
     '<rect width="100%" height="100%" fill="#f7f7f5"/>',
@@ -181,7 +187,8 @@ function renderSide(side: BracketSide, layout: BracketSideLayout): string {
 
 function layoutSide(
   side: BracketSide,
-  matchesByNumber: ReadonlyMap<number, BracketMatch>
+  matchesByNumber: ReadonlyMap<number, BracketMatch>,
+  pathMatchesByNumber: ReadonlyMap<number, BracketMatch>
 ): BracketSideLayout {
   const roundOf32Boxes: RoundOf32Box[] = [];
   const roundOf16Boxes: PathBox[] = [];
@@ -227,6 +234,7 @@ function layoutSide(
     roundOf16Boxes.push({
       kind: "round-of-16",
       matchNumber: pair.nextMatchNumber,
+      ...pathBoxMetadataFor(pair.nextMatchNumber, pathMatchesByNumber),
       sourceLabels: sourceBoxes.map((box) => `Vencedor #${box.matchNumber}`),
       sourceBoxes,
       x: side.columns.r16X,
@@ -258,6 +266,7 @@ function layoutSide(
     quarterFinalBoxes.push({
       kind: "quarter-finals",
       matchNumber: quarterFinal.nextMatchNumber,
+      ...pathBoxMetadataFor(quarterFinal.nextMatchNumber, pathMatchesByNumber),
       sourceLabels: sourceBoxes.map((box) => `Vencedor #${box.matchNumber}`),
       sourceBoxes,
       x: side.columns.qfX,
@@ -282,6 +291,7 @@ function layoutSide(
       semiFinalBox = {
         kind: "semi-finals",
         matchNumber: side.semiFinal.nextMatchNumber,
+        ...pathBoxMetadataFor(side.semiFinal.nextMatchNumber, pathMatchesByNumber),
         sourceLabels: semiFinalSources.map((box) => `Vencedor #${box.matchNumber}`),
         sourceBoxes: semiFinalSources,
         x: side.columns.sfX,
@@ -302,7 +312,8 @@ function layoutSide(
 
 function layoutCenter(
   leftLayout: BracketSideLayout,
-  rightLayout: BracketSideLayout
+  rightLayout: BracketSideLayout,
+  pathMatchesByNumber: ReadonlyMap<number, BracketMatch>
 ): CenterLayout {
   const sourceBoxes = [leftLayout.semiFinalBox, rightLayout.semiFinalBox].filter(
     (box): box is PathBox => box !== undefined
@@ -318,6 +329,7 @@ function layoutCenter(
     finalBox: {
       kind: "final",
       matchNumber: 104,
+      ...pathBoxMetadataFor(104, pathMatchesByNumber),
       title: "Final #104",
       sourceLabels,
       sourceBoxes,
@@ -329,6 +341,7 @@ function layoutCenter(
     thirdPlaceBox: {
       kind: "third-place",
       matchNumber: 103,
+      ...pathBoxMetadataFor(103, pathMatchesByNumber),
       title: "Decisão do 3º lugar #103",
       sourceLabels: loserLabels,
       sourceBoxes,
@@ -363,7 +376,7 @@ function renderRoundOf32Match(
 
   return [
     `<g data-match-id="${escapeAttribute(match.id)}" data-bracket-match-number="${matchNumber}" transform="translate(${x}, ${y})">`,
-    `<text data-kickoff-label-side="${sideKey}" x="${kickoffLabelX}" y="-12"${kickoffAnchor} font-family="Inter, Arial, sans-serif" font-size="10" fill="#273140">${escapeText(match.kickoffLabel ?? matchStatusLabel(match))}</text>`,
+    `<text data-kickoff-label-side="${sideKey}" x="${kickoffLabelX}" y="-12"${kickoffAnchor} font-family="Inter, Arial, sans-serif" font-size="11" fill="#273140">${escapeText(match.kickoffLabel ?? matchStatusLabel(match))}</text>`,
     `<rect width="${r32Width}" height="${r32Height}" fill="#ffffff"/>`,
     `<rect width="3" height="${r32Height}" fill="${statusColor(match)}"/>`,
     `<line x1="${r32Width - 58}" y1="0" x2="${r32Width - 58}" y2="${r32Height}" stroke="#edf0f3"/>`,
@@ -379,10 +392,11 @@ function renderRoundOf32Match(
 function renderPathBox(pathBox: PathBox): string {
   const [firstLabel = "", secondLabel = ""] = pathBox.sourceLabels;
   const title = pathBox.title ?? `#${pathBox.matchNumber}`;
+  const kickoffLabel = pathBox.kickoffLabel ?? "Agendado";
 
   return [
     `<g data-path-match="${pathBox.matchNumber}" transform="translate(${pathBox.x}, ${pathBox.y})">`,
-    `<text x="0" y="-8" font-family="Inter, Arial, sans-serif" font-size="9" fill="#273140">Agendado</text>`,
+    `<text data-path-kickoff-label-match="${pathBox.matchNumber}" x="0" y="-8" font-family="Inter, Arial, sans-serif" font-size="11" fill="#273140">${escapeText(kickoffLabel)}</text>`,
     `<rect width="${pathBox.width}" height="${pathBox.height}" fill="#ffffff"/>`,
     `<rect width="3" height="${pathBox.height}" fill="#1d2635"/>`,
     `<line x1="3" y1="${pathBox.height / 2}" x2="${pathBox.width}" y2="${pathBox.height / 2}" stroke="#edf0f3"/>`,
@@ -429,6 +443,15 @@ function renderCenterConnector(pathBox: PathBox): string {
   }
 
   return `<path data-connector-match="${pathBox.matchNumber}" d="${segments.join(" ")}" fill="none" stroke="${connectorColor}" stroke-width="1.4"/>`;
+}
+
+function pathBoxMetadataFor(
+  matchNumber: number,
+  pathMatchesByNumber: ReadonlyMap<number, BracketMatch>
+): Pick<PathBox, "kickoffLabel"> {
+  const match = pathMatchesByNumber.get(matchNumber);
+
+  return match?.kickoffLabel ? { kickoffLabel: match.kickoffLabel } : {};
 }
 
 function renderEntrantRow(
@@ -669,6 +692,7 @@ interface PathBox extends PositionedBox {
   kind: "round-of-16" | "quarter-finals" | "semi-finals" | "final" | "third-place";
   matchNumber: number;
   title?: string;
+  kickoffLabel?: string;
   sourceLabels: string[];
   sourceBoxes: PositionedBox[];
 }

@@ -44,14 +44,25 @@ describe("renderBracketSvg", () => {
     expect(svg).toContain('data-flag-asset="nl.svg"');
     expect(svg).toContain("Holanda");
     expect(svg).toContain("28/06 16:00 GMT-3");
+    expect(svg).toContain("04/07 18:00 GMT-3");
+    expect(svg).toContain("09/07 17:00 GMT-3");
+    expect(svg).toContain("14/07 16:00 GMT-3");
+    expect(svg).toContain("18/07 18:00 GMT-3");
+    expect(svg).toContain("19/07 16:00 GMT-3");
     expect(svg).toContain(
-      'data-r32-heading-side="left" x="187" y="148" text-anchor="middle"'
+      'data-r32-heading-side="left" x="187" y="148" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="14"'
     );
     expect(svg).toContain(
-      'data-r32-heading-side="right" x="1813" y="148" text-anchor="middle"'
+      'data-r32-heading-side="right" x="1813" y="148" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="14"'
     );
     expect(svg).toContain(
-      'data-kickoff-label-side="right" x="270" y="-12" text-anchor="end" font-family="Inter, Arial, sans-serif" font-size="10"'
+      'data-kickoff-label-side="right" x="270" y="-12" text-anchor="end" font-family="Inter, Arial, sans-serif" font-size="11"'
+    );
+    expect(svg).toContain(
+      'data-path-kickoff-label-match="89" x="0" y="-8" font-family="Inter, Arial, sans-serif" font-size="11"'
+    );
+    expect(svg).toContain(
+      'data-path-kickoff-label-match="104" x="0" y="-8" font-family="Inter, Arial, sans-serif" font-size="11"'
     );
     expect(svg).toContain("Como está ficando");
     expect(svg).toContain("Oitavas");
@@ -252,17 +263,70 @@ function bracketState(): BracketState {
         matches: [
           {
             id: "round_of_16-1",
-            label: "Round of 16",
+            label: "#89",
             state: "scheduled",
+            kickoffLabel: "04/07 18:00 GMT-3",
             home: { label: "W-32-1", sourceSlot: "W-32-1" },
             away: { label: "W-32-2", sourceSlot: "W-32-2" }
           }
         ]
       },
-      { key: "quarter_finals", label: "Quarter-finals", matches: [] },
-      { key: "semi_finals", label: "Semi-finals", matches: [] },
-      { key: "third_place", label: "Third-place play-off", matches: [] },
-      { key: "final", label: "Final", matches: [] }
+      {
+        key: "quarter_finals",
+        label: "Quarter-finals",
+        matches: [
+          {
+            id: "quarter_finals-1",
+            label: "#97",
+            state: "scheduled",
+            kickoffLabel: "09/07 17:00 GMT-3",
+            home: { label: "W-16-1", sourceSlot: "W-16-1" },
+            away: { label: "W-16-2", sourceSlot: "W-16-2" }
+          }
+        ]
+      },
+      {
+        key: "semi_finals",
+        label: "Semi-finals",
+        matches: [
+          {
+            id: "semi_finals-1",
+            label: "#101",
+            state: "scheduled",
+            kickoffLabel: "14/07 16:00 GMT-3",
+            home: { label: "W-QF-1", sourceSlot: "W-QF-1" },
+            away: { label: "W-QF-2", sourceSlot: "W-QF-2" }
+          }
+        ]
+      },
+      {
+        key: "third_place",
+        label: "Third-place play-off",
+        matches: [
+          {
+            id: "third_place-1",
+            label: "#103",
+            state: "scheduled",
+            kickoffLabel: "18/07 18:00 GMT-3",
+            home: { label: "L-SF-1", sourceSlot: "L-SF-1" },
+            away: { label: "L-SF-2", sourceSlot: "L-SF-2" }
+          }
+        ]
+      },
+      {
+        key: "final",
+        label: "Final",
+        matches: [
+          {
+            id: "final-1",
+            label: "#104",
+            state: "scheduled",
+            kickoffLabel: "19/07 16:00 GMT-3",
+            home: { label: "W-SF-1", sourceSlot: "W-SF-1" },
+            away: { label: "W-SF-2", sourceSlot: "W-SF-2" }
+          }
+        ]
+      }
     ]
   };
 }
