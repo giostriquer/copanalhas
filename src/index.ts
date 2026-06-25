@@ -50,8 +50,11 @@ import { renderStandingsPng } from "./standings/png.js";
 import { computeGroupStandings, type StandingsResult } from "./standings/standings.js";
 import { upsertDiscordLeaderboardMessage } from "./discord/leaderboard-posting.js";
 import { upsertDiscordBracketMessage } from "./discord/bracket-posting.js";
+import { upsertDiscordThirdPlaceMessage } from "./discord/third-place-posting.js";
 import { upsertDiscordChaosDashboardMessage } from "./discord/chaos-dashboard-posting.js";
 import type { LeaderboardDashboardMessage } from "./leaderboard/format.js";
+import type { ThirdPlaceDashboardMessage } from "./third-place/format.js";
+import { renderThirdPlacePng } from "./third-place/png.js";
 import { openCopanalhasDatabase } from "./storage/database.js";
 import { getMatchdayDateForInstant, isMatchOnMatchday } from "./worldcup/matchday.js";
 import { WORLD_CUP_2026_SEED } from "./worldcup/seed.js";
@@ -94,6 +97,11 @@ export interface CliDependencies {
     existingMessageId: string | null
   ): Promise<string>;
   renderBracketPng?(svg: string): Promise<Buffer>;
+  upsertThirdPlaceMessage?(
+    message: ThirdPlaceDashboardMessage,
+    existingMessageId: string | null
+  ): Promise<string>;
+  renderThirdPlacePng?(svg: string): Promise<Buffer>;
   upsertChaosDashboardMessage?(
     message: ChaosDashboardMessage,
     existingMessageId: string | null
@@ -351,6 +359,11 @@ async function startBot(dependencies: CliDependencies): Promise<void> {
       ((message, existingMessageId) =>
         upsertDiscordBracketMessage(configResult.config, message, existingMessageId)),
     renderBracketPng: dependencies.renderBracketPng ?? renderBracketPng,
+    upsertThirdPlaceMessage:
+      dependencies.upsertThirdPlaceMessage ??
+      ((message, existingMessageId) =>
+        upsertDiscordThirdPlaceMessage(configResult.config, message, existingMessageId)),
+    renderThirdPlacePng: dependencies.renderThirdPlacePng ?? renderThirdPlacePng,
     upsertChaosDashboardMessage:
       dependencies.upsertChaosDashboardMessage ??
       ((message, existingMessageId) =>

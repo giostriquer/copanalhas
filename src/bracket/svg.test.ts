@@ -44,10 +44,14 @@ describe("renderBracketSvg", () => {
     expect(svg).toContain('data-flag-asset="nl.svg"');
     expect(svg).toContain("Holanda");
     expect(svg).toContain("28/06 16:00 GMT-3");
-    expect(svg).toContain('data-r32-heading-side="left"');
-    expect(svg).toContain('data-r32-heading-side="right"');
     expect(svg).toContain(
-      'data-kickoff-label-side="right" x="270" y="-12" text-anchor="end"'
+      'data-r32-heading-side="left" x="187" y="148" text-anchor="middle"'
+    );
+    expect(svg).toContain(
+      'data-r32-heading-side="right" x="1813" y="148" text-anchor="middle"'
+    );
+    expect(svg).toContain(
+      'data-kickoff-label-side="right" x="270" y="-12" text-anchor="end" font-family="Inter, Arial, sans-serif" font-size="10"'
     );
     expect(svg).toContain("Como está ficando");
     expect(svg).toContain("Oitavas");

@@ -598,7 +598,7 @@ function computeHeadToHeadStats(
   return stats;
 }
 
-function rankThirdPlacedRows(
+export function rankThirdPlacedRows(
   rows: readonly FifaGroupStandingRow[]
 ): { status: FifaQualificationStatus; rows: FifaGroupStandingRow[] } {
   const scoreGroups = splitBySequentialScores(rows, [

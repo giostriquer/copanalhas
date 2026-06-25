@@ -466,6 +466,37 @@ describe("CopanalhasDatabase", () => {
     store.close();
   });
 
+  test("records third-place dashboard posts by guild and channel", () => {
+    const store = openCopanalhasDatabase(":memory:");
+    store.migrate();
+
+    store.recordThirdPlacePost({
+      guildId: "guild-1",
+      channelId: "channel-1",
+      messageId: "third-place-message-1",
+      createdAt: "2026-06-11T12:00:00.000Z",
+      updatedAt: "2026-06-11T12:00:00.000Z"
+    });
+    store.recordThirdPlacePost({
+      guildId: "guild-1",
+      channelId: "channel-1",
+      messageId: "third-place-message-2",
+      createdAt: "2026-06-11T12:00:00.000Z",
+      updatedAt: "2026-06-11T12:05:00.000Z"
+    });
+
+    expect(store.listThirdPlacePosts()).toEqual([
+      {
+        guildId: "guild-1",
+        channelId: "channel-1",
+        messageId: "third-place-message-2",
+        createdAt: "2026-06-11T12:00:00.000Z",
+        updatedAt: "2026-06-11T12:05:00.000Z"
+      }
+    ]);
+    store.close();
+  });
+
   test("records chaos recap posts by guild, channel, and period", () => {
     const store = openCopanalhasDatabase(":memory:");
     store.migrate();

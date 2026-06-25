@@ -104,6 +104,12 @@ describe("handleOperatorCommand", () => {
       bracketPhase: "provisional" as const,
       renderState: "image" as const
     }));
+    const updateThirdPlaceDashboard = vi.fn(async () => ({
+      action: "updated" as const,
+      post: { messageId: "third-place-message-1", action: "edited" as const },
+      qualificationStatus: "resolved" as const,
+      renderState: "image" as const
+    }));
     const updateChaosDashboard = vi.fn(async () => ({
       action: "updated" as const,
       posted: [
@@ -128,6 +134,7 @@ describe("handleOperatorCommand", () => {
         updateStandingsDashboard,
         updateLeaderboardDashboard,
         updateBracketDashboard,
+        updateThirdPlaceDashboard,
         updateChaosDashboard
       })
     );
@@ -144,6 +151,7 @@ describe("handleOperatorCommand", () => {
         "Standings refreshed.",
         "Leaderboard refreshed.",
         "Bracket refreshed.",
+        "Third-place dashboard refreshed.",
         "Copanalhas Recap refreshed."
       ].join("\n"),
       ephemeral: true
@@ -159,6 +167,7 @@ describe("handleOperatorCommand", () => {
     expect(updateStandingsDashboard).toHaveBeenCalledOnce();
     expect(updateLeaderboardDashboard).toHaveBeenCalledOnce();
     expect(updateBracketDashboard).toHaveBeenCalledOnce();
+    expect(updateThirdPlaceDashboard).toHaveBeenCalledOnce();
     expect(updateChaosDashboard).toHaveBeenCalledWith(false);
   });
 
@@ -185,9 +194,10 @@ describe("handleOperatorCommand", () => {
         "Next result-sync check: 2026-06-11T20:50:00.000Z (2 pending)",
         "Last auto-post: posted 1, skipped 1 across 3 days from 2026-06-11",
         "Last result sync: waiting for 2 pending matches; next check 2026-06-11T20:50:00.000Z",
-        "Dashboards: standings 1/2, leaderboard present, bracket present, recaps 2",
+        "Dashboards: standings 1/2, leaderboard present, bracket present, third places present, recaps 2",
         "Last leaderboard update: 2026-06-11T18:00:00.000Z",
         "Last bracket update: 2026-06-11T18:05:00.000Z",
+        "Last third-place update: 2026-06-11T18:07:00.000Z",
         "Last recap update: 2026-06-11T18:10:00.000Z",
         "Data: 104 matches loaded, 0 missing kickoff times"
       ].join("\n"),
@@ -291,6 +301,44 @@ describe("handleOperatorCommand", () => {
     expect(result).toEqual({
       action: "replied",
       content: "Failed to update bracket dashboard: Discord upload failed.",
+      ephemeral: true
+    });
+  });
+
+  test("third-places posts or updates the third-place dashboard", async () => {
+    const updateThirdPlaceDashboard = vi.fn(async () => ({
+      action: "updated" as const,
+      post: { messageId: "third-place-message-1", action: "edited" as const },
+      qualificationStatus: "resolved" as const,
+      renderState: "image" as const
+    }));
+
+    const result = await handleOperatorCommand(
+      command("third-places"),
+      options({ updateThirdPlaceDashboard })
+    );
+
+    expect(result).toEqual({
+      action: "replied",
+      content: "Updated third-place dashboard: edited (resolved, image).",
+      ephemeral: true
+    });
+    expect(updateThirdPlaceDashboard).toHaveBeenCalledOnce();
+  });
+
+  test("third-places returns a private failure reply when refresh fails", async () => {
+    const result = await handleOperatorCommand(
+      command("third-places"),
+      options({
+        updateThirdPlaceDashboard: vi.fn(async () => {
+          throw new Error("Discord upload failed");
+        })
+      })
+    );
+
+    expect(result).toEqual({
+      action: "replied",
+      content: "Failed to update third-place dashboard: Discord upload failed.",
       ephemeral: true
     });
   });
@@ -595,6 +643,12 @@ describe("handleOperatorCommand", () => {
       bracketPhase: "provisional" as const,
       renderState: "image" as const
     }));
+    const updateThirdPlaceDashboard = vi.fn(async () => ({
+      action: "updated" as const,
+      post: { messageId: "third-place-message-1", action: "edited" as const },
+      qualificationStatus: "resolved" as const,
+      renderState: "image" as const
+    }));
 
     await handleOperatorCommand(
       command("result", { match: "wc2026-001", score: "2-1" }),
@@ -602,6 +656,7 @@ describe("handleOperatorCommand", () => {
         updateStandingsDashboard,
         updateLeaderboardDashboard,
         updateBracketDashboard,
+        updateThirdPlaceDashboard,
         updatePredictionResultReveals
       })
     );
@@ -609,6 +664,7 @@ describe("handleOperatorCommand", () => {
     expect(updateStandingsDashboard).toHaveBeenCalledOnce();
     expect(updateLeaderboardDashboard).toHaveBeenCalledOnce();
     expect(updateBracketDashboard).toHaveBeenCalledOnce();
+    expect(updateThirdPlaceDashboard).toHaveBeenCalledOnce();
     expect(updatePredictionResultReveals).toHaveBeenCalledOnce();
   });
 
@@ -937,6 +993,13 @@ function options(overrides: Partial<OperatorCommandOptions> = {}): OperatorComma
       bracketPhase: "provisional" as const,
       renderState: "image" as const
     })),
+    listThirdPlacePosts: vi.fn(() => []),
+    updateThirdPlaceDashboard: vi.fn(async () => ({
+      action: "updated" as const,
+      post: { messageId: "third-place-message-1", action: "edited" as const },
+      qualificationStatus: "resolved" as const,
+      renderState: "image" as const
+    })),
     listChaosDashboardPosts: vi.fn(() => []),
     updateChaosDashboard: vi.fn(async () => ({
       action: "updated" as const,
@@ -1111,6 +1174,10 @@ function operatorHealthSnapshot(): OperatorHealthSnapshot {
     bracketPost: {
       present: true,
       lastUpdatedAt: "2026-06-11T18:05:00.000Z"
+    },
+    thirdPlacePost: {
+      present: true,
+      lastUpdatedAt: "2026-06-11T18:07:00.000Z"
     },
     chaosDashboardPost: {
       present: true,

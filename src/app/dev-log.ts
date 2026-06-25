@@ -2,6 +2,7 @@ import type { UpdateLeaderboardDashboardResult } from "./leaderboard-posting.js"
 import type { UpdateBracketDashboardResult } from "./bracket-posting.js";
 import type { UpdateChaosDashboardResult } from "./chaos-dashboard-posting.js";
 import type { UpdateStandingsDashboardResult } from "./standings-posting.js";
+import type { UpdateThirdPlaceDashboardResult } from "./third-place-posting.js";
 import type {
   OperatorAutocompleteInput,
   OperatorAutocompleteResult,
@@ -214,6 +215,19 @@ export function formatBracketDashboardLog(result: UpdateBracketDashboardResult):
     `action=${result.post.action}`,
     `message=${result.post.messageId}`,
     `phase=${result.bracketPhase}`,
+    `render=${result.renderState}`,
+    result.renderError ? `error=${safeLogMessage(result.renderError)}` : null
+  ]
+    .filter((part): part is string => part !== null)
+    .join(" ");
+}
+
+export function formatThirdPlaceDashboardLog(result: UpdateThirdPlaceDashboardResult): string {
+  return [
+    "[dashboard] thirdPlaces",
+    `action=${result.post.action}`,
+    `message=${result.post.messageId}`,
+    `status=${result.qualificationStatus}`,
     `render=${result.renderState}`,
     result.renderError ? `error=${safeLogMessage(result.renderError)}` : null
   ]

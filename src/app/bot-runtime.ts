@@ -20,7 +20,8 @@ import {
   formatResultSyncErrorLog,
   formatResultSyncLog,
   formatResultSyncStartLog,
-  formatStandingsDashboardLog
+  formatStandingsDashboardLog,
+  formatThirdPlaceDashboardLog
 } from "./dev-log.js";
 import {
   formatOperatorHealthLogLines,
@@ -29,6 +30,7 @@ import {
 } from "./operator-health.js";
 import { updateLeaderboardDashboard } from "./leaderboard-posting.js";
 import { updateBracketDashboard } from "./bracket-posting.js";
+import { updateThirdPlaceDashboard } from "./third-place-posting.js";
 import { updateChaosDashboard } from "./chaos-dashboard-posting.js";
 import { postDueMatchCards } from "./match-card-posting.js";
 import {
@@ -63,6 +65,7 @@ import type { ChaosDashboardMessage } from "../chaos-dashboard/format.js";
 import type { ChaosRecapPeriodKey } from "../chaos-dashboard/periods.js";
 import type { GenerateChaosRecapCopy } from "../chaos-dashboard/recap-copy.js";
 import type { StandingsDashboardMessage } from "../standings/format.js";
+import type { ThirdPlaceDashboardMessage } from "../third-place/format.js";
 import type {
   NewScoringRun,
   StoredBracketPost,
@@ -74,7 +77,8 @@ import type {
   StoredPrediction,
   StoredPredictionRevealPost,
   StoredResult,
-  StoredStandingsPost
+  StoredStandingsPost,
+  StoredThirdPlacePost
 } from "../storage/database.js";
 import type { WorldCupMatch } from "../worldcup/types.js";
 import { canSubmitPredictionAt } from "../worldcup/cutoff.js";
@@ -122,6 +126,8 @@ export interface BotRuntimeStore {
   recordLeaderboardPost(post: StoredLeaderboardPost): void;
   listBracketPosts(): StoredBracketPost[];
   recordBracketPost(post: StoredBracketPost): void;
+  listThirdPlacePosts(): StoredThirdPlacePost[];
+  recordThirdPlacePost(post: StoredThirdPlacePost): void;
   listChaosDashboardPosts(): StoredChaosDashboardPost[];
   recordChaosDashboardPost(post: StoredChaosDashboardPost): void;
   listChaosWeeklySnapshotRows(
@@ -191,6 +197,11 @@ export interface StartCopanalhasBotRuntimeOptions {
     existingMessageId: string | null
   ): Promise<string>;
   renderBracketPng?(svg: string): Promise<Buffer>;
+  upsertThirdPlaceMessage?(
+    message: ThirdPlaceDashboardMessage,
+    existingMessageId: string | null
+  ): Promise<string>;
+  renderThirdPlacePng?(svg: string): Promise<Buffer>;
   upsertChaosDashboardMessage?(
     message: ChaosDashboardMessage,
     existingMessageId: string | null
@@ -260,6 +271,9 @@ export async function startCopanalhasBotRuntime(
   await operatorCommandOptions.updateLeaderboardDashboard();
   if (hasBracketDashboardDependencies(options)) {
     await runBracketDashboardRefresh(options, operatorCommandOptions.updateBracketDashboard);
+  }
+  if (hasThirdPlaceDashboardDependencies(options)) {
+    await runThirdPlaceDashboardRefresh(options, operatorCommandOptions.updateThirdPlaceDashboard);
   }
   if (hasChaosDashboardDependencies(options)) {
     await runChaosDashboardRefresh(options, () => operatorCommandOptions.updateChaosDashboard(false));
@@ -390,6 +404,32 @@ function hasBracketDashboardDependencies(
   );
 }
 
+async function runThirdPlaceDashboardRefresh(
+  options: StartCopanalhasBotRuntimeOptions,
+  updateThirdPlaceDashboardForRuntime: () => Promise<unknown>
+): Promise<void> {
+  try {
+    await updateThirdPlaceDashboardForRuntime();
+  } catch (error) {
+    writeRuntimeLine(
+      options,
+      formatRuntimeAsyncErrorLog({ scope: "third-place-dashboard", error })
+    );
+  }
+}
+
+function hasThirdPlaceDashboardDependencies(
+  options: StartCopanalhasBotRuntimeOptions
+): options is StartCopanalhasBotRuntimeOptions &
+  Required<
+    Pick<StartCopanalhasBotRuntimeOptions, "upsertThirdPlaceMessage" | "renderThirdPlacePng">
+  > {
+  return (
+    typeof options.upsertThirdPlaceMessage === "function" &&
+    typeof options.renderThirdPlacePng === "function"
+  );
+}
+
 async function runChaosDashboardRefresh(
   options: StartCopanalhasBotRuntimeOptions,
   updateChaosDashboardForRuntime: () => Promise<unknown>
@@ -503,6 +543,28 @@ function createOperatorCommandOptions(
 
     return result;
   };
+  const updateThirdPlaceDashboardForRuntime = async () => {
+    if (!hasThirdPlaceDashboardDependencies(options)) {
+      throw new Error("Third-place dashboard dependencies are not configured.");
+    }
+
+    const result = await updateThirdPlaceDashboard({
+      guildId: options.config.guildId,
+      channelId: options.config.channelId,
+      matches: options.matches,
+      results: options.store.listResults(),
+      timeZone: options.config.timezone,
+      now: options.now,
+      listThirdPlacePosts: () => options.store.listThirdPlacePosts(),
+      recordThirdPlacePost: (post) => options.store.recordThirdPlacePost(post),
+      renderPng: options.renderThirdPlacePng,
+      upsertThirdPlaceMessage: options.upsertThirdPlaceMessage
+    });
+
+    writeRuntimeLine(options, formatThirdPlaceDashboardLog(result));
+
+    return result;
+  };
   const updateChaosDashboardForRuntime = async (
     refreshExisting = true,
     periodKey?: ChaosRecapPeriodKey
@@ -554,6 +616,7 @@ function createOperatorCommandOptions(
     updateStandingsDashboard: updateStandingsDashboardForRuntime,
     updateLeaderboardDashboard: updateLeaderboardDashboardForRuntime,
     updateBracketDashboard: updateBracketDashboardForRuntime,
+    updateThirdPlaceDashboard: updateThirdPlaceDashboardForRuntime,
     updateChaosDashboard: () => updateChaosDashboardForRuntime(false)
   };
 
@@ -608,6 +671,8 @@ function createOperatorCommandOptions(
     updateLeaderboardDashboard: updateLeaderboardDashboardForRuntime,
     listBracketPosts: () => options.store.listBracketPosts(),
     updateBracketDashboard: updateBracketDashboardForRuntime,
+    listThirdPlacePosts: () => options.store.listThirdPlacePosts(),
+    updateThirdPlaceDashboard: updateThirdPlaceDashboardForRuntime,
     listChaosDashboardPosts: () => options.store.listChaosDashboardPosts(),
     updateChaosDashboard: updateChaosDashboardForRuntime,
     updatePredictionResultReveals: async () => runPredictionResultReveals(options),
@@ -802,6 +867,7 @@ async function runResultSync(
     | "updateStandingsDashboard"
     | "updateLeaderboardDashboard"
     | "updateBracketDashboard"
+    | "updateThirdPlaceDashboard"
     | "updateChaosDashboard"
   >,
   state: ResultSyncRuntimeState,
@@ -897,6 +963,9 @@ async function runResultSync(
     await operatorCommandOptions.updateLeaderboardDashboard();
     if (hasBracketDashboardDependencies(options)) {
       await runBracketDashboardRefresh(options, operatorCommandOptions.updateBracketDashboard);
+    }
+    if (hasThirdPlaceDashboardDependencies(options)) {
+      await runThirdPlaceDashboardRefresh(options, operatorCommandOptions.updateThirdPlaceDashboard);
     }
     if (hasChaosDashboardDependencies(options)) {
       await runChaosDashboardRefresh(options, () => operatorCommandOptions.updateChaosDashboard(false));
@@ -1019,6 +1088,12 @@ function createOperatorHealthSnapshot(
       (post) =>
         post.guildId === options.config.guildId && post.channelId === options.config.channelId
     );
+  const thirdPlacePost = options.store
+    .listThirdPlacePosts()
+    .find(
+      (post) =>
+        post.guildId === options.config.guildId && post.channelId === options.config.channelId
+    );
   const chaosDashboardPosts = options.store
     .listChaosDashboardPosts()
     .filter(
@@ -1073,6 +1148,10 @@ function createOperatorHealthSnapshot(
     bracketPost: {
       present: bracketPost !== undefined,
       lastUpdatedAt: bracketPost?.updatedAt ?? null
+    },
+    thirdPlacePost: {
+      present: thirdPlacePost !== undefined,
+      lastUpdatedAt: thirdPlacePost?.updatedAt ?? null
     },
     chaosDashboardPost: {
       present: chaosDashboardPosts.length > 0,

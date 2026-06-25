@@ -27,6 +27,8 @@ describe("startCopanalhasBotRuntime", () => {
     const upsertLeaderboardMessage = vi.fn(async () => "leaderboard-message-1");
     const upsertBracketMessage = vi.fn(async () => "bracket-message-1");
     const renderBracketPng = vi.fn(async () => Buffer.from("png"));
+    const upsertThirdPlaceMessage = vi.fn(async () => "third-place-message-1");
+    const renderThirdPlacePng = vi.fn(async () => Buffer.from("png"));
     const upsertChaosDashboardMessage = vi.fn(async () => "chaos-message-1");
     const renderChaosDashboardPng = vi.fn(async () => Buffer.from("png"));
     const writeLine = vi.fn();
@@ -44,6 +46,8 @@ describe("startCopanalhasBotRuntime", () => {
       renderLeaderboardPng: vi.fn(async () => Buffer.from("png")),
       upsertBracketMessage,
       renderBracketPng,
+      upsertThirdPlaceMessage,
+      renderThirdPlacePng,
       upsertChaosDashboardMessage,
       renderChaosDashboardPng,
       now: () => new Date("2026-06-11T21:15:00.000Z"),
@@ -69,6 +73,7 @@ describe("startCopanalhasBotRuntime", () => {
           updateStandingsDashboard: expect.any(Function),
           updateLeaderboardDashboard: expect.any(Function),
           updateBracketDashboard: expect.any(Function),
+          updateThirdPlaceDashboard: expect.any(Function),
           updateChaosDashboard: expect.any(Function)
         }),
         registerCommands: expect.any(Function)
@@ -81,6 +86,8 @@ describe("startCopanalhasBotRuntime", () => {
     expect(store.recordLeaderboardPost).toHaveBeenCalledOnce();
     expect(upsertBracketMessage).toHaveBeenCalledOnce();
     expect(store.recordBracketPost).toHaveBeenCalledOnce();
+    expect(upsertThirdPlaceMessage).toHaveBeenCalledOnce();
+    expect(store.recordThirdPlacePost).toHaveBeenCalledOnce();
     expect(upsertChaosDashboardMessage).not.toHaveBeenCalled();
     expect(store.recordChaosDashboardPost).not.toHaveBeenCalled();
     expect(writeLine).toHaveBeenCalledWith(
@@ -91,6 +98,9 @@ describe("startCopanalhasBotRuntime", () => {
     );
     expect(writeLine).toHaveBeenCalledWith(
       "[2026-06-11T21:15:00.000Z][dashboard] bracket action=posted message=bracket-message-1 phase=provisional render=image"
+    );
+    expect(writeLine).toHaveBeenCalledWith(
+      "[2026-06-11T21:15:00.000Z][dashboard] thirdPlaces action=posted message=third-place-message-1 status=needs-manual-tiebreaker render=image"
     );
     expect(writeLine).toHaveBeenCalledWith(
       "[2026-06-11T21:15:00.000Z][dashboard] recap posts=0 posted=0 edited=0 replaced=0 skipped=3 incomplete=3 alreadyPosted=0"
@@ -105,7 +115,7 @@ describe("startCopanalhasBotRuntime", () => {
       "[2026-06-11T21:15:00.000Z][health] nextMatchday=2026-06-11 matches=2 posted=2/2"
     );
     expect(writeLine).toHaveBeenCalledWith(
-      "[2026-06-11T21:15:00.000Z][health] dashboards standings=2/2 leaderboard=present bracket=present recaps=0 recapPeriods=none lastLeaderboard=2026-06-11T21:15:00.000Z lastBracket=2026-06-11T21:15:00.000Z lastRecap=never"
+      "[2026-06-11T21:15:00.000Z][health] dashboards standings=2/2 leaderboard=present bracket=present thirdPlaces=present recaps=0 recapPeriods=none lastLeaderboard=2026-06-11T21:15:00.000Z lastBracket=2026-06-11T21:15:00.000Z lastThirdPlaces=2026-06-11T21:15:00.000Z lastRecap=never"
     );
 
     await runtime.stop();
@@ -566,6 +576,8 @@ describe("startCopanalhasBotRuntime", () => {
     const upsertLeaderboardMessage = vi.fn(async () => "leaderboard-message-1");
     const upsertBracketMessage = vi.fn(async () => "bracket-message-1");
     const renderBracketPng = vi.fn(async () => Buffer.from("png"));
+    const upsertThirdPlaceMessage = vi.fn(async () => "third-place-message-1");
+    const renderThirdPlacePng = vi.fn(async () => Buffer.from("png"));
     const upsertChaosDashboardMessage = vi.fn(async () => "chaos-message-1");
     const renderChaosDashboardPng = vi.fn(async () => Buffer.from("png"));
     let now = new Date("2026-06-11T21:00:00.000Z");
@@ -597,6 +609,8 @@ describe("startCopanalhasBotRuntime", () => {
       renderLeaderboardPng: vi.fn(async () => Buffer.from("png")),
       upsertBracketMessage,
       renderBracketPng,
+      upsertThirdPlaceMessage,
+      renderThirdPlacePng,
       upsertChaosDashboardMessage,
       renderChaosDashboardPng,
       syncFinishedResults,
@@ -607,6 +621,7 @@ describe("startCopanalhasBotRuntime", () => {
     upsertStandingsMessage.mockClear();
     upsertLeaderboardMessage.mockClear();
     upsertBracketMessage.mockClear();
+    upsertThirdPlaceMessage.mockClear();
     upsertChaosDashboardMessage.mockClear();
     syncFinishedResults.mockClear();
 
@@ -617,6 +632,7 @@ describe("startCopanalhasBotRuntime", () => {
     expect(upsertStandingsMessage).toHaveBeenCalledTimes(2);
     expect(upsertLeaderboardMessage).toHaveBeenCalledOnce();
     expect(upsertBracketMessage).toHaveBeenCalledOnce();
+    expect(upsertThirdPlaceMessage).toHaveBeenCalledOnce();
     expect(upsertChaosDashboardMessage).not.toHaveBeenCalled();
   });
 
@@ -786,6 +802,7 @@ describe("startCopanalhasBotRuntime", () => {
     const upsertBracketMessage = vi.fn(async () => {
       throw new Error("Discord upload failed");
     });
+    const upsertThirdPlaceMessage = vi.fn(async () => "third-place-message-1");
     const writeLine = vi.fn();
     let now = new Date("2026-06-11T21:00:00.000Z");
     const syncFinishedResults = vi.fn(async () => ({
@@ -816,6 +833,8 @@ describe("startCopanalhasBotRuntime", () => {
       renderLeaderboardPng: vi.fn(async () => Buffer.from("png")),
       upsertBracketMessage,
       renderBracketPng: vi.fn(async () => Buffer.from("png")),
+      upsertThirdPlaceMessage,
+      renderThirdPlacePng: vi.fn(async () => Buffer.from("png")),
       syncFinishedResults,
       now: () => now,
       writeLine
@@ -823,6 +842,7 @@ describe("startCopanalhasBotRuntime", () => {
     upsertStandingsMessage.mockClear();
     upsertLeaderboardMessage.mockClear();
     upsertBracketMessage.mockClear();
+    upsertThirdPlaceMessage.mockClear();
     writeLine.mockClear();
     syncFinishedResults.mockClear();
 
@@ -833,6 +853,7 @@ describe("startCopanalhasBotRuntime", () => {
     expect(upsertStandingsMessage).toHaveBeenCalledTimes(2);
     expect(upsertLeaderboardMessage).toHaveBeenCalledOnce();
     expect(upsertBracketMessage).toHaveBeenCalledOnce();
+    expect(upsertThirdPlaceMessage).toHaveBeenCalledOnce();
     expect(writeLine).toHaveBeenCalledWith(
       "[2026-06-11T21:15:00.000Z][runtime] scope=bracket-dashboard message=Discord upload failed"
     );
@@ -888,6 +909,8 @@ describe("startCopanalhasBotRuntime", () => {
     const upsertLeaderboardMessage = vi.fn(async () => "leaderboard-message-1");
     const upsertBracketMessage = vi.fn(async () => "bracket-message-1");
     const renderBracketPng = vi.fn(async () => Buffer.from("png"));
+    const upsertThirdPlaceMessage = vi.fn(async () => "third-place-message-1");
+    const renderThirdPlacePng = vi.fn(async () => Buffer.from("png"));
     const writeLine = vi.fn();
     const syncFinishedResults = vi.fn(async () => ({
       action: "synced" as const,
@@ -911,6 +934,8 @@ describe("startCopanalhasBotRuntime", () => {
       renderLeaderboardPng: vi.fn(async () => Buffer.from("png")),
       upsertBracketMessage,
       renderBracketPng,
+      upsertThirdPlaceMessage,
+      renderThirdPlacePng,
       syncFinishedResults,
       now: () => new Date("2026-06-11T21:15:00.000Z"),
       writeLine
@@ -939,9 +964,13 @@ describe("startCopanalhasBotRuntime", () => {
     expect(writeLine).toHaveBeenCalledWith(
       "[2026-06-11T21:15:00.000Z][dashboard] bracket action=posted message=bracket-message-1 phase=provisional render=image"
     );
+    expect(writeLine).toHaveBeenCalledWith(
+      "[2026-06-11T21:15:00.000Z][dashboard] thirdPlaces action=posted message=third-place-message-1 status=needs-manual-tiebreaker render=image"
+    );
     expect(upsertStandingsMessage).toHaveBeenCalledTimes(4);
     expect(upsertLeaderboardMessage).toHaveBeenCalledTimes(2);
     expect(upsertBracketMessage).toHaveBeenCalledTimes(2);
+    expect(upsertThirdPlaceMessage).toHaveBeenCalledTimes(2);
   });
 
   test("logs thrown result sync errors without aborting startup", async () => {
@@ -994,6 +1023,8 @@ describe("startCopanalhasBotRuntime", () => {
     const upsertLeaderboardMessage = vi.fn(async () => "leaderboard-message-1");
     const upsertBracketMessage = vi.fn(async () => "bracket-message-1");
     const renderBracketPng = vi.fn(async () => Buffer.from("png"));
+    const upsertThirdPlaceMessage = vi.fn(async () => "third-place-message-1");
+    const renderThirdPlacePng = vi.fn(async () => Buffer.from("png"));
     const writeLine = vi.fn();
     const syncFinishedResults = vi.fn(async () => ({
       action: "synced" as const,
@@ -1017,6 +1048,8 @@ describe("startCopanalhasBotRuntime", () => {
       renderLeaderboardPng: vi.fn(async () => Buffer.from("png")),
       upsertBracketMessage,
       renderBracketPng,
+      upsertThirdPlaceMessage,
+      renderThirdPlacePng,
       syncFinishedResults,
       now: () => new Date("2026-06-11T21:00:00.000Z"),
       writeLine
@@ -1024,6 +1057,7 @@ describe("startCopanalhasBotRuntime", () => {
     upsertStandingsMessage.mockClear();
     upsertLeaderboardMessage.mockClear();
     upsertBracketMessage.mockClear();
+    upsertThirdPlaceMessage.mockClear();
     syncFinishedResults.mockClear();
 
     await expect(operatorOptions?.syncResultsNow?.()).resolves.toEqual({
@@ -1045,6 +1079,7 @@ describe("startCopanalhasBotRuntime", () => {
     expect(upsertStandingsMessage).toHaveBeenCalledTimes(2);
     expect(upsertLeaderboardMessage).toHaveBeenCalledOnce();
     expect(upsertBracketMessage).toHaveBeenCalledOnce();
+    expect(upsertThirdPlaceMessage).toHaveBeenCalledOnce();
     expect(writeLine).toHaveBeenCalledWith(
       "[2026-06-11T21:00:00.000Z][result-sync] start mode=forced range=2026-06-11..2026-06-11 pending=1"
     );
@@ -1378,6 +1413,7 @@ function createStore(): BotRuntimeStore {
   const standingsPosts: ReturnType<BotRuntimeStore["listStandingsPosts"]> = [];
   const leaderboardPosts: ReturnType<BotRuntimeStore["listLeaderboardPosts"]> = [];
   const bracketPosts: ReturnType<BotRuntimeStore["listBracketPosts"]> = [];
+  const thirdPlacePosts: ReturnType<BotRuntimeStore["listThirdPlacePosts"]> = [];
   const chaosDashboardPosts: ReturnType<BotRuntimeStore["listChaosDashboardPosts"]> = [];
   const chaosWeeklySnapshotRows: ReturnType<BotRuntimeStore["listChaosWeeklySnapshotRows"]> = [];
 
@@ -1454,6 +1490,15 @@ function createStore(): BotRuntimeStore {
     recordBracketPost: vi.fn((post) => {
       upsertBy(
         bracketPosts,
+        post,
+        (stored) => `${stored.guildId}|${stored.channelId}`,
+        (next) => `${next.guildId}|${next.channelId}`
+      );
+    }),
+    listThirdPlacePosts: vi.fn(() => thirdPlacePosts),
+    recordThirdPlacePost: vi.fn((post) => {
+      upsertBy(
+        thirdPlacePosts,
         post,
         (stored) => `${stored.guildId}|${stored.channelId}`,
         (next) => `${next.guildId}|${next.channelId}`

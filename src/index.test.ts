@@ -241,6 +241,7 @@ describe("runCli", () => {
     );
     const startInterval = vi.fn(() => ({ stop: vi.fn() }));
     const upsertBracketMessage = vi.fn(async () => "bracket-message-1");
+    const upsertThirdPlaceMessage = vi.fn(async () => "third-place-message-1");
     const upsertChaosDashboardMessage = vi.fn(async () => "chaos-message-1");
 
     await runCli(["bot"], {
@@ -260,6 +261,8 @@ describe("runCli", () => {
       renderLeaderboardPng: vi.fn(async () => Buffer.from("png")),
       upsertBracketMessage,
       renderBracketPng: vi.fn(async () => Buffer.from("png")),
+      upsertThirdPlaceMessage,
+      renderThirdPlacePng: vi.fn(async () => Buffer.from("png")),
       upsertChaosDashboardMessage,
       renderChaosDashboardPng: vi.fn(async () => Buffer.from("png")),
       now: () => new Date("2026-06-11T12:00:00.000Z")
@@ -299,6 +302,7 @@ describe("runCli", () => {
       "[2026-06-11T12:00:00.000Z][dashboard] standings posts=2 posted=2 edited=0 replaced=0 image=2 fallback=0",
       "[2026-06-11T12:00:00.000Z][dashboard] leaderboard action=posted message=leaderboard-message-1 render=image",
       "[2026-06-11T12:00:00.000Z][dashboard] bracket action=posted message=bracket-message-1 phase=provisional render=image",
+      "[2026-06-11T12:00:00.000Z][dashboard] thirdPlaces action=posted message=third-place-message-1 status=needs-manual-tiebreaker render=image",
       "[2026-06-11T12:00:00.000Z][dashboard] recap posts=0 posted=0 edited=0 replaced=0 skipped=3 incomplete=3 alreadyPosted=0",
       "[2026-06-11T12:00:00.000Z][auto-post] date=2026-06-11 windowDays=3 posted=8 skipped=0",
       "[2026-06-11T12:00:00.000Z][result-sync] disabled reason=disabled",
@@ -307,7 +311,7 @@ describe("runCli", () => {
       "[2026-06-11T12:00:00.000Z][health] nextMatchday=2026-06-11 matches=2 posted=2/2",
       "[2026-06-11T12:00:00.000Z][health] predictions open=2 closed=0 missingKickoff=0 pendingReveals=0",
       "[2026-06-11T12:00:00.000Z][health] footballData=missing-token resultSync=off nextResultCheck=disabled reason=disabled pendingResults=0",
-      "[2026-06-11T12:00:00.000Z][health] dashboards standings=2/2 leaderboard=present bracket=present recaps=0 recapPeriods=none lastLeaderboard=2026-06-11T12:00:00.000Z lastBracket=2026-06-11T12:00:00.000Z lastRecap=never",
+      "[2026-06-11T12:00:00.000Z][health] dashboards standings=2/2 leaderboard=present bracket=present thirdPlaces=present recaps=0 recapPeriods=none lastLeaderboard=2026-06-11T12:00:00.000Z lastBracket=2026-06-11T12:00:00.000Z lastThirdPlaces=2026-06-11T12:00:00.000Z lastRecap=never",
       "[2026-06-11T12:00:00.000Z][bot] Autonomous operator enabled. Auto-post: on at 09:00 America/Sao_Paulo."
     ]);
 
@@ -436,6 +440,7 @@ function createStoreShape(): CliStore {
   const standingsPosts: ReturnType<CliStore["listStandingsPosts"]> = [];
   const leaderboardPosts: ReturnType<CliStore["listLeaderboardPosts"]> = [];
   const bracketPosts: ReturnType<CliStore["listBracketPosts"]> = [];
+  const thirdPlacePosts: ReturnType<CliStore["listThirdPlacePosts"]> = [];
   const chaosDashboardPosts: ReturnType<CliStore["listChaosDashboardPosts"]> = [];
   const chaosWeeklySnapshotRows: ReturnType<CliStore["listChaosWeeklySnapshotRows"]> = [];
 
@@ -512,6 +517,15 @@ function createStoreShape(): CliStore {
     recordBracketPost: vi.fn((post) => {
       upsertBy(
         bracketPosts,
+        post,
+        (stored) => `${stored.guildId}|${stored.channelId}`,
+        (next) => `${next.guildId}|${next.channelId}`
+      );
+    }),
+    listThirdPlacePosts: vi.fn(() => thirdPlacePosts),
+    recordThirdPlacePost: vi.fn((post) => {
+      upsertBy(
+        thirdPlacePosts,
         post,
         (stored) => `${stored.guildId}|${stored.channelId}`,
         (next) => `${next.guildId}|${next.channelId}`

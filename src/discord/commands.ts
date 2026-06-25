@@ -70,6 +70,11 @@ export function createCopanalhasCommand() {
     )
     .addSubcommand((subcommand) =>
       subcommand
+        .setName("third-places")
+        .setDescription("Post or update the third-place qualification table")
+    )
+    .addSubcommand((subcommand) =>
+      subcommand
         .setName("copanalhas-recap-painel")
         .setDescription("Post or update the Copanalhas Recap")
         .addStringOption((option) =>

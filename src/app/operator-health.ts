@@ -77,6 +77,10 @@ export interface OperatorHealthSnapshot {
     present: boolean;
     lastUpdatedAt: string | null;
   };
+  thirdPlacePost: {
+    present: boolean;
+    lastUpdatedAt: string | null;
+  };
   chaosDashboardPost: {
     present: boolean;
     count: number;
@@ -109,11 +113,14 @@ export function formatOperatorHealthReport(snapshot: OperatorHealthSnapshot): st
     `Last result sync: ${formatLastResultSync(snapshot.lastResultSync)}`,
     `Dashboards: standings ${snapshot.standingsPosts.present}/${snapshot.standingsPosts.expected}, leaderboard ${
       snapshot.leaderboardPost.present ? "present" : "missing"
-    }, bracket ${snapshot.bracketPost.present ? "present" : "missing"}, recaps ${
+    }, bracket ${snapshot.bracketPost.present ? "present" : "missing"}, third places ${
+      snapshot.thirdPlacePost.present ? "present" : "missing"
+    }, recaps ${
       snapshot.chaosDashboardPost.count
     }`,
     `Last leaderboard update: ${snapshot.leaderboardPost.lastUpdatedAt ?? "never"}`,
     `Last bracket update: ${snapshot.bracketPost.lastUpdatedAt ?? "never"}`,
+    `Last third-place update: ${snapshot.thirdPlacePost.lastUpdatedAt ?? "never"}`,
     `Last recap update: ${snapshot.chaosDashboardPost.lastUpdatedAt ?? "never"}`,
     `Data: ${snapshot.data.matchesLoaded} matches loaded, ${snapshot.data.missingKickoffTimes} missing kickoff times`
   ];
@@ -144,13 +151,17 @@ export function formatOperatorHealthLogLines(snapshot: OperatorHealthSnapshot): 
       snapshot.standingsPosts.expected
     } leaderboard=${snapshot.leaderboardPost.present ? "present" : "missing"} bracket=${
       snapshot.bracketPost.present ? "present" : "missing"
+    } thirdPlaces=${
+      snapshot.thirdPlacePost.present ? "present" : "missing"
     } recaps=${snapshot.chaosDashboardPost.count} recapPeriods=${
       snapshot.chaosDashboardPost.periodKeys.length > 0
         ? snapshot.chaosDashboardPost.periodKeys.join(",")
         : "none"
     } lastLeaderboard=${
       snapshot.leaderboardPost.lastUpdatedAt ?? "never"
-    } lastBracket=${snapshot.bracketPost.lastUpdatedAt ?? "never"} lastRecap=${
+    } lastBracket=${snapshot.bracketPost.lastUpdatedAt ?? "never"} lastThirdPlaces=${
+      snapshot.thirdPlacePost.lastUpdatedAt ?? "never"
+    } lastRecap=${
       snapshot.chaosDashboardPost.lastUpdatedAt ?? "never"
     }`
   ];

@@ -14,7 +14,8 @@ import type {
   StoredLeaderboardPost,
   StoredPrediction,
   StoredResult,
-  StoredStandingsPost
+  StoredStandingsPost,
+  StoredThirdPlacePost
 } from "../storage/database.js";
 import type { WorldCupMatch } from "../worldcup/types.js";
 import {
@@ -26,6 +27,7 @@ import { formatTeamName } from "../worldcup/team-display.js";
 import type { UpdateStandingsDashboardResult } from "../app/standings-posting.js";
 import type { UpdateLeaderboardDashboardResult } from "../app/leaderboard-posting.js";
 import type { UpdateBracketDashboardResult } from "../app/bracket-posting.js";
+import type { UpdateThirdPlaceDashboardResult } from "../app/third-place-posting.js";
 import type { UpdateChaosDashboardResult } from "../app/chaos-dashboard-posting.js";
 import {
   chaosRecapPeriodChoices,
@@ -45,6 +47,7 @@ export type OperatorSubcommand =
   | "standings"
   | "leaderboard"
   | "bracket"
+  | "third-places"
   | "copanalhas-recap-painel"
   | "sync-results"
   | "meus-palpites"
@@ -95,6 +98,8 @@ export interface OperatorCommandOptions {
   updateLeaderboardDashboard(): Promise<UpdateLeaderboardDashboardResult>;
   listBracketPosts(): StoredBracketPost[];
   updateBracketDashboard(): Promise<UpdateBracketDashboardResult>;
+  listThirdPlacePosts(): StoredThirdPlacePost[];
+  updateThirdPlaceDashboard(): Promise<UpdateThirdPlaceDashboardResult>;
   listChaosDashboardPosts(): StoredChaosDashboardPost[];
   updateChaosDashboard(
     refreshExisting?: boolean,
@@ -246,6 +251,7 @@ export async function handleOperatorCommand(
     await options.updateStandingsDashboard();
     await options.updateLeaderboardDashboard();
     await options.updateBracketDashboard();
+    await options.updateThirdPlaceDashboard();
     await options.updateChaosDashboard(false);
 
     return reply(
@@ -259,6 +265,7 @@ export async function handleOperatorCommand(
         "Standings refreshed.",
         "Leaderboard refreshed.",
         "Bracket refreshed.",
+        "Third-place dashboard refreshed.",
         "Copanalhas Recap refreshed."
       ].join("\n")
     );
@@ -290,6 +297,11 @@ export async function handleOperatorCommand(
           options.channelId
         ),
         ...formatBracketStatus(options.listBracketPosts(), options.guildId, options.channelId),
+        ...formatThirdPlaceStatus(
+          options.listThirdPlacePosts(),
+          options.guildId,
+          options.channelId
+        ),
         ...formatChaosDashboardStatus(
           options.listChaosDashboardPosts(),
           options.guildId,
@@ -328,6 +340,18 @@ export async function handleOperatorCommand(
       );
     } catch (error) {
       return reply(`Failed to update bracket dashboard: ${errorMessage(error)}.`);
+    }
+  }
+
+  if (command.subcommand === "third-places") {
+    try {
+      const result = await options.updateThirdPlaceDashboard();
+
+      return reply(
+        `Updated third-place dashboard: ${result.post.action} (${result.qualificationStatus}, ${result.renderState}).`
+      );
+    } catch (error) {
+      return reply(`Failed to update third-place dashboard: ${errorMessage(error)}.`);
     }
   }
 
@@ -448,6 +472,7 @@ export async function handleOperatorCommand(
     await options.updateStandingsDashboard();
     await options.updateLeaderboardDashboard();
     await options.updateBracketDashboard();
+    await options.updateThirdPlaceDashboard();
     await options.updateChaosDashboard(false);
     await options.updatePredictionResultReveals?.();
 
@@ -677,6 +702,7 @@ function parseOperatorSubcommand(value: string): OperatorSubcommand | undefined 
     value === "standings" ||
     value === "leaderboard" ||
     value === "bracket" ||
+    value === "third-places" ||
     value === "copanalhas-recap-painel" ||
     value === "sync-results" ||
     value === "meus-palpites" ||
@@ -844,6 +870,21 @@ function formatBracketStatus(
   return [
     `Bracket post: ${matchingPost ? "present" : "missing"}`,
     `Bracket last updated: ${matchingPost?.updatedAt ?? "never"}`
+  ];
+}
+
+function formatThirdPlaceStatus(
+  posts: StoredThirdPlacePost[],
+  guildId: string,
+  channelId: string
+): string[] {
+  const matchingPost = posts.find(
+    (post) => post.guildId === guildId && post.channelId === channelId
+  );
+
+  return [
+    `Third-place post: ${matchingPost ? "present" : "missing"}`,
+    `Third-place last updated: ${matchingPost?.updatedAt ?? "never"}`
   ];
 }
 

@@ -1,11 +1,8 @@
-import { readFileSync } from "node:fs";
-import { createRequire } from "node:module";
-import { dirname, join } from "node:path";
-
 import {
   FOOTBALL_DATA_ATTRIBUTION,
   STANDINGS_DASHBOARD_TITLE
 } from "./format.js";
+import { flagAssetForTeamCode } from "./flag-assets.js";
 import type { GroupStandingRow, GroupStandings } from "./standings.js";
 import { formatTeamName } from "../worldcup/team-display.js";
 
@@ -16,7 +13,6 @@ export interface RenderStandingsDashboardSvgOptions {
   generatedAtLabel: string;
 }
 
-const require = createRequire(import.meta.url);
 const width = 1500;
 const height = 900;
 const margin = 44;
@@ -182,38 +178,6 @@ function renderFlagImage(teamCode: string, x: number, y: number): string {
   ].join("");
 }
 
-function flagAssetForTeamCode(teamCode: string): FlagAsset | undefined {
-  const flagCode = flagIconCodeByTeamCode.get(teamCode);
-
-  if (!flagCode) {
-    return undefined;
-  }
-
-  const cached = flagAssetCache.get(flagCode);
-
-  if (cached) {
-    return cached;
-  }
-
-  const fileName = `${flagCode}.svg`;
-  const sourcePath = join(flagIconsRoot(), "flags", "4x3", fileName);
-  const data = readFileSync(sourcePath).toString("base64");
-  const asset = {
-    fileName,
-    href: `data:image/svg+xml;base64,${data}`
-  };
-
-  flagAssetCache.set(flagCode, asset);
-
-  return asset;
-}
-
-function flagIconsRoot(): string {
-  const packageJsonPath = require.resolve("flag-icons/package.json");
-
-  return dirname(packageJsonPath);
-}
-
 function formatGoalDifference(goalDifference: number): string {
   return goalDifference > 0 ? `+${goalDifference}` : String(goalDifference);
 }
@@ -248,61 +212,3 @@ function escapeText(value: string): string {
 function escapeAttribute(value: string): string {
   return escapeText(value).replaceAll("\"", "&quot;");
 }
-
-interface FlagAsset {
-  fileName: string;
-  href: string;
-}
-
-const flagAssetCache = new Map<string, FlagAsset>();
-
-const flagIconCodeByTeamCode = new Map<string, string>([
-  ["ALG", "dz"],
-  ["ARG", "ar"],
-  ["AUS", "au"],
-  ["AUT", "at"],
-  ["BEL", "be"],
-  ["BIH", "ba"],
-  ["BRA", "br"],
-  ["CAN", "ca"],
-  ["CIV", "ci"],
-  ["COD", "cd"],
-  ["COL", "co"],
-  ["CPV", "cv"],
-  ["CRO", "hr"],
-  ["CUW", "cw"],
-  ["CZE", "cz"],
-  ["ECU", "ec"],
-  ["EGY", "eg"],
-  ["ENG", "gb-eng"],
-  ["ESP", "es"],
-  ["FRA", "fr"],
-  ["GER", "de"],
-  ["GHA", "gh"],
-  ["HAI", "ht"],
-  ["IRN", "ir"],
-  ["IRQ", "iq"],
-  ["JOR", "jo"],
-  ["JPN", "jp"],
-  ["KOR", "kr"],
-  ["KSA", "sa"],
-  ["MAR", "ma"],
-  ["MEX", "mx"],
-  ["NED", "nl"],
-  ["NOR", "no"],
-  ["NZL", "nz"],
-  ["PAN", "pa"],
-  ["PAR", "py"],
-  ["POR", "pt"],
-  ["QAT", "qa"],
-  ["RSA", "za"],
-  ["SCO", "gb-sct"],
-  ["SEN", "sn"],
-  ["SUI", "ch"],
-  ["SWE", "se"],
-  ["TUN", "tn"],
-  ["TUR", "tr"],
-  ["URU", "uy"],
-  ["USA", "us"],
-  ["UZB", "uz"]
-]);

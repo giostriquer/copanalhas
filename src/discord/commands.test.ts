@@ -20,6 +20,7 @@ describe("Copanalhas slash command definition", () => {
         expect.objectContaining({ name: "standings" }),
         expect.objectContaining({ name: "leaderboard" }),
         expect.objectContaining({ name: "bracket" }),
+        expect.objectContaining({ name: "third-places" }),
         expect.objectContaining({ name: "copanalhas-recap-painel" }),
         expect.objectContaining({ name: "sync-results" }),
         expect.objectContaining({ name: "meus-palpites" }),

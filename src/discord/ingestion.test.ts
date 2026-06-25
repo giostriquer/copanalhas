@@ -337,6 +337,13 @@ function operatorOptions(): OperatorCommandOptions {
       bracketPhase: "provisional" as const,
       renderState: "image" as const
     })),
+    listThirdPlacePosts: vi.fn(() => []),
+    updateThirdPlaceDashboard: vi.fn(async () => ({
+      action: "updated" as const,
+      post: { messageId: "third-place-message-1", action: "edited" as const },
+      qualificationStatus: "resolved" as const,
+      renderState: "image" as const
+    })),
     listChaosDashboardPosts: vi.fn(() => []),
     updateChaosDashboard: vi.fn(async () => ({
       action: "updated" as const,

@@ -145,7 +145,7 @@ function renderColumnHeadings(y: number): string {
   const headingY = y + 36;
 
   return [
-    `<g data-bracket-column="round-of-32"><text data-r32-heading-side="left" x="${leftR32X}" y="${headingY}" text-anchor="start" font-family="Inter, Arial, sans-serif" font-size="14" font-weight="850" fill="#141b2b">Rodada de 32</text><text data-r32-heading-side="right" x="${rightR32X + r32Width}" y="${headingY}" text-anchor="end" font-family="Inter, Arial, sans-serif" font-size="14" font-weight="850" fill="#141b2b">Rodada de 32</text></g>`,
+    `<g data-bracket-column="round-of-32"><text data-r32-heading-side="left" x="${leftR32X + r32Width / 2}" y="${headingY}" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="14" font-weight="850" fill="#141b2b">Rodada de 32</text><text data-r32-heading-side="right" x="${rightR32X + r32Width / 2}" y="${headingY}" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="14" font-weight="850" fill="#141b2b">Rodada de 32</text></g>`,
     `<g data-bracket-column="round-of-16"><text x="${leftR16X + r16Width / 2}" y="${headingY}" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="800" fill="#141b2b">Oitavas</text><text x="${rightR16X + r16Width / 2}" y="${headingY}" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="800" fill="#141b2b">Oitavas</text></g>`,
     `<g data-bracket-column="quarter-finals"><text x="${leftQfX + qfWidth / 2}" y="${headingY}" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="800" fill="#141b2b">Quartas</text><text x="${rightQfX + qfWidth / 2}" y="${headingY}" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="800" fill="#141b2b">Quartas</text></g>`,
     `<g data-bracket-column="semi-finals"><text x="${leftSfX + sfWidth / 2}" y="${headingY}" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="800" fill="#141b2b">Semifinal</text><text x="${rightSfX + sfWidth / 2}" y="${headingY}" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="800" fill="#141b2b">Semifinal</text></g>`,
@@ -363,7 +363,7 @@ function renderRoundOf32Match(
 
   return [
     `<g data-match-id="${escapeAttribute(match.id)}" data-bracket-match-number="${matchNumber}" transform="translate(${x}, ${y})">`,
-    `<text data-kickoff-label-side="${sideKey}" x="${kickoffLabelX}" y="-12"${kickoffAnchor} font-family="Inter, Arial, sans-serif" font-size="9" fill="#273140">${escapeText(match.kickoffLabel ?? matchStatusLabel(match))}</text>`,
+    `<text data-kickoff-label-side="${sideKey}" x="${kickoffLabelX}" y="-12"${kickoffAnchor} font-family="Inter, Arial, sans-serif" font-size="10" fill="#273140">${escapeText(match.kickoffLabel ?? matchStatusLabel(match))}</text>`,
     `<rect width="${r32Width}" height="${r32Height}" fill="#ffffff"/>`,
     `<rect width="3" height="${r32Height}" fill="${statusColor(match)}"/>`,
     `<line x1="${r32Width - 58}" y1="0" x2="${r32Width - 58}" y2="${r32Height}" stroke="#edf0f3"/>`,
