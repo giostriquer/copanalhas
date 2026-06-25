@@ -525,6 +525,160 @@ describe("startCopanalhasBotRuntime", () => {
     expect(upsertChaosDashboardMessage).not.toHaveBeenCalled();
   });
 
+  test("keeps cached leaderboard display names when a later refresh falls back to ids", async () => {
+    const userId = "1182735062773534741";
+    const store = {
+      ...createStore(),
+      listPredictions: vi.fn(() => [
+        {
+          userId,
+          matchId: "wc2026-001",
+          messageId: "prediction-message-1",
+          homeScore: 2,
+          awayScore: 1,
+          submittedAt: "2026-06-10T12:00:00.000Z",
+          updatedAt: null,
+          parserVersion: "prediction-modal-v1"
+        }
+      ])
+    };
+    const intervalCallbacks: Array<() => void | Promise<void>> = [];
+    const startInterval = vi.fn((callback) => {
+      intervalCallbacks.push(callback);
+      return { stop: vi.fn() };
+    });
+    const renderedLeaderboardSvgs: string[] = [];
+    let displayNameCallCount = 0;
+    const resolveUserDisplayNames = vi.fn(async () => {
+      displayNameCallCount += 1;
+
+      return new Map([
+        [userId, displayNameCallCount === 1 ? "Giova" : userId]
+      ]);
+    });
+    const syncFinishedResults = vi.fn(async () => ({
+      action: "synced" as const,
+      storedResults: ["wc2026-001"],
+      skipped: []
+    }));
+    let now = new Date("2026-06-11T20:00:00.000Z");
+
+    await startCopanalhasBotRuntime({
+      config: {
+        ...config(),
+        footballDataToken: "token-value",
+        resultSyncEnabled: true,
+        resultSyncFirstCheckMinutes: 110,
+        resultSyncRetryMinutes: 1
+      },
+      store,
+      matches: WORLD_CUP_2026_SEED.matches,
+      startDiscord: vi.fn(async () => ({ destroy: vi.fn(async () => undefined) })),
+      startInterval,
+      sendMatchCard: vi.fn(async () => "discord-message-1"),
+      sendPredictionReveal: vi.fn(async () => ({
+        threadId: "thread-1",
+        messageId: "reveal-message-1"
+      })),
+      upsertStandingsMessage: vi.fn(async (message) => `standings-${message.key}`),
+      upsertLeaderboardMessage: vi.fn(async () => "leaderboard-message-1"),
+      renderLeaderboardPng: vi.fn(async (svg) => {
+        renderedLeaderboardSvgs.push(svg);
+        return Buffer.from("png");
+      }),
+      syncFinishedResults,
+      resolveUserDisplayNames,
+      now: () => now,
+      writeLine: vi.fn()
+    });
+
+    expect(renderedLeaderboardSvgs.at(-1)).toContain(">Giova</text>");
+
+    now = new Date("2026-06-11T21:15:00.000Z");
+    await intervalCallbacks[2]?.();
+
+    expect(resolveUserDisplayNames).toHaveBeenCalledTimes(2);
+    expect(renderedLeaderboardSvgs.at(-1)).toContain(">Giova</text>");
+    expect(renderedLeaderboardSvgs.at(-1)).not.toContain(`>${userId}</text>`);
+  });
+
+  test("keeps cached leaderboard display names when a later refresh cannot resolve names", async () => {
+    const userId = "1182735062773534741";
+    const store = {
+      ...createStore(),
+      listPredictions: vi.fn(() => [
+        {
+          userId,
+          matchId: "wc2026-001",
+          messageId: "prediction-message-1",
+          homeScore: 2,
+          awayScore: 1,
+          submittedAt: "2026-06-10T12:00:00.000Z",
+          updatedAt: null,
+          parserVersion: "prediction-modal-v1"
+        }
+      ])
+    };
+    const intervalCallbacks: Array<() => void | Promise<void>> = [];
+    const startInterval = vi.fn((callback) => {
+      intervalCallbacks.push(callback);
+      return { stop: vi.fn() };
+    });
+    const renderedLeaderboardSvgs: string[] = [];
+    let displayNameCallCount = 0;
+    const resolveUserDisplayNames = vi.fn(async () => {
+      displayNameCallCount += 1;
+
+      if (displayNameCallCount > 1) {
+        throw new Error("Discord member lookup failed");
+      }
+
+      return new Map([[userId, "Giova"]]);
+    });
+    const syncFinishedResults = vi.fn(async () => ({
+      action: "synced" as const,
+      storedResults: ["wc2026-001"],
+      skipped: []
+    }));
+    let now = new Date("2026-06-11T20:00:00.000Z");
+
+    await startCopanalhasBotRuntime({
+      config: {
+        ...config(),
+        footballDataToken: "token-value",
+        resultSyncEnabled: true,
+        resultSyncFirstCheckMinutes: 110,
+        resultSyncRetryMinutes: 1
+      },
+      store,
+      matches: WORLD_CUP_2026_SEED.matches,
+      startDiscord: vi.fn(async () => ({ destroy: vi.fn(async () => undefined) })),
+      startInterval,
+      sendMatchCard: vi.fn(async () => "discord-message-1"),
+      sendPredictionReveal: vi.fn(async () => ({
+        threadId: "thread-1",
+        messageId: "reveal-message-1"
+      })),
+      upsertStandingsMessage: vi.fn(async (message) => `standings-${message.key}`),
+      upsertLeaderboardMessage: vi.fn(async () => "leaderboard-message-1"),
+      renderLeaderboardPng: vi.fn(async (svg) => {
+        renderedLeaderboardSvgs.push(svg);
+        return Buffer.from("png");
+      }),
+      syncFinishedResults,
+      resolveUserDisplayNames,
+      now: () => now,
+      writeLine: vi.fn()
+    });
+
+    now = new Date("2026-06-11T21:15:00.000Z");
+    await intervalCallbacks[2]?.();
+
+    expect(resolveUserDisplayNames).toHaveBeenCalledTimes(2);
+    expect(renderedLeaderboardSvgs.at(-1)).toContain(">Giova</text>");
+    expect(renderedLeaderboardSvgs.at(-1)).not.toContain(`>${userId}</text>`);
+  });
+
   test("isolates bracket refresh failures from standings and leaderboard refreshes", async () => {
     const store = createStore();
     const intervalCallbacks: Array<() => void | Promise<void>> = [];

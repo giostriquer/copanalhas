@@ -219,8 +219,16 @@ export async function startCopanalhasBotRuntime(
     lastResult: { action: "never" },
     lastAttemptAtUtc: null
   };
+  const cachedResolveUserDisplayNames = createCachedUserDisplayNameResolver(
+    options.resolveUserDisplayNames
+  );
   const operatorCommandOptions = createOperatorCommandOptions(
-    options,
+    {
+      ...options,
+      ...(cachedResolveUserDisplayNames
+        ? { resolveUserDisplayNames: cachedResolveUserDisplayNames }
+        : {})
+    },
     autoPostState,
     resultSyncState
   );
@@ -280,6 +288,73 @@ export async function startCopanalhasBotRuntime(
 
 function writeRuntimeLine(options: StartCopanalhasBotRuntimeOptions, line: string): void {
   options.writeLine(formatRuntimeLogLine(options.now(), line));
+}
+
+function createCachedUserDisplayNameResolver(
+  resolver: StartCopanalhasBotRuntimeOptions["resolveUserDisplayNames"]
+): StartCopanalhasBotRuntimeOptions["resolveUserDisplayNames"] {
+  if (!resolver) {
+    return undefined;
+  }
+
+  const cache = new Map<string, string>();
+
+  return async (userIds) => {
+    let resolved: ReadonlyMap<string, string>;
+
+    try {
+      resolved = await resolver(userIds);
+    } catch {
+      return cachedDisplayNamesFor(userIds, cache);
+    }
+
+    const displayNames = new Map<string, string>();
+
+    for (const userId of userIds) {
+      const resolvedName = normalizeRuntimeDisplayName(resolved.get(userId));
+
+      if (resolvedName && !isRawDiscordUserIdFallback(userId, resolvedName)) {
+        cache.set(userId, resolvedName);
+        displayNames.set(userId, resolvedName);
+        continue;
+      }
+
+      const cachedName = cache.get(userId);
+
+      if (cachedName) {
+        displayNames.set(userId, cachedName);
+      } else if (resolvedName) {
+        displayNames.set(userId, resolvedName);
+      }
+    }
+
+    return displayNames;
+  };
+}
+
+function cachedDisplayNamesFor(
+  userIds: readonly string[],
+  cache: ReadonlyMap<string, string>
+): ReadonlyMap<string, string> {
+  const displayNames = new Map<string, string>();
+
+  for (const userId of userIds) {
+    const cachedName = cache.get(userId);
+
+    if (cachedName) {
+      displayNames.set(userId, cachedName);
+    }
+  }
+
+  return displayNames;
+}
+
+function normalizeRuntimeDisplayName(name: string | undefined): string {
+  return (name ?? "").replace(/\s+/gu, " ").trim();
+}
+
+function isRawDiscordUserIdFallback(userId: string, displayName: string): boolean {
+  return displayName === userId && /^\d{15,22}$/u.test(userId);
 }
 
 async function runBracketDashboardRefresh(
