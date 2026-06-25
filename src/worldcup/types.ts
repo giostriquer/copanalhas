@@ -14,11 +14,21 @@ export interface TournamentDataSource {
   notes: string;
 }
 
-export interface WorldCupMatch {
+export type WorldCupPhase =
+  | "group"
+  | "round_of_32"
+  | "round_of_16"
+  | "quarter_final"
+  | "semi_final"
+  | "third_place"
+  | "final";
+
+export type WorldCupMatch = WorldCupGroupMatch | WorldCupKnockoutMatch;
+
+interface WorldCupMatchBase {
   id: string;
   matchNumber: number;
-  phase: "group";
-  group: string;
+  phase: WorldCupPhase;
   homeTeam: WorldCupTeam;
   awayTeam: WorldCupTeam;
   localDate: string;
@@ -29,6 +39,16 @@ export interface WorldCupMatch {
   externalIds: WorldCupExternalIds;
 }
 
+export interface WorldCupGroupMatch extends WorldCupMatchBase {
+  phase: "group";
+  group: string;
+}
+
+export interface WorldCupKnockoutMatch extends WorldCupMatchBase {
+  phase: Exclude<WorldCupPhase, "group">;
+  group: null;
+}
+
 export interface WorldCupTeam {
   code: string;
   name: string;
@@ -36,4 +56,8 @@ export interface WorldCupTeam {
 
 export interface WorldCupExternalIds {
   footballData?: number;
+}
+
+export function isGroupStageMatch(match: WorldCupMatch): match is WorldCupGroupMatch {
+  return match.phase === "group";
 }

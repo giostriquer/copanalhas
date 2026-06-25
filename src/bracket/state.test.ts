@@ -3,7 +3,7 @@ import { describe, expect, test } from "vitest";
 import { createBracketState } from "./state.js";
 import type { StandingsResult } from "../standings/standings.js";
 import { WORLD_CUP_2026_SEED } from "../worldcup/seed.js";
-import type { WorldCupMatch } from "../worldcup/types.js";
+import { isGroupStageMatch, type WorldCupMatch } from "../worldcup/types.js";
 
 describe("createBracketState", () => {
   test("creates a whole bracket skeleton with provisional round-of-32 entrants from incomplete group results", () => {
@@ -157,6 +157,25 @@ describe("createBracketState", () => {
     ]);
   });
 
+  test("attaches GMT-3 kickoff labels from reviewed knockout metadata", () => {
+    const state = createBracketState({
+      matches: WORLD_CUP_2026_SEED.matches,
+      results: currentStoredResults(),
+      timeZone: "America/Sao_Paulo"
+    });
+    const roundOf32 = state.rounds.find((round) => round.key === "round_of_32");
+
+    expect(roundOf32?.matches.find((match) => match.label === "#73")?.kickoffLabel).toBe(
+      "28/06 16:00 GMT-3"
+    );
+    expect(roundOf32?.matches.find((match) => match.label === "#74")?.kickoffLabel).toBe(
+      "29/06 17:30 GMT-3"
+    );
+    expect(roundOf32?.matches.find((match) => match.label === "#85")?.kickoffLabel).toBe(
+      "03/07 00:00 GMT-3"
+    );
+  });
+
   test("resolves final round-of-32 entrants from reviewed current match data", () => {
     const state = createBracketState({
       matches: WORLD_CUP_2026_SEED.matches,
@@ -277,7 +296,7 @@ const currentSeedRankOrders: Readonly<Record<string, readonly string[]>> =
   currentSeedRankOrderByGroup;
 
 function currentSeedProofResults(): StandingsResult[] {
-  return WORLD_CUP_2026_SEED.matches.map((matchFixture) => {
+  return WORLD_CUP_2026_SEED.matches.filter(isGroupStageMatch).map((matchFixture) => {
     const homeRank = currentSeedRank(matchFixture.group, matchFixture.homeTeam.code);
     const awayRank = currentSeedRank(matchFixture.group, matchFixture.awayTeam.code);
     const winnerIsHome = homeRank < awayRank;

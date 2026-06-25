@@ -25,7 +25,7 @@ describe("operator health formatting", () => {
       "Last leaderboard update: 2026-06-11T18:00:00.000Z",
       "Last bracket update: 2026-06-11T18:05:00.000Z",
       "Last recap update: 2026-06-11T18:10:00.000Z",
-      "Data: 72 matches loaded, 0 missing kickoff times"
+      "Data: 104 matches loaded, 0 missing kickoff times"
     ]);
   });
 
@@ -117,7 +117,7 @@ function healthSnapshot(): OperatorHealthSnapshot {
       lastUpdatedAt: "2026-06-11T18:10:00.000Z"
     },
     data: {
-      matchesLoaded: 72,
+      matchesLoaded: 104,
       missingKickoffTimes: 0
     }
   };

@@ -1,19 +1,19 @@
-import type { TournamentSeed, WorldCupExternalIds, WorldCupMatch } from "./types.js";
+import type { TournamentSeed, WorldCupExternalIds, WorldCupMatch, WorldCupPhase } from "./types.js";
 
-const fifaScheduleSourceId = "fifa-match-schedule-2026-03-31";
+const fifaScheduleSourceId = "fifa-match-schedule-2026-04-10";
 
 export const WORLD_CUP_2026_SEED: TournamentSeed = {
   schemaVersion: 1,
   tournamentId: "fifa-world-cup-2026",
-  importedAt: "2026-06-08",
+  importedAt: "2026-06-25",
   sources: [
     {
       id: fifaScheduleSourceId,
       title: "FIFA World Cup 2026 match schedule",
-      url: "https://digitalhub.fifa.com/asset/4b5d4417-3343-4732-9cdf-14b6662af407/FWC26-Match-Schedule_English.pdf",
-      accessedAt: "2026-06-05",
+      url: "https://digitalhub.fifa.com/m/1be9ce37eb98fcc5/original/FWC26-Match-Schedule_English.pdf",
+      accessedAt: "2026-06-25",
       notes:
-        "Official FIFA match schedule PDF for fixture order, groups, host cities, venues, dates, and kick-off times. Times are recorded as venue-local time plus UTC ISO timestamps."
+        "Official FIFA match schedule PDF for fixture order, groups, host cities, venues, dates, and kick-off times. Group fixtures store confirmed teams; knockout fixtures store FIFA slot placeholders until participants are resolved. Times are recorded as venue-local time plus UTC ISO timestamps."
     },
     {
       id: "kickofftimes-jsonld-2026-06-05",
@@ -27,9 +27,9 @@ export const WORLD_CUP_2026_SEED: TournamentSeed = {
       id: "football-data-wc-2026-06-08",
       title: "football-data.org FIFA World Cup 2026 matches",
       url: "https://api.football-data.org/v4/competitions/WC/matches?season=2026",
-      accessedAt: "2026-06-08",
+      accessedAt: "2026-06-25",
       notes:
-        "Provider match IDs for autonomous result sync. Fixture source of truth remains the FIFA schedule."
+        "Provider match IDs for autonomous result sync across all 104 fixtures. Fixture source of truth remains the FIFA schedule."
     }
   ],
   matches: [
@@ -104,7 +104,39 @@ export const WORLD_CUP_2026_SEED: TournamentSeed = {
     groupMatch(69, "K", "COL", "Colombia", "POR", "Portugal", "2026-06-27", "19:30", "2026-06-27T23:30:00.000Z", "Miami Stadium", { footballData: 537407 }),
     groupMatch(70, "K", "COD", "DR Congo", "UZB", "Uzbekistan", "2026-06-27", "19:30", "2026-06-27T23:30:00.000Z", "Atlanta Stadium", { footballData: 537408 }),
     groupMatch(71, "J", "ALG", "Algeria", "AUT", "Austria", "2026-06-27", "21:00", "2026-06-28T02:00:00.000Z", "Kansas City Stadium", { footballData: 537402 }),
-    groupMatch(72, "J", "JOR", "Jordan", "ARG", "Argentina", "2026-06-27", "21:00", "2026-06-28T02:00:00.000Z", "Dallas Stadium", { footballData: 537401 })
+    groupMatch(72, "J", "JOR", "Jordan", "ARG", "Argentina", "2026-06-27", "21:00", "2026-06-28T02:00:00.000Z", "Dallas Stadium", { footballData: 537401 }),
+    knockoutMatch(73, "round_of_32", "2A", "2B", "2026-06-28", "12:00", "2026-06-28T19:00:00.000Z", "Los Angeles Stadium", { footballData: 537417 }),
+    knockoutMatch(74, "round_of_32", "1E", "3ABCDF", "2026-06-29", "16:30", "2026-06-29T20:30:00.000Z", "Boston Stadium", { footballData: 537415 }),
+    knockoutMatch(75, "round_of_32", "1F", "2C", "2026-06-29", "19:00", "2026-06-30T01:00:00.000Z", "Estadio Monterrey", { footballData: 537418 }),
+    knockoutMatch(76, "round_of_32", "1C", "2F", "2026-06-29", "12:00", "2026-06-29T17:00:00.000Z", "Houston Stadium", { footballData: 537423 }),
+    knockoutMatch(77, "round_of_32", "1I", "3CDFGH", "2026-06-30", "17:00", "2026-06-30T21:00:00.000Z", "New York New Jersey Stadium", { footballData: 537416 }),
+    knockoutMatch(78, "round_of_32", "2E", "2I", "2026-06-30", "12:00", "2026-06-30T17:00:00.000Z", "Dallas Stadium", { footballData: 537424 }),
+    knockoutMatch(79, "round_of_32", "1A", "3CEFHI", "2026-06-30", "19:00", "2026-07-01T01:00:00.000Z", "Mexico City Stadium", { footballData: 537425 }),
+    knockoutMatch(80, "round_of_32", "1L", "3EHIJK", "2026-07-01", "12:00", "2026-07-01T16:00:00.000Z", "Atlanta Stadium", { footballData: 537426 }),
+    knockoutMatch(81, "round_of_32", "1D", "3BEFIJ", "2026-07-01", "17:00", "2026-07-02T00:00:00.000Z", "San Francisco Bay Area Stadium", { footballData: 537421 }),
+    knockoutMatch(82, "round_of_32", "1G", "3AEHIJ", "2026-07-01", "13:00", "2026-07-01T20:00:00.000Z", "Seattle Stadium", { footballData: 537422 }),
+    knockoutMatch(83, "round_of_32", "2K", "2L", "2026-07-02", "19:00", "2026-07-02T23:00:00.000Z", "Toronto Stadium", { footballData: 537419 }),
+    knockoutMatch(84, "round_of_32", "1H", "2J", "2026-07-02", "12:00", "2026-07-02T19:00:00.000Z", "Los Angeles Stadium", { footballData: 537420 }),
+    knockoutMatch(85, "round_of_32", "1B", "3EFGIJ", "2026-07-02", "20:00", "2026-07-03T03:00:00.000Z", "BC Place Vancouver", { footballData: 537429 }),
+    knockoutMatch(86, "round_of_32", "1J", "2H", "2026-07-03", "18:00", "2026-07-03T22:00:00.000Z", "Miami Stadium", { footballData: 537427 }),
+    knockoutMatch(87, "round_of_32", "1K", "3DEIJL", "2026-07-03", "20:30", "2026-07-04T01:30:00.000Z", "Kansas City Stadium", { footballData: 537430 }),
+    knockoutMatch(88, "round_of_32", "2D", "2G", "2026-07-03", "13:00", "2026-07-03T18:00:00.000Z", "Dallas Stadium", { footballData: 537428 }),
+    knockoutMatch(89, "round_of_16", "W74", "W77", "2026-07-04", "17:00", "2026-07-04T21:00:00.000Z", "Philadelphia Stadium", { footballData: 537375 }),
+    knockoutMatch(90, "round_of_16", "W73", "W75", "2026-07-04", "12:00", "2026-07-04T17:00:00.000Z", "Houston Stadium", { footballData: 537376 }),
+    knockoutMatch(91, "round_of_16", "W76", "W78", "2026-07-05", "16:00", "2026-07-05T20:00:00.000Z", "New York New Jersey Stadium", { footballData: 537377 }),
+    knockoutMatch(92, "round_of_16", "W79", "W80", "2026-07-05", "18:00", "2026-07-06T00:00:00.000Z", "Mexico City Stadium", { footballData: 537378 }),
+    knockoutMatch(93, "round_of_16", "W83", "W84", "2026-07-06", "14:00", "2026-07-06T19:00:00.000Z", "Dallas Stadium", { footballData: 537379 }),
+    knockoutMatch(94, "round_of_16", "W81", "W82", "2026-07-06", "17:00", "2026-07-07T00:00:00.000Z", "Seattle Stadium", { footballData: 537380 }),
+    knockoutMatch(95, "round_of_16", "W86", "W88", "2026-07-07", "12:00", "2026-07-07T16:00:00.000Z", "Atlanta Stadium", { footballData: 537381 }),
+    knockoutMatch(96, "round_of_16", "W85", "W87", "2026-07-07", "13:00", "2026-07-07T20:00:00.000Z", "BC Place Vancouver", { footballData: 537382 }),
+    knockoutMatch(97, "quarter_final", "W89", "W90", "2026-07-09", "16:00", "2026-07-09T20:00:00.000Z", "Boston Stadium", { footballData: 537383 }),
+    knockoutMatch(98, "quarter_final", "W93", "W94", "2026-07-10", "12:00", "2026-07-10T19:00:00.000Z", "Los Angeles Stadium", { footballData: 537384 }),
+    knockoutMatch(99, "quarter_final", "W91", "W92", "2026-07-11", "17:00", "2026-07-11T21:00:00.000Z", "Miami Stadium", { footballData: 537385 }),
+    knockoutMatch(100, "quarter_final", "W95", "W96", "2026-07-11", "20:00", "2026-07-12T01:00:00.000Z", "Kansas City Stadium", { footballData: 537386 }),
+    knockoutMatch(101, "semi_final", "W97", "W98", "2026-07-14", "14:00", "2026-07-14T19:00:00.000Z", "Dallas Stadium", { footballData: 537387 }),
+    knockoutMatch(102, "semi_final", "W99", "W100", "2026-07-15", "15:00", "2026-07-15T19:00:00.000Z", "Atlanta Stadium", { footballData: 537388 }),
+    knockoutMatch(103, "third_place", "L101", "L102", "2026-07-18", "17:00", "2026-07-18T21:00:00.000Z", "Miami Stadium", { footballData: 537389 }),
+    knockoutMatch(104, "final", "W101", "W102", "2026-07-19", "15:00", "2026-07-19T19:00:00.000Z", "New York New Jersey Stadium", { footballData: 537390 })
   ]
 };
 
@@ -135,4 +167,56 @@ function groupMatch(
     sourceId: fifaScheduleSourceId,
     externalIds
   };
+}
+
+function knockoutMatch(
+  matchNumber: number,
+  phase: Exclude<WorldCupPhase, "group">,
+  homeSlot: string,
+  awaySlot: string,
+  localDate: string,
+  kickoffTimeLocal: string,
+  kickoffAtUtc: string,
+  venue: string,
+  externalIds: WorldCupExternalIds = {}
+): WorldCupMatch {
+  return {
+    id: `wc2026-${matchNumber.toString().padStart(3, "0")}`,
+    matchNumber,
+    phase,
+    group: null,
+    homeTeam: slotTeam(homeSlot),
+    awayTeam: slotTeam(awaySlot),
+    localDate,
+    kickoffTimeLocal,
+    kickoffAtUtc,
+    venue,
+    sourceId: fifaScheduleSourceId,
+    externalIds
+  };
+}
+
+function slotTeam(slot: string): { code: string; name: string } {
+  const rankingSlot = /^(?<rank>[123])(?<groups>[A-L]+)$/u.exec(slot);
+
+  if (rankingSlot?.groups?.rank && rankingSlot.groups.groups) {
+    const rank = rankingSlot.groups.rank;
+    const groups = rankingSlot.groups.groups.split("").join("/");
+
+    return { code: slot, name: `${rank}º Grupo ${groups}` };
+  }
+
+  const winnerSlot = /^W(?<matchNumber>\d+)$/u.exec(slot);
+
+  if (winnerSlot?.groups?.matchNumber) {
+    return { code: slot, name: `Vencedor #${winnerSlot.groups.matchNumber}` };
+  }
+
+  const loserSlot = /^L(?<matchNumber>\d+)$/u.exec(slot);
+
+  if (loserSlot?.groups?.matchNumber) {
+    return { code: slot, name: `Perdedor #${loserSlot.groups.matchNumber}` };
+  }
+
+  return { code: slot, name: slot };
 }

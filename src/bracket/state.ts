@@ -8,7 +8,12 @@ import {
   type FifaGroupStandingRow,
   type ResolvedRoundOf32Fixture
 } from "../worldcup/fifa-qualification.js";
-import type { WorldCupMatch, WorldCupTeam } from "../worldcup/types.js";
+import {
+  isGroupStageMatch,
+  type WorldCupGroupMatch,
+  type WorldCupMatch,
+  type WorldCupTeam
+} from "../worldcup/types.js";
 import { computeQualificationSecurityByTeamCode } from "./qualification-security.js";
 import {
   ROUND_OF_32_TEMPLATES,
@@ -20,29 +25,43 @@ import type { BracketEntrant, BracketMatch, BracketRound, BracketState } from ".
 export interface CreateBracketStateOptions {
   matches: readonly WorldCupMatch[];
   results: readonly StandingsResult[];
+  timeZone?: string;
 }
 
 export function createBracketState(options: CreateBracketStateOptions): BracketState {
-  const groupMatches = options.matches.filter((match) => match.phase === "group");
+  const groupMatches = options.matches.filter(isGroupStageMatch);
+  const knockoutScheduleByNumber = knockoutScheduleByNumberForMatches(
+    options.matches,
+    options.timeZone ?? "America/Sao_Paulo"
+  );
 
   if (hasCompleteGroupResults(groupMatches, options.results)) {
     try {
-      return createFinalBracketState(resolveWorldCup2026RoundOf32(groupMatches, options.results));
+      return createFinalBracketState(
+        resolveWorldCup2026RoundOf32(groupMatches, options.results),
+        knockoutScheduleByNumber
+      );
     } catch (error) {
       if (!isManualTiebreakerError(error)) {
         throw error;
       }
 
-      return createBlockedBracketState(groupMatches, options.results, error);
+      return createBlockedBracketState(
+        groupMatches,
+        options.results,
+        knockoutScheduleByNumber,
+        error
+      );
     }
   }
 
-  return createProvisionalBracketState(groupMatches, options.results);
+  return createProvisionalBracketState(groupMatches, options.results, knockoutScheduleByNumber);
 }
 
 function createProvisionalBracketState(
-  groupMatches: readonly WorldCupMatch[],
-  results: readonly StandingsResult[]
+  groupMatches: readonly WorldCupGroupMatch[],
+  results: readonly StandingsResult[],
+  knockoutScheduleByNumber: ReadonlyMap<number, string>
 ): BracketState {
   const standings = computeFifaGroupStandings(groupMatches, results);
   const qualificationSecurityByTeamCode = computeQualificationSecurityByTeamCode(
@@ -99,6 +118,7 @@ function createProvisionalBracketState(
           id: `r32-${template.matchNumber}`,
           label: `#${template.matchNumber}`,
           state: "provisional",
+          ...kickoffLabelForMatchNumber(template.matchNumber, knockoutScheduleByNumber),
           home: entrantForSlot(template.homeSlot, slotEntrants, false),
           away: entrantForSlot(
             awaySlotForTemplate(template, thirdPlaceAssignments) || `OPEN-${index + 1}`,
@@ -112,7 +132,10 @@ function createProvisionalBracketState(
   };
 }
 
-function createFinalBracketState(fixtures: readonly ResolvedRoundOf32Fixture[]): BracketState {
+function createFinalBracketState(
+  fixtures: readonly ResolvedRoundOf32Fixture[],
+  knockoutScheduleByNumber: ReadonlyMap<number, string>
+): BracketState {
   return {
     phase: "final",
     notes: [
@@ -127,6 +150,7 @@ function createFinalBracketState(fixtures: readonly ResolvedRoundOf32Fixture[]):
           id: `r32-${fixture.matchNumber}`,
           label: `#${fixture.matchNumber}`,
           state: "final",
+          ...kickoffLabelForMatchNumber(fixture.matchNumber, knockoutScheduleByNumber),
           home: resolvedEntrant(fixture.homeSlot, fixture.homeTeam),
           away: resolvedEntrant(fixture.awaySlot, fixture.awayTeam)
         }))
@@ -137,11 +161,16 @@ function createFinalBracketState(fixtures: readonly ResolvedRoundOf32Fixture[]):
 }
 
 function createBlockedBracketState(
-  groupMatches: readonly WorldCupMatch[],
+  groupMatches: readonly WorldCupGroupMatch[],
   results: readonly StandingsResult[],
+  knockoutScheduleByNumber: ReadonlyMap<number, string>,
   error: unknown
 ): BracketState {
-  const provisionalState = createProvisionalBracketState(groupMatches, results);
+  const provisionalState = createProvisionalBracketState(
+    groupMatches,
+    results,
+    knockoutScheduleByNumber
+  );
 
   return {
     ...provisionalState,
@@ -165,7 +194,7 @@ function createBlockedBracketState(
 }
 
 function hasCompleteGroupResults(
-  groupMatches: readonly WorldCupMatch[],
+  groupMatches: readonly WorldCupGroupMatch[],
   results: readonly StandingsResult[]
 ): boolean {
   const resultMatchIds = new Set(results.map((result) => result.matchId));
@@ -251,6 +280,61 @@ function winnerRound(
 
 function placeholder(label: string): BracketEntrant {
   return { label, sourceSlot: label };
+}
+
+function kickoffLabelForMatchNumber(
+  matchNumber: number,
+  knockoutScheduleByNumber: ReadonlyMap<number, string>
+): Pick<BracketMatch, "kickoffLabel"> {
+  const kickoffLabel = knockoutScheduleByNumber.get(matchNumber);
+
+  return kickoffLabel ? { kickoffLabel } : {};
+}
+
+function knockoutScheduleByNumberForMatches(
+  matches: readonly WorldCupMatch[],
+  timeZone: string
+): Map<number, string> {
+  const schedule = new Map<number, string>();
+
+  for (const match of matches) {
+    if (match.phase === "group" || !match.kickoffAtUtc) {
+      continue;
+    }
+
+    schedule.set(match.matchNumber, formatKickoffLabel(match.kickoffAtUtc, timeZone));
+  }
+
+  return schedule;
+}
+
+function formatKickoffLabel(kickoffAtUtc: string, timeZone: string): string {
+  const date = new Date(kickoffAtUtc);
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone,
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+    timeZoneName: "shortOffset"
+  }).formatToParts(date);
+
+  return `${part(parts, "day")}/${part(parts, "month")} ${part(parts, "hour")}:${part(
+    parts,
+    "minute"
+  )} ${normalizeGmtOffset(part(parts, "timeZoneName"))}`;
+}
+
+function normalizeGmtOffset(value: string): string {
+  return value.replace(/GMT([+-])0(\d)(?::00)?$/u, "GMT$1$2");
+}
+
+function part(
+  parts: Intl.DateTimeFormatPart[],
+  type: Intl.DateTimeFormatPartTypes
+): string {
+  return parts.find((candidate) => candidate.type === type)?.value ?? "";
 }
 
 function isManualTiebreakerError(error: unknown): boolean {

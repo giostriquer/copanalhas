@@ -10,7 +10,12 @@ import {
 } from "./fifa-qualification.js";
 import { WORLD_CUP_2026_SEED } from "./seed.js";
 import type { StandingsResult } from "../standings/standings.js";
-import type { WorldCupMatch, WorldCupTeam } from "./types.js";
+import {
+  isGroupStageMatch,
+  type WorldCupGroupMatch,
+  type WorldCupMatch,
+  type WorldCupTeam
+} from "./types.js";
 
 describe("computeFifaGroupStandings", () => {
   test("uses head-to-head results before overall goal difference for teams tied on points", () => {
@@ -236,7 +241,7 @@ const currentSeedRankOrders: Readonly<Record<string, readonly string[]>> =
   currentSeedRankOrderByGroup;
 
 function currentSeedProofResults(): StandingsResult[] {
-  return WORLD_CUP_2026_SEED.matches.map((match) => {
+  return WORLD_CUP_2026_SEED.matches.filter(isGroupStageMatch).map((match) => {
     const homeRank = currentSeedRank(match.group, match.homeTeam.code);
     const awayRank = currentSeedRank(match.group, match.awayTeam.code);
     const winnerIsHome = homeRank < awayRank;
@@ -263,15 +268,17 @@ function currentSeedRank(group: string, teamCode: string): number {
   return index + 1;
 }
 
-function allGroupMatches(): WorldCupMatch[] {
+function allGroupMatches(): WorldCupGroupMatch[] {
   return "ABCDEFGHIJKL".split("").flatMap((group) => groupMatches(group));
 }
 
-function seedGroupMatches(group: string): WorldCupMatch[] {
-  return WORLD_CUP_2026_SEED.matches.filter((matchFixture) => matchFixture.group === group);
+function seedGroupMatches(group: string): WorldCupGroupMatch[] {
+  return WORLD_CUP_2026_SEED.matches.filter(isGroupStageMatch).filter(
+    (matchFixture) => matchFixture.group === group
+  );
 }
 
-function groupMatches(group: string): WorldCupMatch[] {
+function groupMatches(group: string): WorldCupGroupMatch[] {
   const teams = [1, 2, 3, 4].map((position) =>
     team(`${group}${position}`, `Group ${group} Team ${position}`)
   );
@@ -286,7 +293,7 @@ function groupMatches(group: string): WorldCupMatch[] {
   ];
 }
 
-function scoreForMatch(match: WorldCupMatch): number {
+function scoreForMatch(match: WorldCupGroupMatch): number {
   if (match.homeTeam.code.endsWith("1")) {
     if (match.group < "E" && match.id.endsWith("AC")) {
       return 5;
@@ -320,7 +327,7 @@ function match(
   group: string,
   homeTeam: WorldCupTeam | undefined,
   awayTeam: WorldCupTeam | undefined
-): WorldCupMatch {
+): WorldCupGroupMatch {
   if (!homeTeam || !awayTeam) {
     throw new Error(`Missing teams for ${id}`);
   }

@@ -354,7 +354,7 @@ function renderRoundOf32Match(match: BracketMatch, x: number, y: number): string
 
   return [
     `<g data-match-id="${escapeAttribute(match.id)}" data-bracket-match-number="${matchNumber}" transform="translate(${x}, ${y})">`,
-    `<text x="0" y="-8" font-family="Inter, Arial, sans-serif" font-size="9" fill="#273140">${escapeText(matchStatusLabel(match))}</text>`,
+    `<text x="0" y="-8" font-family="Inter, Arial, sans-serif" font-size="9" fill="#273140">${escapeText(match.kickoffLabel ?? matchStatusLabel(match))}</text>`,
     `<rect width="${r32Width}" height="${r32Height}" fill="#ffffff"/>`,
     `<rect width="3" height="${r32Height}" fill="${statusColor(match)}"/>`,
     `<line x1="${r32Width - 52}" y1="0" x2="${r32Width - 52}" y2="${r32Height}" stroke="#edf0f3"/>`,

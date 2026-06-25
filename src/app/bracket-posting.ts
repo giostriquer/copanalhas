@@ -49,7 +49,8 @@ export async function updateBracketDashboard(
   const bracketState = {
     ...createBracketState({
       matches: options.matches,
-      results: options.results
+      results: options.results,
+      timeZone: options.timeZone
     }),
     generatedAtLabel: formatDashboardTimestamp(updatedAt, options.timeZone)
   };

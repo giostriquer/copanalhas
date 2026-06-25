@@ -22,6 +22,23 @@ describe("CopanalhasDatabase", () => {
     store.close();
   });
 
+  test("round-trips knockout fixture metadata without forcing a group name", () => {
+    const store = openCopanalhasDatabase(":memory:");
+    const knockoutMatch = WORLD_CUP_2026_SEED.matches.find(
+      (match) => match.matchNumber === 73
+    );
+
+    if (!knockoutMatch) {
+      throw new Error("World Cup seed needs knockout match #73 for storage tests");
+    }
+
+    store.migrate();
+    store.upsertMatches([knockoutMatch]);
+
+    expect(store.listMatches()).toEqual([knockoutMatch]);
+    store.close();
+  });
+
   test("upserts the latest prediction for a user and match", () => {
     const store = openCopanalhasDatabase(":memory:");
     store.migrate();

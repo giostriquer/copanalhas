@@ -120,6 +120,26 @@ describe("match cards", () => {
     ]);
   });
 
+  test("formats knockout placeholder matches without group-stage labels", () => {
+    const match = seedMatchByNumber(73);
+
+    expect(buildMatchCardView(match, { timeZone: "America/Sao_Paulo" })).toMatchObject({
+      matchId: "wc2026-073",
+      predictButtonCustomId: "copanalhas:predict:wc2026-073",
+      content: expect.stringContaining("Match #73 - Rodada de 32")
+    });
+
+    const payload = createMatchDayMessage([match], {
+      date: "2026-06-28",
+      timeZone: "America/Sao_Paulo"
+    });
+
+    expect(payload.embeds?.[0]?.toJSON().fields?.[0]).toMatchObject({
+      name: "#73 · Rodada de 32",
+      value: expect.stringContaining("2º Grupo A x 2º Grupo B")
+    });
+  });
+
   test("creates a score modal payload for one match", () => {
     const modal = createPredictionModal(firstSeedMatch()).toJSON();
     const firstRow = modal.components[0] as { components: Array<{ custom_id?: string }> } | undefined;
@@ -179,6 +199,18 @@ function secondSeedMatch() {
 
   if (!match) {
     throw new Error("World Cup seed needs at least two matches");
+  }
+
+  return match;
+}
+
+function seedMatchByNumber(matchNumber: number) {
+  const match = WORLD_CUP_2026_SEED.matches.find(
+    (candidate) => candidate.matchNumber === matchNumber
+  );
+
+  if (!match) {
+    throw new Error(`Missing World Cup seed match #${matchNumber}`);
   }
 
   return match;

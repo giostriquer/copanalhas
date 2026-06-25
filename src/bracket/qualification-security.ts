@@ -1,10 +1,10 @@
 import type { StandingsResult } from "../standings/standings.js";
 import type { FifaGroupStandingRow, FifaGroupStandings } from "../worldcup/fifa-qualification.js";
-import type { WorldCupMatch } from "../worldcup/types.js";
+import type { WorldCupGroupMatch } from "../worldcup/types.js";
 import type { QualificationSecurity } from "./types.js";
 
 export function computeQualificationSecurityByTeamCode(
-  groupMatches: readonly WorldCupMatch[],
+  groupMatches: readonly WorldCupGroupMatch[],
   results: readonly StandingsResult[],
   standings: readonly FifaGroupStandings[]
 ): ReadonlyMap<string, QualificationSecurity> {
@@ -74,7 +74,7 @@ function qualificationSecurityForRow(
 }
 
 function buildGroupContexts(
-  groupMatches: readonly WorldCupMatch[],
+  groupMatches: readonly WorldCupGroupMatch[],
   results: readonly StandingsResult[]
 ): Map<string, GroupPointContext> {
   const resultsByMatchId = new Map(results.map((result) => [result.matchId, result]));
@@ -243,7 +243,7 @@ function groupContext(
 
 function applyResultPoints(
   pointsByTeamCode: Map<string, number>,
-  match: WorldCupMatch,
+  match: WorldCupGroupMatch,
   result: StandingsResult
 ): void {
   if (result.homeScore > result.awayScore) {

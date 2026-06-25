@@ -41,6 +41,7 @@ describe("renderBracketSvg", () => {
     expect(svg).toContain('data-flag-team-code="NED"');
     expect(svg).toContain('data-flag-asset="nl.svg"');
     expect(svg).toContain("Holanda");
+    expect(svg).toContain("28/06 16:00 GMT-3");
     expect(svg).toContain("Como está ficando");
     expect(svg).toContain("Oitavas");
     expect(svg).toContain("Quartas");
@@ -94,6 +95,7 @@ function bracketState(): BracketState {
             id: "r32-73",
             label: "#73",
             state: "provisional",
+            kickoffLabel: "28/06 16:00 GMT-3",
             home: {
               label: "T1",
               teamCode: "T1",

@@ -71,15 +71,23 @@ statistics it applies to so a later result cannot keep using stale conduct data.
 
 ## Hardcoded Dataset Path
 
-The current seed lives in `src/worldcup/seed.ts`. It contains the reviewed full
-72-match group stage with groups, teams, local fixture dates, venue-local kickoff
-times, UTC kickoff timestamps, and FIFA-style venue names. The seed stores source
-metadata with the data.
+The current seed lives in `src/worldcup/seed.ts`. It contains all 104 reviewed
+fixtures with local fixture dates, venue-local kickoff times, UTC kickoff
+timestamps, and FIFA-style venue names. Group-stage fixtures store the confirmed
+teams and group. Knockout fixtures store explicit FIFA slot placeholders such as
+`2A`, `3CEFHI`, `W89`, and `L101` until participating teams are resolved.
 
-Knockout fixtures should stay out of this seed until the participating teams are
-known or represented with an explicit placeholder type. If future schedule
-snapshots become too large for inline TypeScript, they may move to
-`data/worldcup/` with:
+The knockout schedule metadata comes from the official FIFA schedule PDF
+accessed on 2026-06-25:
+`https://digitalhub.fifa.com/m/1be9ce37eb98fcc5/original/FWC26-Match-Schedule_English.pdf`
+
+Football-Data provider IDs are stored for all 104 fixtures so autonomous result
+sync can poll knockout matches after they pass the configured finished-result
+check window. Manual `/copanalhas result` recovery remains available for any
+seeded match.
+
+If future schedule snapshots become too large for inline TypeScript, they may
+move to `data/worldcup/` with:
 
 - machine-readable JSON
 - a short source note

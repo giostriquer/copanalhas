@@ -74,7 +74,7 @@ export function buildMatchCardView(
     predictButtonCustomId: buildPredictButtonCustomId(match.id),
     content: [
       "MATCH OF THE DAY",
-      `Match #${match.matchNumber} - Group ${match.group}`,
+      `Match #${match.matchNumber} - ${formatMatchStage(match, "single")}`,
       `${homeTeamName} vs ${awayTeamName}`,
       predictionWindow.kickoffText,
       predictionWindow.closesText,
@@ -163,7 +163,7 @@ function formatMatchDaySection(match: WorldCupMatch, options: MatchCardViewOptio
   const predictionWindow = formatPredictionWindow(match, options.timeZone ?? defaultTimeZone);
 
   return [
-    `Match #${match.matchNumber} - Group ${match.group}`,
+    `Match #${match.matchNumber} - ${formatMatchStage(match, "single")}`,
     `${formatTeamName(match.homeTeam)} vs ${formatTeamName(match.awayTeam)}`,
     predictionWindow.kickoffText,
     predictionWindow.closesText
@@ -174,7 +174,7 @@ function formatMatchDayEmbedField(match: WorldCupMatch) {
   const predictionWindow = getPredictionWindow(match);
 
   return {
-    name: `#${match.matchNumber} · Grupo ${match.group}`,
+    name: `#${match.matchNumber} · ${formatMatchStage(match, "embed")}`,
     value: [
       `${formatTeamName(match.homeTeam)} x ${formatTeamName(match.awayTeam)}`,
       predictionWindow.kickoffAtUtc
@@ -189,6 +189,33 @@ function formatMatchDayEmbedField(match: WorldCupMatch) {
     ].join("\n"),
     inline: true
   };
+}
+
+function formatMatchStage(match: WorldCupMatch, mode: "single" | "embed"): string {
+  if (match.phase === "group") {
+    return mode === "single" ? `Group ${match.group}` : `Grupo ${match.group}`;
+  }
+
+  return knockoutPhaseLabel(match.phase);
+}
+
+function knockoutPhaseLabel(phase: WorldCupMatch["phase"]): string {
+  switch (phase) {
+    case "round_of_32":
+      return "Rodada de 32";
+    case "round_of_16":
+      return "Oitavas";
+    case "quarter_final":
+      return "Quartas";
+    case "semi_final":
+      return "Semifinal";
+    case "third_place":
+      return "Decisão do 3º lugar";
+    case "final":
+      return "Final";
+    case "group":
+      return "Grupo";
+  }
 }
 
 function formatMatchDayDate(date: string, timeZone: string): string {

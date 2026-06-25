@@ -4,7 +4,7 @@ import {
   FIFA_2026_ANNEX_C_ROWS
 } from "./fifa-annex-c.js";
 import { FIFA_2026_REVIEWED_TIEBREAKER_ORDERS } from "./reviewed-tiebreakers.js";
-import type { WorldCupMatch, WorldCupTeam } from "./types.js";
+import { isGroupStageMatch, type WorldCupGroupMatch, type WorldCupMatch, type WorldCupTeam } from "./types.js";
 
 export { FIFA_2026_ANNEX_C_COLUMNS, FIFA_2026_ANNEX_C_ROWS } from "./fifa-annex-c.js";
 
@@ -111,13 +111,14 @@ export function computeFifaGroupStandings(
   results: readonly StandingsResult[],
   options: ComputeFifaGroupStandingsOptions = {}
 ): FifaGroupStandings[] {
+  const groupMatches = matches.filter(isGroupStageMatch);
   const groups = new Map<string, Map<string, MutableFifaGroupStandingRow>>();
   const playedMatches = new Map<string, PlayedGroupMatch[]>();
-  const matchesById = new Map(matches.map((match) => [match.id, match]));
+  const matchesById = new Map(groupMatches.map((match) => [match.id, match]));
   const reviewedTiebreakerOrders =
     options.reviewedTiebreakerOrders ?? FIFA_2026_REVIEWED_TIEBREAKER_ORDERS;
 
-  for (const match of matches) {
+  for (const match of groupMatches) {
     ensureTeam(groups, match.group, match.homeTeam);
     ensureTeam(groups, match.group, match.awayTeam);
   }
@@ -193,9 +194,11 @@ export function resolveWorldCup2026RoundOf32(
   matches: readonly WorldCupMatch[],
   results: readonly StandingsResult[]
 ): ResolvedRoundOf32Fixture[] {
-  assertCompleteGroupResults(matches, results);
+  const groupMatches = matches.filter(isGroupStageMatch);
 
-  const standings = computeFifaGroupStandings(matches, results);
+  assertCompleteGroupResults(groupMatches, results);
+
+  const standings = computeFifaGroupStandings(groupMatches, results);
   const standingsByGroup = new Map(standings.map((group) => [group.group, group]));
   const slotTeams = new Map<QualificationSlot, WorldCupTeam>();
   const thirdPlacedRows: FifaGroupStandingRow[] = [];
@@ -287,7 +290,7 @@ function ensureTeam(
 }
 
 function assertCompleteGroupResults(
-  matches: readonly WorldCupMatch[],
+  matches: readonly WorldCupGroupMatch[],
   results: readonly StandingsResult[]
 ): void {
   const resultMatchIds = new Set(results.map((result) => result.matchId));
@@ -350,7 +353,7 @@ function applyResult(
 
 function recordPlayedMatch(
   playedMatches: Map<string, PlayedGroupMatch[]>,
-  match: WorldCupMatch,
+  match: WorldCupGroupMatch,
   result: StandingsResult
 ): void {
   const groupMatches = playedMatches.get(match.group) ?? [];

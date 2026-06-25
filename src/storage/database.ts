@@ -4,7 +4,7 @@ import { dirname } from "node:path";
 
 import type { ChaosWeeklySnapshotRow } from "../chaos-dashboard/types.js";
 import type { StandingsPostKey } from "../standings/format.js";
-import type { WorldCupMatch } from "../worldcup/types.js";
+import type { WorldCupMatch, WorldCupPhase } from "../worldcup/types.js";
 
 export interface StoredPrediction {
   userId: string;
@@ -336,7 +336,7 @@ export class CopanalhasDatabase {
         match.id,
         match.matchNumber,
         match.phase,
-        match.group,
+        match.group ?? phaseLabel(match.phase),
         match.homeTeam.code,
         match.homeTeam.name,
         match.awayTeam.code,
@@ -356,26 +356,7 @@ export class CopanalhasDatabase {
       .prepare("SELECT * FROM matches ORDER BY match_number")
       .all() as unknown as MatchRow[];
 
-    return rows.map((row) => ({
-      id: row.id,
-      matchNumber: row.match_number,
-      phase: "group",
-      group: row.group_name,
-      homeTeam: {
-        code: row.home_team_code,
-        name: row.home_team_name
-      },
-      awayTeam: {
-        code: row.away_team_code,
-        name: row.away_team_name
-      },
-      localDate: row.local_date,
-      kickoffTimeLocal: row.kickoff_time_local,
-      kickoffAtUtc: row.kickoff_at_utc,
-      venue: row.venue,
-      sourceId: row.source_id,
-      externalIds: row.football_data_match_id ? { footballData: row.football_data_match_id } : {}
-    }));
+    return rows.map(rowToWorldCupMatch);
   }
 
   upsertPrediction(prediction: StoredPrediction): void {
@@ -947,6 +928,7 @@ export function openCopanalhasDatabase(path: string): CopanalhasDatabase {
 interface MatchRow {
   id: string;
   match_number: number;
+  phase: string;
   group_name: string;
   home_team_code: string;
   home_team_name: string;
@@ -958,6 +940,66 @@ interface MatchRow {
   venue: string;
   source_id: string;
   football_data_match_id: number | null;
+}
+
+function phaseLabel(phase: WorldCupPhase): string {
+  if (phase === "group") {
+    return "Group";
+  }
+
+  return phase;
+}
+
+function worldCupPhaseFromDatabase(value: string): WorldCupPhase {
+  if (
+    value === "group" ||
+    value === "round_of_32" ||
+    value === "round_of_16" ||
+    value === "quarter_final" ||
+    value === "semi_final" ||
+    value === "third_place" ||
+    value === "final"
+  ) {
+    return value;
+  }
+
+  return "group";
+}
+
+function rowToWorldCupMatch(row: MatchRow): WorldCupMatch {
+  const phase = worldCupPhaseFromDatabase(row.phase);
+  const base = {
+    id: row.id,
+    matchNumber: row.match_number,
+    homeTeam: {
+      code: row.home_team_code,
+      name: row.home_team_name
+    },
+    awayTeam: {
+      code: row.away_team_code,
+      name: row.away_team_name
+    },
+    localDate: row.local_date,
+    kickoffTimeLocal: row.kickoff_time_local,
+    kickoffAtUtc: row.kickoff_at_utc,
+    venue: row.venue,
+    sourceId: row.source_id,
+    externalIds: row.football_data_match_id ? { footballData: row.football_data_match_id } : {}
+  };
+
+  if (phase === "group") {
+    return {
+      ...base,
+      phase,
+      group: row.group_name
+    };
+  }
+
+  return {
+    ...base,
+    phase,
+    group: null
+  };
 }
 
 interface PredictionRow {

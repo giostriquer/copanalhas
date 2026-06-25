@@ -11,11 +11,48 @@ describe("validateTournamentSeed", () => {
     });
   });
 
-  test("contains all reviewed group-stage fixtures with kickoff times", () => {
-    expect(WORLD_CUP_2026_SEED.matches).toHaveLength(72);
-    expect(WORLD_CUP_2026_SEED.matches.every((match) => match.phase === "group")).toBe(true);
+  test("contains all reviewed tournament fixtures with kickoff times", () => {
+    const groupMatches = WORLD_CUP_2026_SEED.matches.filter((match) => match.phase === "group");
+    const knockoutMatches = WORLD_CUP_2026_SEED.matches.filter(
+      (match) => match.phase !== "group"
+    );
+
+    expect(WORLD_CUP_2026_SEED.matches).toHaveLength(104);
+    expect(groupMatches).toHaveLength(72);
+    expect(knockoutMatches).toHaveLength(32);
     expect(WORLD_CUP_2026_SEED.matches.every((match) => match.kickoffAtUtc)).toBe(true);
     expect(WORLD_CUP_2026_SEED.matches.every((match) => match.kickoffTimeLocal)).toBe(true);
+    expect(WORLD_CUP_2026_SEED.matches.every((match) => match.externalIds.footballData)).toBe(
+      true
+    );
+  });
+
+  test("includes reviewed knockout metadata for prediction windows and bracket labels", () => {
+    expect(seedMatchByNumber(73)).toMatchObject({
+      id: "wc2026-073",
+      matchNumber: 73,
+      phase: "round_of_32",
+      group: null,
+      homeTeam: { code: "2A", name: "2º Grupo A" },
+      awayTeam: { code: "2B", name: "2º Grupo B" },
+      localDate: "2026-06-28",
+      kickoffTimeLocal: "12:00",
+      kickoffAtUtc: "2026-06-28T19:00:00.000Z",
+      venue: "Los Angeles Stadium",
+      externalIds: { footballData: 537417 }
+    });
+    expect(seedMatchByNumber(104)).toMatchObject({
+      id: "wc2026-104",
+      matchNumber: 104,
+      phase: "final",
+      group: null,
+      homeTeam: { code: "W101", name: "Vencedor #101" },
+      awayTeam: { code: "W102", name: "Vencedor #102" },
+      localDate: "2026-07-19",
+      kickoffTimeLocal: "15:00",
+      kickoffAtUtc: "2026-07-19T19:00:00.000Z",
+      venue: "New York New Jersey Stadium"
+    });
   });
 
   test("has the opening match day fixtures ready for auto-post smoke tests", () => {
@@ -141,6 +178,18 @@ function seedMatch(index: number) {
 
   if (!match) {
     throw new Error(`Missing seed match at index ${index}`);
+  }
+
+  return match;
+}
+
+function seedMatchByNumber(matchNumber: number) {
+  const match = WORLD_CUP_2026_SEED.matches.find(
+    (candidate) => candidate.matchNumber === matchNumber
+  );
+
+  if (!match) {
+    throw new Error(`Missing seed match #${matchNumber}`);
   }
 
   return match;
