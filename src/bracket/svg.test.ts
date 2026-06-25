@@ -8,6 +8,8 @@ describe("renderBracketSvg", () => {
     const svg = renderBracketSvg(bracketState());
 
     expect(svg).toContain("<svg");
+    expect(svg).toContain('width="2000"');
+    expect(svg).toContain('height="1028"');
     expect(svg).toContain("Copa do Mundo 2026 - Mata-mata");
     expect(svg).toContain("Rodada de 32");
     expect(svg).toContain("Team &amp; One");
@@ -42,6 +44,11 @@ describe("renderBracketSvg", () => {
     expect(svg).toContain('data-flag-asset="nl.svg"');
     expect(svg).toContain("Holanda");
     expect(svg).toContain("28/06 16:00 GMT-3");
+    expect(svg).toContain('data-r32-heading-side="left"');
+    expect(svg).toContain('data-r32-heading-side="right"');
+    expect(svg).toContain(
+      'data-kickoff-label-side="right" x="270" y="-12" text-anchor="end"'
+    );
     expect(svg).toContain("Como está ficando");
     expect(svg).toContain("Oitavas");
     expect(svg).toContain("Quartas");

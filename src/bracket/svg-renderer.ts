@@ -16,34 +16,34 @@ export interface RenderReferenceBracketSvgOptions {
 
 const require = createRequire(import.meta.url);
 const FOOTBALL_DATA_ATTRIBUTION = "Football data provided by the Football-Data.org API.";
-const marginX = 44;
-const headerHeight = 96;
-const footerHeight = 52;
-const canvasWidth = 1800;
-const sideHeaderHeight = 50;
-const r32Width = 244;
-const r16Width = 146;
-const qfWidth = 112;
-const sfWidth = 116;
-const finalWidth = 158;
-const r32Height = 66;
-const pathHeight = 58;
-const finalHeight = 72;
-const r32Gap = 26;
-const flagWidth = 23;
-const flagHeight = 16;
-const teamTextMaxLength = 18;
+const marginX = 52;
+const headerHeight = 112;
+const footerHeight = 58;
+const canvasWidth = 2000;
+const sideHeaderHeight = 72;
+const r32Width = 270;
+const r16Width = 160;
+const qfWidth = 124;
+const sfWidth = 128;
+const finalWidth = 174;
+const r32Height = 72;
+const pathHeight = 62;
+const finalHeight = 78;
+const r32Gap = 30;
+const flagWidth = 25;
+const flagHeight = 17;
+const teamTextMaxLength = 19;
 const entrantAreaX = 4;
-const entrantAreaWidth = r32Width - 56;
+const entrantAreaWidth = r32Width - 64;
 const connectorColor = "#4f8f38";
 const leftR32X = marginX;
-const leftR16X = 306;
-const leftQfX = 492;
-const leftSfX = 640;
+const leftR16X = 344;
+const leftQfX = 552;
+const leftSfX = 708;
 const centerX = canvasWidth / 2 - finalWidth / 2;
-const rightSfX = 1044;
-const rightQfX = 1196;
-const rightR16X = 1348;
+const rightSfX = canvasWidth - leftSfX - sfWidth;
+const rightQfX = canvasWidth - leftQfX - qfWidth;
+const rightR16X = canvasWidth - leftR16X - r16Width;
 const rightR32X = canvasWidth - marginX - r32Width;
 
 const bracketSides = [
@@ -142,12 +142,14 @@ export function renderReferenceBracketSvg(
 }
 
 function renderColumnHeadings(y: number): string {
+  const headingY = y + 36;
+
   return [
-    `<g data-bracket-column="round-of-32"><text x="${leftR32X + r32Width / 2}" y="${y + 44}" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="800" fill="#141b2b">Rodada de 32</text><text x="${rightR32X + r32Width / 2}" y="${y + 44}" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="800" fill="#141b2b">Rodada de 32</text></g>`,
-    `<g data-bracket-column="round-of-16"><text x="${leftR16X + r16Width / 2}" y="${y + 44}" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="800" fill="#141b2b">Oitavas</text><text x="${rightR16X + r16Width / 2}" y="${y + 44}" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="800" fill="#141b2b">Oitavas</text></g>`,
-    `<g data-bracket-column="quarter-finals"><text x="${leftQfX + qfWidth / 2}" y="${y + 44}" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="800" fill="#141b2b">Quartas</text><text x="${rightQfX + qfWidth / 2}" y="${y + 44}" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="800" fill="#141b2b">Quartas</text></g>`,
-    `<g data-bracket-column="semi-finals"><text x="${leftSfX + sfWidth / 2}" y="${y + 44}" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="800" fill="#141b2b">Semifinal</text><text x="${rightSfX + sfWidth / 2}" y="${y + 44}" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="800" fill="#141b2b">Semifinal</text></g>`,
-    `<g data-bracket-column="finals"><text x="${centerX + finalWidth / 2}" y="${y + 44}" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="800" fill="#141b2b">Final</text></g>`
+    `<g data-bracket-column="round-of-32"><text data-r32-heading-side="left" x="${leftR32X}" y="${headingY}" text-anchor="start" font-family="Inter, Arial, sans-serif" font-size="14" font-weight="850" fill="#141b2b">Rodada de 32</text><text data-r32-heading-side="right" x="${rightR32X + r32Width}" y="${headingY}" text-anchor="end" font-family="Inter, Arial, sans-serif" font-size="14" font-weight="850" fill="#141b2b">Rodada de 32</text></g>`,
+    `<g data-bracket-column="round-of-16"><text x="${leftR16X + r16Width / 2}" y="${headingY}" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="800" fill="#141b2b">Oitavas</text><text x="${rightR16X + r16Width / 2}" y="${headingY}" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="800" fill="#141b2b">Oitavas</text></g>`,
+    `<g data-bracket-column="quarter-finals"><text x="${leftQfX + qfWidth / 2}" y="${headingY}" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="800" fill="#141b2b">Quartas</text><text x="${rightQfX + qfWidth / 2}" y="${headingY}" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="800" fill="#141b2b">Quartas</text></g>`,
+    `<g data-bracket-column="semi-finals"><text x="${leftSfX + sfWidth / 2}" y="${headingY}" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="800" fill="#141b2b">Semifinal</text><text x="${rightSfX + sfWidth / 2}" y="${headingY}" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="800" fill="#141b2b">Semifinal</text></g>`,
+    `<g data-bracket-column="finals"><text x="${centerX + finalWidth / 2}" y="${headingY}" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="800" fill="#141b2b">Final</text></g>`
   ].join("");
 }
 
@@ -169,7 +171,7 @@ function renderSide(side: BracketSide, layout: BracketSideLayout): string {
   }
 
   for (const matchBox of layout.roundOf32Boxes) {
-    parts.push(renderRoundOf32Match(matchBox.match, matchBox.x, matchBox.y));
+    parts.push(renderRoundOf32Match(matchBox.match, matchBox.x, matchBox.y, side.key));
   }
 
   parts.push("</g>");
@@ -349,20 +351,27 @@ function renderCenter(layout: CenterLayout): string {
   ].join("");
 }
 
-function renderRoundOf32Match(match: BracketMatch, x: number, y: number): string {
+function renderRoundOf32Match(
+  match: BracketMatch,
+  x: number,
+  y: number,
+  sideKey: BracketSide["key"]
+): string {
   const matchNumber = matchNumberFor(match);
+  const kickoffLabelX = sideKey === "right" ? r32Width : 0;
+  const kickoffAnchor = sideKey === "right" ? ' text-anchor="end"' : "";
 
   return [
     `<g data-match-id="${escapeAttribute(match.id)}" data-bracket-match-number="${matchNumber}" transform="translate(${x}, ${y})">`,
-    `<text x="0" y="-8" font-family="Inter, Arial, sans-serif" font-size="9" fill="#273140">${escapeText(match.kickoffLabel ?? matchStatusLabel(match))}</text>`,
+    `<text data-kickoff-label-side="${sideKey}" x="${kickoffLabelX}" y="-12"${kickoffAnchor} font-family="Inter, Arial, sans-serif" font-size="9" fill="#273140">${escapeText(match.kickoffLabel ?? matchStatusLabel(match))}</text>`,
     `<rect width="${r32Width}" height="${r32Height}" fill="#ffffff"/>`,
     `<rect width="3" height="${r32Height}" fill="${statusColor(match)}"/>`,
-    `<line x1="${r32Width - 52}" y1="0" x2="${r32Width - 52}" y2="${r32Height}" stroke="#edf0f3"/>`,
+    `<line x1="${r32Width - 58}" y1="0" x2="${r32Width - 58}" y2="${r32Height}" stroke="#edf0f3"/>`,
     `<line x1="3" y1="${r32Height / 2}" x2="${r32Width}" y2="${r32Height / 2}" stroke="#edf0f3"/>`,
-    `<text x="${r32Width - 26}" y="25" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="12" font-weight="850" fill="#141b2b">#${matchNumber}</text>`,
-    `<text x="${r32Width - 26}" y="43" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="8" fill="#778397">${escapeText(matchLabelSuffix(match))}</text>`,
-    renderEntrantRow(match.home, 12, 21, 1),
-    renderEntrantRow(match.away, 12, 53, r32Height / 2 + 1),
+    `<text x="${r32Width - 29}" y="27" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="850" fill="#141b2b">#${matchNumber}</text>`,
+    `<text x="${r32Width - 29}" y="46" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="8" fill="#778397">${escapeText(matchLabelSuffix(match))}</text>`,
+    renderEntrantRow(match.home, 14, 25, 1),
+    renderEntrantRow(match.away, 14, 61, r32Height / 2 + 1),
     "</g>"
   ].join("");
 }
