@@ -27,6 +27,9 @@ describe("renderThirdPlaceDashboardSvg", () => {
     expect(svg).toContain('data-flag-asset="mx.svg"');
     expect(svg).toContain("Pts");
     expect(svg).toContain("SG");
+    expect(svg).toContain(
+      '<rect data-third-place-status-pill="advancing" x="1326"'
+    );
   });
 });
 

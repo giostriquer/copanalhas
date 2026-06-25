@@ -112,7 +112,15 @@ function renderThirdPlaceRow(
     text(String(row.goalsFor), cols.goalsFor, textY, 14, "#dbeafe", 850, "middle"),
     text(String(row.goalsAgainst), cols.goalsAgainst, textY, 14, "#dbeafe", 850, "middle"),
     text(formatGoalDifference(row.goalDifference), cols.goalDifference, textY, 14, "#dbeafe", 850, "middle"),
-    renderStatusPill(state.label, cols.status, rowCenterY, state.accent, state.fill, state.text),
+    renderStatusPill(
+      row.qualificationState,
+      state.label,
+      cols.status,
+      rowCenterY,
+      state.accent,
+      state.fill,
+      state.text
+    ),
     "</g>"
   ].join("");
 }
@@ -145,7 +153,7 @@ function columnPositions(x: number): ColumnPositions {
     goalsFor: x + 1054,
     goalsAgainst: x + 1130,
     goalDifference: x + 1210,
-    status: x + 1328
+    status: x + 1312
   };
 }
 
@@ -167,6 +175,7 @@ function legendItem(label: string, x: number, y: number, color: string): string 
 }
 
 function renderStatusPill(
+  state: ThirdPlaceStandingRow["qualificationState"],
   label: string,
   centerX: number,
   centerY: number,
@@ -178,7 +187,7 @@ function renderStatusPill(
   const pillHeight = 25;
 
   return [
-    `<rect x="${centerX - pillWidth / 2}" y="${centerY - pillHeight / 2}" width="${pillWidth}" height="${pillHeight}" rx="12.5" fill="${fill}" stroke="${stroke}" stroke-width="1.5"/>`,
+    `<rect data-third-place-status-pill="${escapeAttribute(state)}" x="${centerX - pillWidth / 2}" y="${centerY - pillHeight / 2}" width="${pillWidth}" height="${pillHeight}" rx="12.5" fill="${fill}" stroke="${stroke}" stroke-width="1.5"/>`,
     text(label, centerX, centerY + 5, 12, color, 900, "middle")
   ].join("");
 }
