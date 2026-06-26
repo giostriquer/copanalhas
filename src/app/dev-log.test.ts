@@ -111,8 +111,35 @@ describe("dev log formatting", () => {
         action: "accepted",
         prediction
       })
-    ).toBe("[prediction] accepted user=user-1 match=wc2026-001 score=<redacted> message=interaction-1");
+    ).toBe(
+      "[prediction] accepted user=user-1 match=wc2026-001 score=<redacted> decision=none message=interaction-1"
+    );
     expect(prediction).toMatchObject({ homeScore: 2, awayScore: 1 });
+  });
+
+  test("logs knockout decision methods without logging the score", () => {
+    const prediction = {
+      userId: "user-1",
+      matchId: "wc2026-073",
+      messageId: "interaction-1",
+      homeScore: 1,
+      awayScore: 3,
+      decisionMethod: "penalties" as const,
+      submittedAt: "2026-06-28T12:00:00.000Z",
+      updatedAt: null,
+      parserVersion: "prediction-modal-v1"
+    };
+
+    const line = formatPredictionInteractionLog({
+      action: "accepted",
+      prediction
+    });
+
+    expect(line).toBe(
+      "[prediction] accepted user=user-1 match=wc2026-073 score=<redacted> decision=penalties message=interaction-1"
+    );
+    expect(line).not.toContain("1-3");
+    expect(line).not.toContain("1x3");
   });
 
   test("formats automation and dashboard lifecycle logs", () => {

@@ -61,13 +61,36 @@ describe("formatUserPredictionSummary", () => {
       })
     ).toBe(["Meus palpites - 2026-06-13", "#8 Austrália x Turquia: sem palpite"].join("\n"));
   });
+
+  test("shows knockout decision methods with saved predictions", () => {
+    expect(
+      formatUserPredictionSummary({
+        userId: "user-1",
+        date: "2026-06-28",
+        matches: [
+          {
+            ...match("wc2026-073", 73, "2026-06-28", "RSA", "South Africa", "CAN", "Canada"),
+            phase: "round_of_32",
+            group: null
+          }
+        ],
+        predictions: [prediction("user-1", "wc2026-073", 1, 3, "penalties")]
+      })
+    ).toBe(
+      [
+        "Meus palpites - 2026-06-28",
+        "#73 África do Sul x Canadá: 1x3 (Pênaltis)"
+      ].join("\n")
+    );
+  });
 });
 
 function prediction(
   userId: string,
   matchId: string,
   homeScore: number,
-  awayScore: number
+  awayScore: number,
+  decisionMethod?: StoredPrediction["decisionMethod"]
 ): StoredPrediction {
   return {
     userId,
@@ -75,6 +98,7 @@ function prediction(
     messageId: `interaction-${userId}-${matchId}`,
     homeScore,
     awayScore,
+    ...(decisionMethod ? { decisionMethod } : {}),
     submittedAt: "2026-06-10T12:00:00.000Z",
     updatedAt: null,
     parserVersion: "prediction-modal-v1"

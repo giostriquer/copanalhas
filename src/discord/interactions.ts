@@ -22,6 +22,7 @@ import {
 } from "../worldcup/matchday.js";
 import { formatTeamName } from "../worldcup/team-display.js";
 import type { WorldCupMatch } from "../worldcup/types.js";
+import { formatDecisionMethodLabel, formatPredictionScoreLabel } from "../predictions/display.js";
 
 export const modalPredictionParserVersion = "prediction-modal-v1";
 const defaultTimeZone = "UTC";
@@ -312,9 +313,7 @@ async function handleScoreModal(
   await options.upsertPrediction(prediction);
   await interaction.reply({
     content: [
-      `Palpite salvo: ${formatTeamName(match.homeTeam)} ${
-        parsedScore.score.normalizedText
-      } ${formatTeamName(match.awayTeam)}`,
+      formatSavedPredictionConfirmation(match, prediction),
       "",
       formatUserPredictionSummary({
         userId: interaction.userId,
@@ -336,6 +335,23 @@ async function handleScoreModal(
     action: "accepted",
     prediction
   };
+}
+
+function formatSavedPredictionConfirmation(
+  match: WorldCupMatch,
+  prediction: StoredPrediction
+): string {
+  const decisionSuffix = prediction.decisionMethod
+    ? ` (${formatDecisionMethodLabel(prediction.decisionMethod)})`
+    : "";
+
+  return `Palpite salvo: ${formatTeamName(match.homeTeam)} ${formatPredictionScoreLabel(
+    prediction,
+    {
+      includeDecision: false,
+      separator: "-"
+    }
+  )} ${formatTeamName(match.awayTeam)}${decisionSuffix}`;
 }
 
 function parsePredictionDecisionMethod(

@@ -109,6 +109,11 @@ describe("handlePredictionInteraction", () => {
 
   test("stores a knockout modal score prediction with its decision method", async () => {
     const storedPredictions: StoredPrediction[] = [];
+    const match = {
+      ...knockoutMatchWithKickoff(),
+      homeTeam: { code: "RSA", name: "South Africa" },
+      awayTeam: { code: "CAN", name: "Canada" }
+    };
     const interaction = modalInteraction({
       customId: buildScoreModalCustomId("wc2026-073"),
       homeScoreText: "1",
@@ -120,7 +125,7 @@ describe("handlePredictionInteraction", () => {
     const result = await handlePredictionInteraction(
       interaction,
       options({
-        matches: [knockoutMatchWithKickoff()],
+        matches: [match],
         upsertPrediction: (prediction) => {
           storedPredictions.push(prediction);
         }
@@ -142,6 +147,15 @@ describe("handlePredictionInteraction", () => {
       }
     });
     expect(storedPredictions).toEqual(result.action === "accepted" ? [result.prediction] : []);
+    expect(interaction.reply).toHaveBeenCalledWith({
+      content: [
+        "Palpite salvo: África do Sul 1-1 Canadá (Pênaltis)",
+        "",
+        "Meus palpites - 2026-06-28",
+        "#73 África do Sul x Canadá: 1x1 (Pênaltis)"
+      ].join("\n"),
+      ephemeral: true
+    });
   });
 
   test("rejects knockout modal predictions without a decision method", async () => {

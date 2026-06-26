@@ -104,6 +104,7 @@ export function formatPredictionInteractionLog(result: PredictionInteractionResu
       `user=${result.prediction.userId}`,
       `match=${result.prediction.matchId}`,
       "score=<redacted>",
+      `decision=${result.prediction.decisionMethod ?? "none"}`,
       `message=${result.prediction.messageId}`
     ].join(" ");
   }

@@ -2,6 +2,7 @@ import type { StoredPrediction } from "../storage/database.js";
 import { scoreMatch, type MatchResult } from "../scoring/scoring.js";
 import { formatTeamName } from "../worldcup/team-display.js";
 import type { WorldCupMatch } from "../worldcup/types.js";
+import { formatPredictionScoreLabel } from "./display.js";
 
 export interface LockedPredictionRevealBatchOptions {
   matches: readonly WorldCupMatch[];
@@ -169,7 +170,7 @@ function formatPredictionGroup(
 }
 
 function formatPredictionLine(prediction: StoredPrediction): string {
-  return `<@${prediction.userId}>  ${formatPredictionScore(prediction)}`;
+  return `<@${prediction.userId}>  ${formatPredictionScoreLabel(prediction)}`;
 }
 
 function outcomeHeading(match: WorldCupMatch, outcome: PredictionOutcome): string {
@@ -204,30 +205,8 @@ function formatPredictionResultLines(
   return formatPredictionLinesByOutcome(match, predictions, (prediction) => {
     const points = scoredByUserId.get(prediction.userId)?.points ?? 0;
 
-    return `<@${prediction.userId}>  ${formatPredictionScore(prediction)} - ${pointsLabel(points)}`;
+    return `<@${prediction.userId}>  ${formatPredictionScoreLabel(prediction)} - ${pointsLabel(points)}`;
   });
-}
-
-function formatPredictionScore(prediction: StoredPrediction): string {
-  const score = `${prediction.homeScore}x${prediction.awayScore}`;
-
-  if (!prediction.decisionMethod) {
-    return score;
-  }
-
-  return `${score} (${decisionMethodLabel(prediction.decisionMethod)})`;
-}
-
-function decisionMethodLabel(value: NonNullable<StoredPrediction["decisionMethod"]>): string {
-  if (value === "regular") {
-    return "Tempo regulamentar";
-  }
-
-  if (value === "extra_time") {
-    return "Prorrogação";
-  }
-
-  return "Pênaltis";
 }
 
 function countLabel(value: number): string {

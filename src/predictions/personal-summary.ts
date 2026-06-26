@@ -2,6 +2,7 @@ import type { StoredPrediction } from "../storage/database.js";
 import { isMatchOnMatchday, defaultMatchdayRolloverTime } from "../worldcup/matchday.js";
 import { formatTeamName } from "../worldcup/team-display.js";
 import type { WorldCupMatch } from "../worldcup/types.js";
+import { formatPredictionScoreLabel } from "./display.js";
 
 export interface FormatUserPredictionSummaryOptions {
   userId: string;
@@ -45,7 +46,7 @@ export function formatUserPredictionSummary(
     ...matchesForDate.map((match) => {
       const prediction = predictionsByMatch.get(match.id);
       const score = prediction
-        ? `${prediction.homeScore}x${prediction.awayScore}`
+        ? formatPredictionScoreLabel(prediction)
         : "sem palpite";
 
       return `#${match.matchNumber} ${formatTeamName(match.homeTeam)} x ${formatTeamName(
