@@ -901,6 +901,112 @@ describe("startCopanalhasBotRuntime", () => {
     );
   });
 
+  test("keeps retrying a simultaneous match skipped after another result stores", async () => {
+    const results: StoredResult[] = [];
+    const store = {
+      ...createStore(),
+      listResults: vi.fn(() => results),
+      upsertResult: vi.fn((result: StoredResult) => {
+        const index = results.findIndex((stored) => stored.matchId === result.matchId);
+
+        if (index === -1) {
+          results.push(result);
+        } else {
+          results.splice(index, 1, result);
+        }
+      })
+    };
+    const intervalCallbacks: Array<() => void | Promise<void>> = [];
+    const startInterval = vi.fn((callback) => {
+      intervalCallbacks.push(callback);
+      return { stop: vi.fn() };
+    });
+    const writeLine = vi.fn();
+    let now = new Date("2026-06-11T20:49:00.000Z");
+    const matches = WORLD_CUP_2026_SEED.matches.map((match) =>
+      match.id === "wc2026-001" || match.id === "wc2026-002"
+        ? {
+            ...match,
+            localDate: "2026-06-11",
+            kickoffTimeLocal: "16:00",
+            kickoffAtUtc: "2026-06-11T19:00:00.000Z"
+          }
+        : match
+    );
+    let syncAttempt = 0;
+    const syncFinishedResults = vi.fn(async (syncOptions) => {
+      syncAttempt += 1;
+
+      if (syncAttempt === 1) {
+        await syncOptions.upsertResult({
+          matchId: "wc2026-001",
+          homeScore: 1,
+          awayScore: 0,
+          recordedAt: now.toISOString(),
+          resultSource: "football-data",
+          externalMatchId: "537327",
+          fetchedAt: now.toISOString()
+        });
+
+        return {
+          action: "synced" as const,
+          storedResults: ["wc2026-001"],
+          skipped: ["wc2026-002"]
+        };
+      }
+
+      return {
+        action: "synced" as const,
+        storedResults: [],
+        skipped: ["wc2026-002"]
+      };
+    });
+
+    await startCopanalhasBotRuntime({
+      config: {
+        ...config(),
+        footballDataToken: "token-value",
+        resultSyncEnabled: true,
+        resultSyncFirstCheckMinutes: 110,
+        resultSyncRetryMinutes: 1
+      },
+      store,
+      matches,
+      startDiscord: vi.fn(async () => ({ destroy: vi.fn(async () => undefined) })),
+      startInterval,
+      sendMatchCard: vi.fn(async () => "discord-message-1"),
+      sendPredictionReveal: vi.fn(async () => ({
+        threadId: "thread-1",
+        messageId: "reveal-message-1"
+      })),
+      upsertStandingsMessage: vi.fn(async (message) => `standings-${message.key}`),
+      upsertLeaderboardMessage: vi.fn(async () => "leaderboard-message-1"),
+      renderLeaderboardPng: vi.fn(async () => Buffer.from("png")),
+      syncFinishedResults,
+      now: () => now,
+      writeLine
+    });
+
+    now = new Date("2026-06-11T20:50:00.000Z");
+    await intervalCallbacks[2]?.();
+    expect(syncFinishedResults).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        pendingMatchIds: ["wc2026-001", "wc2026-002"]
+      })
+    );
+    expect(writeLine).toHaveBeenCalledWith(
+      "[2026-06-11T20:50:00.000Z][result-sync] next pending=1 next=2026-06-11T20:51:00.000Z"
+    );
+
+    now = new Date("2026-06-11T20:51:00.000Z");
+    await intervalCallbacks[2]?.();
+    expect(syncFinishedResults).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        pendingMatchIds: ["wc2026-002"]
+      })
+    );
+  });
+
   test("syncs recent results during startup catch-up when configured", async () => {
     const store = createStore();
     const startDiscord = vi.fn(async () => ({ destroy: vi.fn(async () => undefined) }));

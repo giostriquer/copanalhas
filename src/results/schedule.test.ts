@@ -60,6 +60,27 @@ describe("planResultSyncAttempt", () => {
     });
   });
 
+  test("keeps simultaneous unresolved matches pending after one result is stored", () => {
+    expect(
+      planResultSyncAttempt({
+        matches: [
+          match("wc2026-001", "2026-06-11T19:00:00.000Z", 537327),
+          match("wc2026-002", "2026-06-11T19:00:00.000Z", 537328)
+        ],
+        results: [result("wc2026-001")],
+        now: new Date("2026-06-11T20:51:00.000Z"),
+        firstCheckDelayMinutes: 110,
+        retryIntervalMinutes: 1,
+        lastAttemptAtUtc: "2026-06-11T20:50:00.000Z"
+      })
+    ).toEqual({
+      action: "due",
+      dateFrom: "2026-06-11",
+      dateTo: "2026-06-11",
+      pendingMatchIds: ["wc2026-002"]
+    });
+  });
+
   test("ignores matches that are already resolved or missing provider ids", () => {
     expect(
       planResultSyncAttempt({

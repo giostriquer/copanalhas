@@ -159,6 +159,22 @@ export function formatResultSyncLog(result: RuntimeResultSyncStatus): string {
   } skipped=${result.skipped.length}${formatResultSyncSkipCounts(result.skippedDetails)}`;
 }
 
+export function formatResultSyncNextLog(input: {
+  pendingCount: number;
+  nextCheckAtUtc: string | null;
+  dueNow: boolean;
+}): string | null {
+  if (input.pendingCount === 0) {
+    return null;
+  }
+
+  if (input.dueNow) {
+    return `[result-sync] next pending=${input.pendingCount} next=due`;
+  }
+
+  return `[result-sync] next pending=${input.pendingCount} next=${input.nextCheckAtUtc ?? "none"}`;
+}
+
 export function formatResultSyncStartLog(input: {
   mode: "scheduled" | "forced";
   dateFrom: string;

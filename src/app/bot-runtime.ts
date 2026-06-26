@@ -19,6 +19,7 @@ import {
   formatRuntimeAsyncErrorLog,
   formatResultSyncErrorLog,
   formatResultSyncLog,
+  formatResultSyncNextLog,
   formatResultSyncStartLog,
   formatStandingsDashboardLog,
   formatThirdPlaceDashboardLog
@@ -957,6 +958,30 @@ async function runResultSync(
   state.lastResult = resultSyncStatus(syncResult, syncPlan.dateFrom, syncPlan.dateTo);
   writeRuntimeLine(options, formatResultSyncLog(state.lastResult));
 
+  if (syncResult.action === "synced") {
+    const remainingAttemptPendingCount = countRemainingAttemptPendingMatches(
+      syncPlan.pendingMatchIds,
+      options.store.listResults()
+    );
+    const nextPlan = planResultSyncAttempt({
+      matches: options.matches,
+      results: options.store.listResults(),
+      now: options.now(),
+      firstCheckDelayMinutes: options.config.resultSyncFirstCheckMinutes,
+      retryIntervalMinutes: options.config.resultSyncRetryMinutes,
+      lastAttemptAtUtc: state.lastAttemptAtUtc
+    });
+    const nextLog = formatResultSyncNextLog({
+      pendingCount: remainingAttemptPendingCount,
+      nextCheckAtUtc: nextPlan.action === "not-due" ? nextPlan.nextCheckAtUtc : null,
+      dueNow: nextPlan.action === "due"
+    });
+
+    if (nextLog) {
+      writeRuntimeLine(options, nextLog);
+    }
+  }
+
   if (syncResult.action === "synced" && syncResult.storedResults.length > 0) {
     refreshRuntimeMatches(options, seedMatches);
     await operatorCommandOptions.updateStandingsDashboard();
@@ -975,6 +1000,15 @@ async function runResultSync(
   }
 
   return state.lastResult;
+}
+
+function countRemainingAttemptPendingMatches(
+  attemptedMatchIds: readonly string[],
+  results: readonly Pick<StoredResult, "matchId">[]
+): number {
+  const resolvedMatchIds = new Set(results.map((result) => result.matchId));
+
+  return attemptedMatchIds.filter((matchId) => !resolvedMatchIds.has(matchId)).length;
 }
 
 function resultSyncStatus(
