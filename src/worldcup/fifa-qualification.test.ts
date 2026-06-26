@@ -35,6 +35,42 @@ describe("computeFifaGroupStandings", () => {
     expect(standings[0]?.rows.map((row) => row.goalDifference)).toEqual([-2, 9, -1, -6]);
   });
 
+  test("uses head-to-head before overall goal difference when choosing second and third place", () => {
+    const usa = team("USA", "United States");
+    const paraguay = team("PAR", "Paraguay");
+    const australia = team("AUS", "Australia");
+    const turkey = team("TUR", "Turkey");
+    const standings = computeFifaGroupStandings(
+      [
+        match("D-USA-PAR", 1, "D", usa, paraguay),
+        match("D-USA-AUS", 2, "D", usa, australia),
+        match("D-USA-TUR", 3, "D", usa, turkey),
+        match("D-PAR-AUS", 4, "D", paraguay, australia),
+        match("D-PAR-TUR", 5, "D", paraguay, turkey),
+        match("D-AUS-TUR", 6, "D", australia, turkey)
+      ],
+      [
+        result("D-USA-PAR", 1, 0),
+        result("D-USA-AUS", 0, 5),
+        result("D-USA-TUR", 0, 0),
+        result("D-PAR-AUS", 1, 1),
+        result("D-PAR-TUR", 5, 0),
+        result("D-AUS-TUR", 3, 0)
+      ]
+    );
+
+    expect(standings).toHaveLength(1);
+    expect(standings[0]?.status).toBe("resolved");
+    expect(standings[0]?.rows.map((row) => row.teamCode)).toEqual([
+      "AUS",
+      "USA",
+      "PAR",
+      "TUR"
+    ]);
+    expect(standings[0]?.rows.map((row) => row.points)).toEqual([7, 4, 4, 1]);
+    expect(standings[0]?.rows.map((row) => row.goalDifference)).toEqual([8, -4, 4, -8]);
+  });
+
   test("uses reviewed official tiebreaker order for current score-identical Group C rows", () => {
     const standings = computeFifaGroupStandings(seedGroupMatches("C"), [
       result("wc2026-006", 1, 1),
