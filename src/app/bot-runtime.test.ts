@@ -2,6 +2,7 @@ import { describe, expect, test, vi } from "vitest";
 import { Buffer } from "node:buffer";
 
 import { startCopanalhasBotRuntime, type BotRuntimeStore } from "./bot-runtime.js";
+import type { MatchCardMessage } from "../discord/components.js";
 import type { CopanalhasConfig } from "../discord/config.js";
 import type { DiscordIngestionResult } from "../discord/ingestion.js";
 import type { OperatorCommandOptions } from "../discord/operator-commands.js";
@@ -318,6 +319,49 @@ describe("startCopanalhasBotRuntime", () => {
         messageId: "discord-message-1",
         postedForDate: "2026-06-11",
         postSource: "auto"
+      })
+    );
+  });
+
+  test("posts fixed round-of-32 cards with resolved teams during startup catch-up", async () => {
+    const sentMessages: MatchCardMessage[] = [];
+    const store = {
+      ...createStore(),
+      listResults: vi.fn(() => currentSeedProofStoredResultsForGroups(["A", "B"]))
+    };
+
+    await startCopanalhasBotRuntime({
+      config: config(),
+      store,
+      matches: WORLD_CUP_2026_SEED.matches,
+      startDiscord: vi.fn(async () => ({ destroy: vi.fn(async () => undefined) })),
+      startInterval: vi.fn(() => ({ stop: vi.fn() })),
+      sendMatchCard: vi.fn(async (message) => {
+        sentMessages.push(message);
+        return `discord-message-${sentMessages.length}`;
+      }),
+      sendPredictionReveal: vi.fn(async () => ({
+        threadId: "thread-1",
+        messageId: "reveal-message-1"
+      })),
+      upsertStandingsMessage: vi.fn(async (message) => `standings-${message.key}`),
+      upsertLeaderboardMessage: vi.fn(async () => "leaderboard-message-1"),
+      renderLeaderboardPng: vi.fn(async () => Buffer.from("png")),
+      now: () => new Date("2026-06-26T12:15:00.000Z"),
+      writeLine: vi.fn()
+    });
+
+    const roundOf32Field = sentMessages
+      .flatMap((message) => message.embeds?.[0]?.toJSON().fields ?? [])
+      .find((field) => field.name === "#73 · Rodada de 32");
+
+    expect(roundOf32Field?.value).toContain("África do Sul x Bósnia e Herzegovina");
+    expect(roundOf32Field?.value).not.toContain("2º Grupo A");
+    expect(roundOf32Field?.value).not.toContain("2º Grupo B");
+    expect(store.recordPostedMatchCard).toHaveBeenCalledWith(
+      expect.objectContaining({
+        matchId: "wc2026-073",
+        postedForDate: "2026-06-28"
       })
     );
   });
@@ -1485,7 +1529,15 @@ const currentSeedRankOrders: Readonly<Record<string, readonly string[]>> =
   currentSeedRankOrderByGroup;
 
 function currentSeedProofStoredResults(): StoredResult[] {
+  return currentSeedProofStoredResultsForGroups("ABCDEFGHIJKL".split(""));
+}
+
+function currentSeedProofStoredResultsForGroups(groups: readonly string[]): StoredResult[] {
   return WORLD_CUP_2026_SEED.matches.filter(isGroupStageMatch).map((match) => {
+    if (!groups.includes(match.group)) {
+      return null;
+    }
+
     const homeRank = currentSeedRank(match.group, match.homeTeam.code);
     const awayRank = currentSeedRank(match.group, match.awayTeam.code);
     const winnerIsHome = homeRank < awayRank;
@@ -1498,7 +1550,7 @@ function currentSeedProofStoredResults(): StoredResult[] {
       winnerIsHome ? winnerGoals : 0,
       winnerIsHome ? 0 : winnerGoals
     );
-  });
+  }).filter((candidate): candidate is StoredResult => candidate !== null);
 }
 
 function currentSeedRank(group: string, teamCode: string): number {

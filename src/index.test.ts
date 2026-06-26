@@ -5,6 +5,8 @@ import { logUnhandledCliError, runCli, startNodeInterval } from "./index.js";
 import type { CliDependencies, CliStore } from "./index.js";
 import type { CopanalhasConfig } from "./discord/config.js";
 import type { MatchCardMessage } from "./discord/components.js";
+import { WORLD_CUP_2026_SEED } from "./worldcup/seed.js";
+import { isGroupStageMatch } from "./worldcup/types.js";
 
 describe("runCli", () => {
   test("prints a leaderboard from stored predictions and results", async () => {
@@ -150,14 +152,13 @@ describe("runCli", () => {
 
   test("posts match cards for a selected World Cup date", async () => {
     const lines: string[] = [];
+    const store = createStore();
     const postMatchCards = vi.fn(
       async (_config: CopanalhasConfig, _messages: MatchCardMessage[]) => undefined
     );
 
     await runCli(["post-matches-today", "2026-06-11"], {
-      openDatabase: () => {
-        throw new Error("database should not open");
-      },
+      openDatabase: () => store,
       writeLine: (line) => lines.push(line),
       env: {
         DISCORD_BOT_TOKEN: "token-value",
@@ -168,6 +169,8 @@ describe("runCli", () => {
       postMatchCards
     });
 
+    expect(store.migrate).toHaveBeenCalledOnce();
+    expect(store.close).toHaveBeenCalledOnce();
     expect(postMatchCards).toHaveBeenCalledWith(
       expect.objectContaining({
         discordToken: "token-value",
@@ -207,6 +210,38 @@ describe("runCli", () => {
       ]
     });
     expect(lines).toEqual(["Posted 1 matchday card for 2 matches on 2026-06-11."]);
+  });
+
+  test("posts resolved round-of-32 team names from stored group results", async () => {
+    const lines: string[] = [];
+    const store = createStore({
+      listResults: () => currentSeedProofStoredResultsForGroups(["A", "B"])
+    });
+    const postMatchCards = vi.fn(
+      async (_config: CopanalhasConfig, _messages: MatchCardMessage[]) => undefined
+    );
+
+    await runCli(["post-matches-today", "2026-06-28"], {
+      openDatabase: () => store,
+      writeLine: (line) => lines.push(line),
+      env: {
+        DISCORD_BOT_TOKEN: "token-value",
+        DISCORD_GUILD_ID: "guild-1",
+        DISCORD_CHANNEL_ID: "channel-1"
+      },
+      startDiscord: async () => undefined,
+      postMatchCards
+    });
+
+    const postedMessage = vi.mocked(postMatchCards).mock.calls[0]?.[1]?.[0];
+    const roundOf32Field = postedMessage?.embeds?.[0]
+      ?.toJSON()
+      .fields?.find((field) => field.name === "#73 · Rodada de 32");
+
+    expect(roundOf32Field?.value).toContain("África do Sul x Bósnia e Herzegovina");
+    expect(roundOf32Field?.value).not.toContain("2º Grupo A");
+    expect(roundOf32Field?.value).not.toContain("2º Grupo B");
+    expect(lines).toEqual(["Posted 1 matchday card for 1 matches on 2026-06-28."]);
   });
 
   test("prints a local standings preview with simulated first-day results", async () => {
@@ -431,6 +466,50 @@ function createStore(overrides: Partial<CliStore> = {}): CliStore {
     ...createStoreShape(),
     ...overrides
   };
+}
+
+const currentSeedRankOrderByGroup = {
+  A: ["MEX", "RSA", "KOR", "CZE"],
+  B: ["CAN", "BIH", "QAT", "SUI"]
+} as const satisfies Record<string, readonly string[]>;
+const currentSeedRankOrders: Readonly<Record<string, readonly string[]>> =
+  currentSeedRankOrderByGroup;
+
+function currentSeedProofStoredResultsForGroups(groups: readonly string[]): ReturnType<CliStore["listResults"]> {
+  const results: ReturnType<CliStore["listResults"]> = [];
+
+  for (const match of WORLD_CUP_2026_SEED.matches.filter(isGroupStageMatch)) {
+    if (!groups.includes(match.group)) {
+      continue;
+    }
+
+    const homeRank = currentSeedRank(match.group, match.homeTeam.code);
+    const awayRank = currentSeedRank(match.group, match.awayTeam.code);
+    const winnerIsHome = homeRank < awayRank;
+
+    results.push({
+      matchId: match.id,
+      homeScore: winnerIsHome ? 3 : 0,
+      awayScore: winnerIsHome ? 0 : 3,
+      recordedAt: "2026-06-24T15:00:00.000Z",
+      resultSource: "manual" as const,
+      externalMatchId: null,
+      fetchedAt: null
+    });
+  }
+
+  return results;
+}
+
+function currentSeedRank(group: string, teamCode: string): number {
+  const order = currentSeedRankOrders[group];
+  const index = order?.indexOf(teamCode) ?? -1;
+
+  if (index < 0) {
+    throw new Error(`Missing proof-test rank for Group ${group} team ${teamCode}.`);
+  }
+
+  return index + 1;
 }
 
 function createStoreShape(): CliStore {

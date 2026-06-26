@@ -31,6 +31,34 @@ describe("resolveKnockoutMatchParticipants", () => {
     });
   });
 
+  test("resolves fixed round-of-32 slots from completed groups before every group is finished", () => {
+    const resolved = resolveKnockoutMatchParticipants(
+      WORLD_CUP_2026_SEED.matches,
+      currentSeedProofResultsForGroups(["A", "B"])
+    );
+
+    expect(matchByNumber(resolved, 73)).toMatchObject({
+      homeTeam: { code: "RSA", name: "South Africa" },
+      awayTeam: { code: "BIH", name: "Bosnia and Herzegovina" }
+    });
+    expect(matchByNumber(resolved, 74)).toMatchObject({
+      homeTeam: { code: "1E", name: "1º Grupo E" },
+      awayTeam: { code: "3ABCDF", name: "3º Grupo A/B/C/D/F" }
+    });
+  });
+
+  test("keeps fixed round-of-32 slots as placeholders until their groups are finished", () => {
+    const resolved = resolveKnockoutMatchParticipants(
+      WORLD_CUP_2026_SEED.matches,
+      currentSeedProofResultsForGroups(["A"])
+    );
+
+    expect(matchByNumber(resolved, 73)).toMatchObject({
+      homeTeam: { code: "RSA", name: "South Africa" },
+      awayTeam: { code: "2B", name: "2º Grupo B" }
+    });
+  });
+
   test("propagates knockout winners into later rounds when results are available", () => {
     const resolved = resolveKnockoutMatchParticipants(WORLD_CUP_2026_SEED.matches, [
       ...currentSeedProofResults(),
@@ -75,7 +103,15 @@ const currentSeedRankOrders: Readonly<Record<string, readonly string[]>> =
   currentSeedRankOrderByGroup;
 
 function currentSeedProofResults(): StandingsResult[] {
+  return currentSeedProofResultsForGroups("ABCDEFGHIJKL".split(""));
+}
+
+function currentSeedProofResultsForGroups(groups: readonly string[]): StandingsResult[] {
   return WORLD_CUP_2026_SEED.matches.filter(isGroupStageMatch).map((match) => {
+    if (!groups.includes(match.group)) {
+      return null;
+    }
+
     const homeRank = currentSeedRank(match.group, match.homeTeam.code);
     const awayRank = currentSeedRank(match.group, match.awayTeam.code);
     const winnerIsHome = homeRank < awayRank;
@@ -88,7 +124,7 @@ function currentSeedProofResults(): StandingsResult[] {
       winnerIsHome ? winnerGoals : 0,
       winnerIsHome ? 0 : winnerGoals
     );
-  });
+  }).filter((candidate): candidate is StandingsResult => candidate !== null);
 }
 
 function currentSeedRank(group: string, teamCode: string): number {

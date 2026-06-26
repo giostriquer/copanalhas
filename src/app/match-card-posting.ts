@@ -4,6 +4,7 @@ import type {
   StoredPostedMatchCard
 } from "../storage/database.js";
 import { isMatchOnMatchday } from "../worldcup/matchday.js";
+import { hasResolvedPredictionParticipants } from "../worldcup/prediction-eligibility.js";
 import type { WorldCupMatch } from "../worldcup/types.js";
 
 export interface PostDueMatchCardsOptions {
@@ -40,6 +41,10 @@ export async function postDueMatchCards(
   for (const match of options.matches.filter((candidate) =>
     isMatchOnMatchday(candidate, options.date, options.timeZone, options.matchdayRolloverTime)
   )) {
+    if (!hasResolvedPredictionParticipants(match)) {
+      continue;
+    }
+
     if (alreadyPosted.has(match.id)) {
       skipped.push(match.id);
       continue;

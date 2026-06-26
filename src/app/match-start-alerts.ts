@@ -1,4 +1,5 @@
 import type { StoredMatchStartAlert, StoredResult } from "../storage/database.js";
+import { hasResolvedPredictionParticipants } from "../worldcup/prediction-eligibility.js";
 import { formatTeamName } from "../worldcup/team-display.js";
 import type { WorldCupMatch } from "../worldcup/types.js";
 
@@ -95,6 +96,10 @@ function dueStartMatches(options: MatchStartAlertTickOptions, now: Date): WorldC
   return options.matches
     .filter((match) => {
       if (!match.kickoffAtUtc || alertedMatchIds.has(match.id) || resultedMatchIds.has(match.id)) {
+        return false;
+      }
+
+      if (!hasResolvedPredictionParticipants(match)) {
         return false;
       }
 

@@ -1,6 +1,9 @@
 import type { StandingsResult } from "../standings/standings.js";
-import { resolveWorldCup2026RoundOf32 } from "./fifa-qualification.js";
-import { isGroupStageMatch, type WorldCupMatch, type WorldCupTeam } from "./types.js";
+import {
+  computeFifaGroupStandings,
+  resolveWorldCup2026RoundOf32
+} from "./fifa-qualification.js";
+import { isGroupStageMatch, type WorldCupGroupMatch, type WorldCupMatch, type WorldCupTeam } from "./types.js";
 
 export function resolveKnockoutMatchParticipants(
   matches: readonly WorldCupMatch[],
@@ -21,6 +24,8 @@ function resolveRoundOf32Participants(
   matchesByNumber: Map<number, WorldCupMatch>,
   results: readonly StandingsResult[]
 ): void {
+  resolveFixedRoundOf32Slots(matches, matchesByNumber, results);
+
   try {
     for (const fixture of resolveWorldCup2026RoundOf32(matches.filter(isGroupStageMatch), results)) {
       const match = matchesByNumber.get(fixture.matchNumber);
@@ -37,6 +42,84 @@ function resolveRoundOf32Participants(
       throw error;
     }
   }
+}
+
+function resolveFixedRoundOf32Slots(
+  matches: readonly WorldCupMatch[],
+  matchesByNumber: Map<number, WorldCupMatch>,
+  results: readonly StandingsResult[]
+): void {
+  const slotTeams = qualificationSlotsForCompletedGroups(matches.filter(isGroupStageMatch), results);
+
+  if (slotTeams.size === 0) {
+    return;
+  }
+
+  for (const match of matchesByNumber.values()) {
+    if (match.phase !== "round_of_32") {
+      continue;
+    }
+
+    const homeTeam = slotTeams.get(match.homeTeam.code);
+    const awayTeam = slotTeams.get(match.awayTeam.code);
+
+    if (homeTeam) {
+      match.homeTeam = { ...homeTeam };
+    }
+
+    if (awayTeam) {
+      match.awayTeam = { ...awayTeam };
+    }
+  }
+}
+
+function qualificationSlotsForCompletedGroups(
+  groupMatches: readonly WorldCupGroupMatch[],
+  results: readonly StandingsResult[]
+): Map<string, WorldCupTeam> {
+  const resultMatchIds = new Set(results.map((result) => result.matchId));
+  const completedGroups = new Set<string>();
+
+  for (const [group, matches] of groupMatchesByGroup(groupMatches)) {
+    if (matches.length > 0 && matches.every((match) => resultMatchIds.has(match.id))) {
+      completedGroups.add(group);
+    }
+  }
+
+  const slotTeams = new Map<string, WorldCupTeam>();
+
+  for (const standing of computeFifaGroupStandings(groupMatches, results)) {
+    if (!completedGroups.has(standing.group) || standing.status !== "resolved") {
+      continue;
+    }
+
+    for (const rank of [1, 2, 3] as const) {
+      const row = standing.rows[rank - 1];
+
+      if (row) {
+        slotTeams.set(`${rank}${standing.group}`, {
+          code: row.teamCode,
+          name: row.teamName
+        });
+      }
+    }
+  }
+
+  return slotTeams;
+}
+
+function groupMatchesByGroup(
+  matches: readonly WorldCupGroupMatch[]
+): Map<string, WorldCupGroupMatch[]> {
+  const grouped = new Map<string, WorldCupGroupMatch[]>();
+
+  for (const match of matches) {
+    const group = grouped.get(match.group) ?? [];
+    group.push(match);
+    grouped.set(match.group, group);
+  }
+
+  return grouped;
 }
 
 function resolveWinnerLoserSlots(

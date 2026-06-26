@@ -1,4 +1,4 @@
-import { describe, expect, test } from "vitest";
+import { describe, expect, test, vi } from "vitest";
 
 import { postDueMatchCards } from "./match-card-posting.js";
 import type { MatchCardMessage } from "../discord/components.js";
@@ -124,6 +124,79 @@ describe("postDueMatchCards", () => {
     });
     expect(sent).toHaveLength(1);
   });
+
+  test("does not post unresolved knockout placeholder matches", async () => {
+    const sendMatchCard = vi.fn(async () => "daily-message-4");
+    const recordPostedMatchCard = vi.fn();
+
+    const result = await postDueMatchCards({
+      matches: [
+        knockoutMatch(
+          "wc2026-073",
+          73,
+          "2A",
+          "2º Grupo A",
+          "2B",
+          "2º Grupo B",
+          "2026-06-28T19:00:00.000Z"
+        )
+      ],
+      channelId: "channel-1",
+      date: "2026-06-28",
+      postSource: "auto",
+      timeZone: "America/Sao_Paulo",
+      matchdayRolloverTime: "06:00",
+      now: () => new Date("2026-06-26T12:00:00.000Z"),
+      listPostedMatchCards: () => [],
+      sendMatchCard,
+      recordPostedMatchCard
+    });
+
+    expect(result).toEqual({
+      posted: [],
+      skipped: []
+    });
+    expect(sendMatchCard).not.toHaveBeenCalled();
+    expect(recordPostedMatchCard).not.toHaveBeenCalled();
+  });
+
+  test("posts resolved knockout matches with concrete team names", async () => {
+    const sent: MatchCardMessage[] = [];
+
+    const result = await postDueMatchCards({
+      matches: [
+        knockoutMatch(
+          "wc2026-073",
+          73,
+          "RSA",
+          "South Africa",
+          "BIH",
+          "Bosnia and Herzegovina",
+          "2026-06-28T19:00:00.000Z"
+        )
+      ],
+      channelId: "channel-1",
+      date: "2026-06-28",
+      postSource: "auto",
+      timeZone: "America/Sao_Paulo",
+      matchdayRolloverTime: "06:00",
+      now: () => new Date("2026-06-28T12:00:00.000Z"),
+      listPostedMatchCards: () => [],
+      sendMatchCard: async (message) => {
+        sent.push(message);
+        return "daily-message-5";
+      },
+      recordPostedMatchCard: () => undefined
+    });
+
+    expect(result).toEqual({
+      posted: ["wc2026-073"],
+      skipped: []
+    });
+    expect(sent[0]?.embeds?.[0]?.toJSON().fields?.[0]?.value).toContain(
+      "África do Sul x Bósnia e Herzegovina"
+    );
+  });
 });
 
 function match(id: string, matchNumber: number, localDate: string): WorldCupMatch {
@@ -137,6 +210,31 @@ function match(id: string, matchNumber: number, localDate: string): WorldCupMatc
     localDate,
     kickoffTimeLocal: null,
     kickoffAtUtc: "2026-06-11T19:00:00.000Z",
+    venue: "Test Stadium",
+    sourceId: "test-source",
+    externalIds: {}
+  };
+}
+
+function knockoutMatch(
+  id: string,
+  matchNumber: number,
+  homeCode: string,
+  homeName: string,
+  awayCode: string,
+  awayName: string,
+  kickoffAtUtc: string
+): WorldCupMatch {
+  return {
+    id,
+    matchNumber,
+    phase: "round_of_32",
+    group: null,
+    homeTeam: { code: homeCode, name: homeName },
+    awayTeam: { code: awayCode, name: awayName },
+    localDate: kickoffAtUtc.slice(0, 10),
+    kickoffTimeLocal: "16:00",
+    kickoffAtUtc,
     venue: "Test Stadium",
     sourceId: "test-source",
     externalIds: {}

@@ -111,6 +111,36 @@ describe("runMatchStartAlertTick", () => {
     expect(sendAlert).toHaveBeenCalledOnce();
   });
 
+  test("does not post start alerts for unresolved knockout placeholder matches", async () => {
+    const sendAlert = vi.fn(async () => "match-start-message-1");
+
+    const result = await runMatchStartAlertTick({
+      channelId: "channel-1",
+      roleId: "role-canalhas",
+      matches: [
+        knockoutMatch(
+          "wc2026-073",
+          73,
+          "2A",
+          "2º Grupo A",
+          "2B",
+          "2º Grupo B",
+          "2026-06-28T19:00:00.000Z"
+        )
+      ],
+      results: [],
+      alerts: [],
+      now: () => new Date("2026-06-28T18:55:00.000Z"),
+      sendAlert,
+      deleteAlert: vi.fn(),
+      recordAlert: vi.fn(),
+      markAlertDeleted: vi.fn()
+    });
+
+    expect(result.posted).toEqual([]);
+    expect(sendAlert).not.toHaveBeenCalled();
+  });
+
   test("does not repost a match that already has a start alert", async () => {
     const sendAlert = vi.fn(async () => "match-start-message-2");
 
@@ -207,6 +237,31 @@ function match(
     matchNumber,
     phase: "group",
     group: "A",
+    homeTeam: { code: homeCode, name: homeName },
+    awayTeam: { code: awayCode, name: awayName },
+    localDate: kickoffAtUtc.slice(0, 10),
+    kickoffTimeLocal: "16:00",
+    kickoffAtUtc,
+    venue: "Test Stadium",
+    sourceId: "test-source",
+    externalIds: {}
+  };
+}
+
+function knockoutMatch(
+  id: string,
+  matchNumber: number,
+  homeCode: string,
+  homeName: string,
+  awayCode: string,
+  awayName: string,
+  kickoffAtUtc: string
+): WorldCupMatch {
+  return {
+    id,
+    matchNumber,
+    phase: "round_of_32",
+    group: null,
     homeTeam: { code: homeCode, name: homeName },
     awayTeam: { code: awayCode, name: awayName },
     localDate: kickoffAtUtc.slice(0, 10),

@@ -57,7 +57,10 @@ import type { ThirdPlaceDashboardMessage } from "./third-place/format.js";
 import { renderThirdPlacePng } from "./third-place/png.js";
 import { openCopanalhasDatabase } from "./storage/database.js";
 import { getMatchdayDateForInstant, isMatchOnMatchday } from "./worldcup/matchday.js";
+import { resolveKnockoutMatchParticipants } from "./worldcup/knockout-resolution.js";
+import { hasResolvedPredictionParticipants } from "./worldcup/prediction-eligibility.js";
 import { WORLD_CUP_2026_SEED } from "./worldcup/seed.js";
+import type { WorldCupMatch } from "./worldcup/types.js";
 
 export interface CliStore extends BotRuntimeStore {
   close(): void;
@@ -200,14 +203,28 @@ async function postMatchesToday(argv: string[], dependencies: CliDependencies): 
       configResult.config.timezone,
       configResult.config.matchdayRolloverTime
     );
-  const matches = WORLD_CUP_2026_SEED.matches.filter((match) =>
-    isMatchOnMatchday(
-      match,
-      date,
-      configResult.config.timezone,
-      configResult.config.matchdayRolloverTime
-    )
-  );
+  const store = dependencies.openDatabase(databasePathFromEnv(dependencies.env));
+  let matches: WorldCupMatch[];
+
+  try {
+    store.migrate();
+    const resolvedMatches = resolveKnockoutMatchParticipants(
+      WORLD_CUP_2026_SEED.matches,
+      store.listResults()
+    );
+
+    matches = resolvedMatches.filter(
+      (match) =>
+        isMatchOnMatchday(
+          match,
+          date,
+          configResult.config.timezone,
+          configResult.config.matchdayRolloverTime
+        ) && hasResolvedPredictionParticipants(match)
+    );
+  } finally {
+    store.close();
+  }
 
   if (matches.length === 0) {
     dependencies.writeLine(`No reviewed World Cup matches found for ${date}.`);
