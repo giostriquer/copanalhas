@@ -13,6 +13,7 @@ export function sampleChaosDashboardModel(
       exactCount: 4,
       outcomeCount: 3,
       closestCount: 0,
+      decisionBonusCount: 0,
       matchesScored: 12
     }
   ];

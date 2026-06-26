@@ -25,6 +25,12 @@ lives in the private modal and confirmation flow instead of the public card.
 Raw channel message parsing can remain as a development fallback, but it is no
 longer the desired member-facing prediction workflow.
 
+Group-stage prediction modals stay score-only. Knockout prediction modals add
+one required dropdown for how the member thinks the match will be decided:
+`Tempo regulamentar`, `Prorrogação`, or `Cobrança de pênaltis`. The dropdown is
+stored with the prediction and is used only for the knockout decision-method
+bonus.
+
 ## Current API Constraints
 
 Discord apps receive events through gateway intents. Message content is privileged:
@@ -119,6 +125,10 @@ While `bot` is running, use `/copanalhas` for normal operator work:
 - `/copanalhas repost-reveal match:wc2026-001`
 - `/copanalhas result match:wc2026-001 score:2-1`
 - `/copanalhas sync-results`
+
+For knockout result recovery, `/copanalhas result` accepts optional detail
+fields: `decision`, `regular-score`, `extra-score`, `penalties-score`, and
+`winner`. Group matches can continue to use only `match` plus `score`.
 
 Posted matchday cards are deduped by match and channel. The grouped Discord
 message ID is recorded once per included match, so restarting the process or

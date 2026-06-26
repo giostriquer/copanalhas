@@ -3,6 +3,8 @@ import { MessageFlags, type Interaction, type ModalBuilder } from "discord.js";
 import {
   awayScoreInputCustomId,
   createPredictionModal,
+  decisionMethodSelectCustomId,
+  parseDecisionMethod,
   homeScoreInputCustomId,
   parsePredictButtonCustomId,
   parseScoreModalCustomId,
@@ -58,6 +60,7 @@ export interface PredictionModalSubmitInteraction {
   interactionId: string;
   createdAt: Date;
   getTextInputValue(customId: string): string;
+  getStringSelectValues?(customId: string): readonly string[];
   reply(reply: PredictionInteractionReply): Promise<void>;
 }
 
@@ -77,7 +80,7 @@ export type PredictionInteractionResult =
     }
   | {
       action: "rejected";
-      reason: "unknown-match" | "invalid-score-format" | "missing-kickoff";
+      reason: "unknown-match" | "invalid-score-format" | "invalid-decision-method" | "missing-kickoff";
       matchId: string;
       userId: string;
     }
@@ -158,6 +161,7 @@ export async function handleDiscordPredictionInteraction(
         interactionId: interaction.id,
         createdAt: interaction.createdAt,
         getTextInputValue: (customId) => interaction.fields.getTextInputValue(customId),
+        getStringSelectValues: (customId) => interaction.fields.getStringSelectValues(customId),
         reply: async (reply) => {
           await interaction.reply({
             content: reply.content,
@@ -275,6 +279,21 @@ async function handleScoreModal(
     };
   }
 
+  const parsedDecisionMethod = parsePredictionDecisionMethod(interaction, match);
+
+  if (!parsedDecisionMethod.ok) {
+    await interaction.reply({
+      content: "Selecione como a partida será decidida.",
+      ephemeral: true
+    });
+    return {
+      action: "rejected",
+      reason: parsedDecisionMethod.reason,
+      matchId: match.id,
+      userId: interaction.userId
+    };
+  }
+
   const existingPrediction = findExistingPrediction(options, interaction.userId, match.id);
   const prediction: StoredPrediction = {
     userId: interaction.userId,
@@ -282,6 +301,9 @@ async function handleScoreModal(
     messageId: interaction.interactionId,
     homeScore: parsedScore.score.homeScore,
     awayScore: parsedScore.score.awayScore,
+    ...(parsedDecisionMethod.decisionMethod
+      ? { decisionMethod: parsedDecisionMethod.decisionMethod }
+      : {}),
     submittedAt: existingPrediction?.submittedAt ?? interaction.createdAt.toISOString(),
     updatedAt: existingPrediction ? interaction.createdAt.toISOString() : null,
     parserVersion: modalPredictionParserVersion
@@ -314,6 +336,26 @@ async function handleScoreModal(
     action: "accepted",
     prediction
   };
+}
+
+function parsePredictionDecisionMethod(
+  interaction: PredictionModalSubmitInteraction,
+  match: WorldCupMatch
+):
+  | { ok: true; decisionMethod?: ReturnType<typeof parseDecisionMethod> }
+  | { ok: false; reason: "invalid-decision-method" } {
+  if (match.phase === "group") {
+    return { ok: true };
+  }
+
+  const [value] = interaction.getStringSelectValues?.(decisionMethodSelectCustomId) ?? [];
+  const decisionMethod = value ? parseDecisionMethod(value) : undefined;
+
+  if (!decisionMethod) {
+    return { ok: false, reason: "invalid-decision-method" };
+  }
+
+  return { ok: true, decisionMethod };
 }
 
 function findExistingPrediction(

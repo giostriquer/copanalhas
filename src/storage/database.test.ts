@@ -79,6 +79,38 @@ describe("CopanalhasDatabase", () => {
     store.close();
   });
 
+  test("round-trips knockout prediction decision methods", () => {
+    const store = openCopanalhasDatabase(":memory:");
+    store.migrate();
+
+    store.upsertPrediction({
+      userId: "user-1",
+      matchId: "wc2026-073",
+      messageId: "interaction-1",
+      homeScore: 1,
+      awayScore: 1,
+      decisionMethod: "penalties",
+      submittedAt: "2026-06-29T12:00:00.000Z",
+      updatedAt: null,
+      parserVersion: "prediction-modal-v2"
+    } as Parameters<typeof store.upsertPrediction>[0]);
+
+    expect(store.listPredictions()).toEqual([
+      {
+        userId: "user-1",
+        matchId: "wc2026-073",
+        messageId: "interaction-1",
+        homeScore: 1,
+        awayScore: 1,
+        decisionMethod: "penalties",
+        submittedAt: "2026-06-29T12:00:00.000Z",
+        updatedAt: null,
+        parserVersion: "prediction-modal-v2"
+      }
+    ]);
+    store.close();
+  });
+
   test("upserts final results by match", () => {
     const store = openCopanalhasDatabase(":memory:");
     store.migrate();
@@ -108,6 +140,50 @@ describe("CopanalhasDatabase", () => {
         homeScore: 3,
         awayScore: 1,
         recordedAt: "2026-06-11T23:05:00.000Z",
+        resultSource: "manual",
+        externalMatchId: null,
+        fetchedAt: null
+      }
+    ]);
+    store.close();
+  });
+
+  test("round-trips detailed knockout result scoring fields", () => {
+    const store = openCopanalhasDatabase(":memory:");
+    store.migrate();
+
+    store.upsertResult({
+      matchId: "wc2026-073",
+      homeScore: 6,
+      awayScore: 5,
+      decisionMethod: "penalties",
+      regularTimeHomeScore: 1,
+      regularTimeAwayScore: 1,
+      extraTimeHomeScore: 1,
+      extraTimeAwayScore: 1,
+      penaltyHomeScore: 5,
+      penaltyAwayScore: 4,
+      winner: "home",
+      recordedAt: "2026-06-29T23:00:00.000Z",
+      resultSource: "manual",
+      externalMatchId: null,
+      fetchedAt: null
+    } as Parameters<typeof store.upsertResult>[0]);
+
+    expect(store.listResults()).toEqual([
+      {
+        matchId: "wc2026-073",
+        homeScore: 6,
+        awayScore: 5,
+        decisionMethod: "penalties",
+        regularTimeHomeScore: 1,
+        regularTimeAwayScore: 1,
+        extraTimeHomeScore: 1,
+        extraTimeAwayScore: 1,
+        penaltyHomeScore: 5,
+        penaltyAwayScore: 4,
+        winner: "home",
+        recordedAt: "2026-06-29T23:00:00.000Z",
         resultSource: "manual",
         externalMatchId: null,
         fetchedAt: null

@@ -232,6 +232,7 @@ describe("chaos dashboard stats", () => {
           exactCount: 0,
           outcomeCount: 0,
           closestCount: 0,
+          decisionBonusCount: 0,
           matchesScored: 1
         },
         {
@@ -241,6 +242,7 @@ describe("chaos dashboard stats", () => {
           exactCount: 0,
           outcomeCount: 0,
           closestCount: 0,
+          decisionBonusCount: 0,
           matchesScored: 1
         },
         {
@@ -250,6 +252,7 @@ describe("chaos dashboard stats", () => {
           exactCount: 0,
           outcomeCount: 1,
           closestCount: 0,
+          decisionBonusCount: 0,
           matchesScored: 1
         }
       ]).map((row) => ({ userId: row.userId, rank: row.rank }))

@@ -22,11 +22,12 @@ March 2026 playoff berths were resolved.
 `football-data.org` lists FIFA World Cup coverage in its free coverage table and
 provides a v4 API. Copanalhas uses it only when `FOOTBALL_DATA_TOKEN` is set and
 `COPANALHAS_RESULT_SYNC_ENABLED` allows sync. The consumed fields are provider
-match ID, `utcDate`, `status`, and `score.fullTime`. Football-Data v4 score
-nodes use `home`/`away` team keys while older examples may show
-`homeTeam`/`awayTeam`. Result sync queries planned provider match IDs through
-the `/v4/matches?ids=...` filter because the broader competition date response
-can lag detailed match scores.
+match ID, `utcDate`, `status`, `score.fullTime`, and, for knockout matches,
+`score.duration`, `score.regularTime`, `score.extraTime`, `score.penalties`, and
+`score.winner` when present. Football-Data v4 score nodes use `home`/`away` team
+keys while older examples may show `homeTeam`/`awayTeam`. Result sync queries
+planned provider match IDs through the `/v4/matches?ids=...` filter because the
+broader competition date response can lag detailed match scores.
 
 Football-Data credentials are developer credentials and must not be stored in
 open-source repositories. When Copanalhas may use Football-Data result sync, the
@@ -106,6 +107,9 @@ reviewed `externalIds.footballData` mapping.
 Result sync stores:
 
 - final score
+- actual knockout decision method, when the match is a knockout fixture
+- regular-time, extra-time, penalty, and winner detail needed to recompute
+  knockout scoring, when applicable
 - source `"football-data"`
 - provider match ID
 - fetch timestamp
@@ -124,6 +128,12 @@ of play, halftime, and a five-minute buffer; default retries are one minute
 apart, with duplicate not-due logs suppressed while the next check is unchanged.
 Operators can run `/copanalhas sync-results` to force one immediate finished
 result check for unresolved mapped matches that have already kicked off.
+
+For knockout fixtures, result sync stores a provider result only when enough
+final detail exists to recompute the active knockout scoring rules. Incomplete
+knockout payloads are skipped with `missing-knockout-detail` rather than scored
+from guessed phase data. Manual `/copanalhas result` recovery can fill the
+reviewed knockout details when provider data is missing or incomplete.
 
 Keep polling conservative; the free football-data.org client limit is small, and
 failures such as rate limiting should not break prediction collection.

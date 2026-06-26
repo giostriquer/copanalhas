@@ -4,9 +4,15 @@ import type { PostDueMatchCardsResult } from "../app/match-card-posting.js";
 import { formatOperatorHealthReport, type OperatorHealthSnapshot } from "../app/operator-health.js";
 import { formatLeaderboard } from "../leaderboard/format.js";
 import { formatUserPredictionSummary } from "../predictions/personal-summary.js";
-import { parseScoreInput } from "../predictions/score-parser.js";
+import { parseScoreInput, type ParsedScoreInput } from "../predictions/score-parser.js";
 import { formatPredictionAudit, formatPredictionReveal } from "../predictions/visibility.js";
-import { buildLeaderboard, scoreMatch, type MatchResult } from "../scoring/scoring.js";
+import {
+  buildLeaderboard,
+  scoreMatch,
+  type DecisionMethod,
+  type MatchResult,
+  type MatchWinner
+} from "../scoring/scoring.js";
 import type {
   PostedMatchCardSource,
   StoredBracketPost,
@@ -460,15 +466,13 @@ export async function handleOperatorCommand(
       return reply("Use a score like 2x1 or 2-1.");
     }
 
-    await options.upsertResult({
-      matchId: match.id,
-      homeScore: parsedScore.score.homeScore,
-      awayScore: parsedScore.score.awayScore,
-      recordedAt: options.now().toISOString(),
-      resultSource: "manual",
-      externalMatchId: null,
-      fetchedAt: null
-    });
+    const manualResult = parseManualResult(match, command.options, parsedScore.score, options.now().toISOString());
+
+    if (!manualResult.ok) {
+      return reply(manualResult.message);
+    }
+
+    await options.upsertResult(manualResult.result);
     await options.updateStandingsDashboard();
     await options.updateLeaderboardDashboard();
     await options.updateBracketDashboard();
@@ -683,13 +687,182 @@ function readCommandOptions(
   }
 
   if (subcommand === "result") {
-    return {
+    return removeUndefinedValues({
       match: interaction.options.getString("match", true),
-      score: interaction.options.getString("score", true)
-    };
+      score: interaction.options.getString("score", true),
+      decision: interaction.options.getString("decision", false) ?? undefined,
+      "regular-score": interaction.options.getString("regular-score", false) ?? undefined,
+      "extra-score": interaction.options.getString("extra-score", false) ?? undefined,
+      "penalties-score": interaction.options.getString("penalties-score", false) ?? undefined,
+      winner: interaction.options.getString("winner", false) ?? undefined
+    });
   }
 
   return {};
+}
+
+function parseManualResult(
+  match: WorldCupMatch,
+  options: Record<string, string>,
+  finalScore: ParsedScoreInput,
+  recordedAt: string
+): { ok: true; result: StoredResult } | { ok: false; message: string } {
+  const baseResult: StoredResult = {
+    matchId: match.id,
+    homeScore: finalScore.homeScore,
+    awayScore: finalScore.awayScore,
+    recordedAt,
+    resultSource: "manual",
+    externalMatchId: null,
+    fetchedAt: null
+  };
+
+  if (match.phase === "group") {
+    return { ok: true, result: baseResult };
+  }
+
+  const decisionMethod = parseDecisionMethodOption(options.decision ?? "regular");
+
+  if (!decisionMethod) {
+    return { ok: false, message: "Use decision regular, extra_time, or penalties." };
+  }
+
+  if (decisionMethod === "regular") {
+    const regularScore = parseOptionalScoreOption(options["regular-score"]) ?? finalScore;
+    const winner = parseWinnerOption(options.winner) ?? winnerFromScore(regularScore);
+
+    if (!winner) {
+      return { ok: false, message: "Use winner home or away for drawn knockout results." };
+    }
+
+    return {
+      ok: true,
+      result: {
+        ...baseResult,
+        decisionMethod,
+        regularTimeHomeScore: regularScore.homeScore,
+        regularTimeAwayScore: regularScore.awayScore,
+        winner
+      }
+    };
+  }
+
+  const regularScore = parseRequiredScoreOption(options["regular-score"], "regular-score");
+
+  if (!regularScore.ok) {
+    return regularScore;
+  }
+
+  const extraScore = parseRequiredScoreOption(options["extra-score"], "extra-score");
+
+  if (!extraScore.ok) {
+    return extraScore;
+  }
+
+  if (decisionMethod === "extra_time") {
+    const winner = parseWinnerOption(options.winner) ?? winnerFromScore(extraScore.score);
+
+    if (!winner) {
+      return { ok: false, message: "Use winner home or away for drawn knockout results." };
+    }
+
+    return {
+      ok: true,
+      result: {
+        ...baseResult,
+        decisionMethod,
+        regularTimeHomeScore: regularScore.score.homeScore,
+        regularTimeAwayScore: regularScore.score.awayScore,
+        extraTimeHomeScore: extraScore.score.homeScore,
+        extraTimeAwayScore: extraScore.score.awayScore,
+        winner
+      }
+    };
+  }
+
+  const penaltiesScore = parseRequiredScoreOption(options["penalties-score"], "penalties-score");
+
+  if (!penaltiesScore.ok) {
+    return penaltiesScore;
+  }
+
+  const winner = parseWinnerOption(options.winner) ?? winnerFromScore(penaltiesScore.score);
+
+  if (!winner) {
+    return { ok: false, message: "Use winner home or away for drawn knockout results." };
+  }
+
+  return {
+    ok: true,
+    result: {
+      ...baseResult,
+      decisionMethod,
+      regularTimeHomeScore: regularScore.score.homeScore,
+      regularTimeAwayScore: regularScore.score.awayScore,
+      extraTimeHomeScore: extraScore.score.homeScore,
+      extraTimeAwayScore: extraScore.score.awayScore,
+      penaltyHomeScore: penaltiesScore.score.homeScore,
+      penaltyAwayScore: penaltiesScore.score.awayScore,
+      winner
+    }
+  };
+}
+
+function parseDecisionMethodOption(value: string): DecisionMethod | undefined {
+  if (value === "regular" || value === "extra_time" || value === "penalties") {
+    return value;
+  }
+
+  return undefined;
+}
+
+function parseWinnerOption(value: string | undefined): MatchWinner | undefined {
+  if (value === "home" || value === "away") {
+    return value;
+  }
+
+  return undefined;
+}
+
+function parseOptionalScoreOption(value: string | undefined): ParsedScoreInput | undefined {
+  if (!value) {
+    return undefined;
+  }
+
+  const parsed = parseScoreInput(value);
+
+  return parsed.ok ? parsed.score : undefined;
+}
+
+function parseRequiredScoreOption(
+  value: string | undefined,
+  optionName: string
+): { ok: true; score: ParsedScoreInput } | { ok: false; message: string } {
+  const parsed = parseScoreInput(value ?? "");
+
+  if (!parsed.ok) {
+    return { ok: false, message: `Use ${optionName} like 1-1.` };
+  }
+
+  return { ok: true, score: parsed.score };
+}
+
+function winnerFromScore(score: Pick<ParsedScoreInput, "homeScore" | "awayScore">): MatchWinner | undefined {
+  if (score.homeScore > score.awayScore) {
+    return "home";
+  }
+
+  if (score.awayScore > score.homeScore) {
+    return "away";
+  }
+
+  return undefined;
+}
+
+function removeUndefinedValues(values: Record<string, string | undefined>): Record<string, string> {
+  return Object.fromEntries(
+    Object.entries(values).filter((entry): entry is [string, string] => entry[1] !== undefined)
+  );
 }
 
 function parseOperatorSubcommand(value: string): OperatorSubcommand | undefined {

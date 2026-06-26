@@ -1,4 +1,4 @@
-import { scoreMatch, type ScorePrediction } from "../scoring/scoring.js";
+import { scoreMatch, type MatchWinner, type ScorePrediction } from "../scoring/scoring.js";
 import type { NewScoringRun, StoredResult } from "../storage/database.js";
 import type { WorldCupMatch } from "../worldcup/types.js";
 import {
@@ -32,7 +32,11 @@ export type SyncFinishedResultsResult =
       skippedDetails?: ResultSyncSkippedMatch[];
     };
 
-export type ResultSyncSkipReason = "manual-result" | "not-final" | "missing-final-score";
+export type ResultSyncSkipReason =
+  | "manual-result"
+  | "not-final"
+  | "missing-final-score"
+  | "missing-knockout-detail";
 
 export interface ResultSyncSkippedMatch {
   matchId: string;
@@ -81,7 +85,7 @@ export async function syncFinishedResults(
       continue;
     }
 
-    const result = resultFromProviderMatch(localMatch.id, providerMatch, fetchedAt);
+    const result = resultFromProviderMatch(localMatch, providerMatch, fetchedAt);
 
     if (result.action === "skipped") {
       skippedDetails.push(result.detail);
@@ -155,12 +159,14 @@ function matchByFootballDataId(matches: WorldCupMatch[]): Map<string, WorldCupMa
 }
 
 function resultFromProviderMatch(
-  matchId: string,
+  localMatch: WorldCupMatch,
   providerMatch: FootballDataMatch,
   fetchedAt: string
 ):
   | { action: "stored"; result: StoredResult }
   | { action: "skipped"; detail: ResultSyncSkippedMatch } {
+  const matchId = localMatch.id;
+
   if (providerMatch.status !== "FINISHED") {
     return {
       action: "skipped",
@@ -172,6 +178,23 @@ function resultFromProviderMatch(
     return {
       action: "skipped",
       detail: { matchId, reason: "missing-final-score", providerStatus: providerMatch.status }
+    };
+  }
+
+  if (localMatch.phase !== "group") {
+    const knockoutResult = knockoutResultFromProviderMatch(localMatch, providerMatch, fetchedAt);
+
+    if (knockoutResult) {
+      return { action: "stored", result: knockoutResult };
+    }
+
+    return {
+      action: "skipped",
+      detail: {
+        matchId,
+        reason: "missing-knockout-detail",
+        providerStatus: providerMatch.status
+      }
     };
   }
 
@@ -187,6 +210,112 @@ function resultFromProviderMatch(
       fetchedAt
     }
   };
+}
+
+function knockoutResultFromProviderMatch(
+  localMatch: WorldCupMatch,
+  providerMatch: FootballDataMatch,
+  fetchedAt: string
+): StoredResult | undefined {
+  const fullTime = providerMatch.fullTime;
+
+  if (!fullTime || !providerMatch.decisionMethod) {
+    return undefined;
+  }
+
+  if (providerMatch.decisionMethod === "regular") {
+    const regularTime = providerMatch.regularTime ?? fullTime;
+    const winner = providerMatch.winner ?? winnerFromScore(regularTime);
+
+    if (!winner) {
+      return undefined;
+    }
+
+    return {
+      ...baseStoredResult(localMatch.id, fullTime, providerMatch, fetchedAt),
+      decisionMethod: "regular",
+      regularTimeHomeScore: regularTime.homeScore,
+      regularTimeAwayScore: regularTime.awayScore,
+      winner
+    };
+  }
+
+  if (providerMatch.decisionMethod === "extra_time") {
+    if (!providerMatch.regularTime || !providerMatch.extraTime) {
+      return undefined;
+    }
+
+    const winner = providerMatch.winner ?? winnerFromScore(providerMatch.extraTime);
+
+    if (!winner) {
+      return undefined;
+    }
+
+    return {
+      ...baseStoredResult(localMatch.id, fullTime, providerMatch, fetchedAt),
+      decisionMethod: "extra_time",
+      regularTimeHomeScore: providerMatch.regularTime.homeScore,
+      regularTimeAwayScore: providerMatch.regularTime.awayScore,
+      extraTimeHomeScore: providerMatch.extraTime.homeScore,
+      extraTimeAwayScore: providerMatch.extraTime.awayScore,
+      winner
+    };
+  }
+
+  if (
+    !providerMatch.regularTime ||
+    !providerMatch.extraTime ||
+    !providerMatch.penalties
+  ) {
+    return undefined;
+  }
+
+  const winner = providerMatch.winner ?? winnerFromScore(providerMatch.penalties);
+
+  if (!winner) {
+    return undefined;
+  }
+
+  return {
+    ...baseStoredResult(localMatch.id, fullTime, providerMatch, fetchedAt),
+    decisionMethod: "penalties",
+    regularTimeHomeScore: providerMatch.regularTime.homeScore,
+    regularTimeAwayScore: providerMatch.regularTime.awayScore,
+    extraTimeHomeScore: providerMatch.extraTime.homeScore,
+    extraTimeAwayScore: providerMatch.extraTime.awayScore,
+    penaltyHomeScore: providerMatch.penalties.homeScore,
+    penaltyAwayScore: providerMatch.penalties.awayScore,
+    winner
+  };
+}
+
+function baseStoredResult(
+  matchId: string,
+  fullTime: { homeScore: number; awayScore: number },
+  providerMatch: FootballDataMatch,
+  fetchedAt: string
+): StoredResult {
+  return {
+    matchId,
+    homeScore: fullTime.homeScore,
+    awayScore: fullTime.awayScore,
+    recordedAt: fetchedAt,
+    resultSource: "football-data",
+    externalMatchId: providerMatch.externalMatchId,
+    fetchedAt
+  };
+}
+
+function winnerFromScore(score: { homeScore: number; awayScore: number }): MatchWinner | undefined {
+  if (score.homeScore > score.awayScore) {
+    return "home";
+  }
+
+  if (score.awayScore > score.homeScore) {
+    return "away";
+  }
+
+  return undefined;
 }
 
 function scoringRun(

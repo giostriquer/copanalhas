@@ -31,8 +31,9 @@ const columns = {
   solo: margin + 820,
   exact: margin + 930,
   outcome: margin + 1065,
-  closest: margin + 1210,
-  matches: margin + 1330
+  closest: margin + 1180,
+  bonus: margin + 1280,
+  matches: margin + 1370
 };
 
 export function renderLeaderboardDashboardSvg(input: LeaderboardDashboardSvgInput): string {
@@ -49,7 +50,7 @@ export function renderLeaderboardDashboardSvg(input: LeaderboardDashboardSvgInpu
     text(LEADERBOARD_DASHBOARD_TITLE, margin + 68, 56, 38, brazilBlue, 900),
     text("Tabela geral", margin + 68, 88, 17, brazilBlue, 800),
     text(`Atualizado: ${input.generatedAtLabel}`, width - margin, 58, 15, brazilBlue, 800, "end"),
-    text("Solo 5 pts | Exato 3 pts | Resultado 2 pts | Perto 1 pt", width - margin, 88, 15, brazilBlue, 800, "end"),
+    text("Solo 5 pts | Exato 3 pts | Resultado 2 pts | Perto 1 pt | Método +2 pts", width - margin, 88, 15, brazilBlue, 800, "end"),
     `<rect x="${margin}" y="${tableTop - 44}" width="${tableWidth}" height="${height - tableTop - footerHeight + 70}" rx="8" fill="${brazilPanelBlue}" stroke="${panelStroke}"/>`,
     ...renderHeader(tableTop),
     ...renderRows(input.rows, displayNames, input.avatarDataUris ?? new Map(), tableTop + 56),
@@ -67,6 +68,7 @@ function renderHeader(y: number): string[] {
     text("Exato", columns.exact, y, 13, "#93c5fd", 900, "middle"),
     text("Resultado", columns.outcome, y, 13, "#93c5fd", 900, "middle"),
     text("Perto", columns.closest, y, 13, "#93c5fd", 900, "middle"),
+    text("Bonus", columns.bonus, y, 13, "#93c5fd", 900, "middle"),
     text("Jogos", columns.matches, y, 13, "#93c5fd", 900, "middle"),
     `<line x1="${margin + 22}" y1="${y + 18}" x2="${width - margin - 22}" y2="${y + 18}" stroke="#1d4ed8"/>`
   ];
@@ -102,6 +104,7 @@ function renderRows(
       text(String(row.exactCount), columns.exact, y, 17, "#dbeafe", 850, "middle"),
       text(String(row.outcomeCount), columns.outcome, y, 17, "#dbeafe", 850, "middle"),
       text(String(row.closestCount), columns.closest, y, 17, "#dbeafe", 850, "middle"),
+      text(String(row.decisionBonusCount), columns.bonus, y, 17, "#dbeafe", 850, "middle"),
       text(String(row.matchesScored), columns.matches, y, 17, "#dbeafe", 850, "middle")
     ];
   });

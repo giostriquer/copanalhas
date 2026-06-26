@@ -18,6 +18,7 @@ describe("formatLeaderboard", () => {
         "- Se ninguém acertar o placar exato, quem acertar o vencedor ou empate ganha 2 pts resultado.",
         "- O ponto de mais próximo só vale quando ninguém acerta o placar exato nem o vencedor/empate.",
         "- Nesse caso, ganha 1 pt quem tiver a menor soma de diferenças nos gols dos dois times; se empatar, desempata pelo total de gols mais próximo.",
+        "- Em mata-mata, acertar como a partida foi decidida vale 2 pts bônus.",
         "- Em empate na pontuação, desempata por solo, exatos, resultados, mais próximos e depois ID do jogador.",
         "",
         "Premiação",
@@ -35,8 +36,8 @@ describe("formatLeaderboard", () => {
     expect(
       formatLeaderboard(
         [
-          { userId: "u1", points: 9, soloCount: 1, exactCount: 1, outcomeCount: 0, closestCount: 1, matchesScored: 3 },
-          { userId: "u2", points: 2, soloCount: 0, exactCount: 0, outcomeCount: 1, closestCount: 0, matchesScored: 1 }
+          { userId: "u1", points: 11, soloCount: 1, exactCount: 1, outcomeCount: 0, closestCount: 1, decisionBonusCount: 1, matchesScored: 3 },
+          { userId: "u2", points: 2, soloCount: 0, exactCount: 0, outcomeCount: 1, closestCount: 0, decisionBonusCount: 0, matchesScored: 1 }
         ],
         new Map([
           ["u1", "Alice"],
@@ -46,8 +47,8 @@ describe("formatLeaderboard", () => {
     ).toBe(
       [
         "Ranking Copanalhas",
-        "1. Alice - 9 pts (1 solo, 1 exato, 0 resultados, 1 mais próximo, 3 partidas)",
-        "2. Bob - 2 pts (0 solos, 0 exatos, 1 resultado, 0 mais próximos, 1 partida)",
+        "1. Alice - 11 pts (1 solo, 1 exato, 0 resultados, 1 mais próximo, 1 bônus, 3 partidas)",
+        "2. Bob - 2 pts (0 solos, 0 exatos, 1 resultado, 0 mais próximos, 0 bônus, 1 partida)",
         "",
         "Como funciona",
         "- Envie seu palpite pelo botão do jogo do dia; você pode editar até 30 min antes da partida.",
@@ -56,6 +57,7 @@ describe("formatLeaderboard", () => {
         "- Se ninguém acertar o placar exato, quem acertar o vencedor ou empate ganha 2 pts resultado.",
         "- O ponto de mais próximo só vale quando ninguém acerta o placar exato nem o vencedor/empate.",
         "- Nesse caso, ganha 1 pt quem tiver a menor soma de diferenças nos gols dos dois times; se empatar, desempata pelo total de gols mais próximo.",
+        "- Em mata-mata, acertar como a partida foi decidida vale 2 pts bônus.",
         "- Em empate na pontuação, desempata por solo, exatos, resultados, mais próximos e depois ID do jogador.",
         "",
         "Premiação",
@@ -72,18 +74,18 @@ describe("formatLeaderboard", () => {
   test("uses shared ranks for tied scores", () => {
     expect(
       formatLeaderboard([
-        { userId: "u1", points: 5, soloCount: 1, exactCount: 0, outcomeCount: 0, closestCount: 0, matchesScored: 1 },
-        { userId: "u2", points: 2, soloCount: 0, exactCount: 0, outcomeCount: 1, closestCount: 0, matchesScored: 1 },
-        { userId: "u3", points: 2, soloCount: 0, exactCount: 0, outcomeCount: 1, closestCount: 0, matchesScored: 1 },
-        { userId: "u4", points: 1, soloCount: 0, exactCount: 0, outcomeCount: 0, closestCount: 1, matchesScored: 1 }
+        { userId: "u1", points: 5, soloCount: 1, exactCount: 0, outcomeCount: 0, closestCount: 0, decisionBonusCount: 0, matchesScored: 1 },
+        { userId: "u2", points: 2, soloCount: 0, exactCount: 0, outcomeCount: 1, closestCount: 0, decisionBonusCount: 0, matchesScored: 1 },
+        { userId: "u3", points: 2, soloCount: 0, exactCount: 0, outcomeCount: 1, closestCount: 0, decisionBonusCount: 1, matchesScored: 1 },
+        { userId: "u4", points: 1, soloCount: 0, exactCount: 0, outcomeCount: 0, closestCount: 1, decisionBonusCount: 0, matchesScored: 1 }
       ])
     ).toBe(
       [
         "Ranking Copanalhas",
-        "1. u1 - 5 pts (1 solo, 0 exatos, 0 resultados, 0 mais próximos, 1 partida)",
-        "2. u2 - 2 pts (0 solos, 0 exatos, 1 resultado, 0 mais próximos, 1 partida)",
-        "2. u3 - 2 pts (0 solos, 0 exatos, 1 resultado, 0 mais próximos, 1 partida)",
-        "4. u4 - 1 pt (0 solos, 0 exatos, 0 resultados, 1 mais próximo, 1 partida)",
+        "1. u1 - 5 pts (1 solo, 0 exatos, 0 resultados, 0 mais próximos, 0 bônus, 1 partida)",
+        "2. u2 - 2 pts (0 solos, 0 exatos, 1 resultado, 0 mais próximos, 0 bônus, 1 partida)",
+        "2. u3 - 2 pts (0 solos, 0 exatos, 1 resultado, 0 mais próximos, 1 bônus, 1 partida)",
+        "4. u4 - 1 pt (0 solos, 0 exatos, 0 resultados, 1 mais próximo, 0 bônus, 1 partida)",
         "",
         "Como funciona",
         "- Envie seu palpite pelo botão do jogo do dia; você pode editar até 30 min antes da partida.",
@@ -92,6 +94,7 @@ describe("formatLeaderboard", () => {
         "- Se ninguém acertar o placar exato, quem acertar o vencedor ou empate ganha 2 pts resultado.",
         "- O ponto de mais próximo só vale quando ninguém acerta o placar exato nem o vencedor/empate.",
         "- Nesse caso, ganha 1 pt quem tiver a menor soma de diferenças nos gols dos dois times; se empatar, desempata pelo total de gols mais próximo.",
+        "- Em mata-mata, acertar como a partida foi decidida vale 2 pts bônus.",
         "- Em empate na pontuação, desempata por solo, exatos, resultados, mais próximos e depois ID do jogador.",
         "",
         "Premiação",
@@ -107,7 +110,7 @@ describe("formatLeaderboard", () => {
 
   test("normalizes display names before rendering them", () => {
     const output = formatLeaderboard(
-      [{ userId: "u1", points: 0, soloCount: 0, exactCount: 0, outcomeCount: 0, closestCount: 0, matchesScored: 0 }],
+      [{ userId: "u1", points: 0, soloCount: 0, exactCount: 0, outcomeCount: 0, closestCount: 0, decisionBonusCount: 0, matchesScored: 0 }],
       new Map([["u1", "Ana\nMaria"]])
     );
 
@@ -182,6 +185,7 @@ describe("createLeaderboardDashboardMessage", () => {
               exactCount: 0,
               outcomeCount: 0,
               closestCount: 0,
+              decisionBonusCount: 1,
               matchesScored: 2
             },
             {
@@ -191,6 +195,7 @@ describe("createLeaderboardDashboardMessage", () => {
               exactCount: 0,
               outcomeCount: 1,
               closestCount: 0,
+              decisionBonusCount: 0,
               matchesScored: 2
             }
           ],
@@ -209,9 +214,9 @@ describe("createLeaderboardDashboardMessage", () => {
         "Atualizado: 2026-06-11 23:30 UTC",
         "Imagem indisponivel no momento; usando fallback de texto.",
         "```text",
-        "#  Pts Solo Exato Resul Perto Jogos  Jogador",
-        "1   10    2     0     0     0     2  Giova",
-        "2    2    0     0     1     0     2  Ana",
+        "#  Pts Solo Exato Resul Perto Bonus Jogos  Jogador",
+        "1   10    2     0     0     0     1     2  Giova",
+        "2    2    0     0     1     0     0     2  Ana",
         "```",
         "",
         "Como funciona",
@@ -221,6 +226,7 @@ describe("createLeaderboardDashboardMessage", () => {
         "- Se ninguém acertar o placar exato, quem acertar o vencedor ou empate ganha 2 pts resultado.",
         "- O ponto de mais próximo só vale quando ninguém acerta o placar exato nem o vencedor/empate.",
         "- Nesse caso, ganha 1 pt quem tiver a menor soma de diferenças nos gols dos dois times; se empatar, desempata pelo total de gols mais próximo.",
+        "- Em mata-mata, acertar como a partida foi decidida vale 2 pts bônus.",
         "- Em empate na pontuação, desempata por solo, exatos, resultados, mais próximos e depois ID do jogador.",
         "",
         "Premiação",
@@ -237,7 +243,7 @@ describe("createLeaderboardDashboardMessage", () => {
   test("normalizes dashboard display names before placing them in the table", () => {
     const content = createLeaderboardDashboardMessage(
       {
-        rows: [{ userId: "user-1", points: 0, soloCount: 0, exactCount: 0, outcomeCount: 0, closestCount: 0, matchesScored: 0 }],
+        rows: [{ userId: "user-1", points: 0, soloCount: 0, exactCount: 0, outcomeCount: 0, closestCount: 0, decisionBonusCount: 0, matchesScored: 0 }],
         displayNames: new Map([["user-1", "Ana\nMaria"]]),
         updatedAt: new Date("2026-06-11T23:30:00.000Z"),
         timeZone: "UTC"
@@ -245,7 +251,7 @@ describe("createLeaderboardDashboardMessage", () => {
       null
     ).content;
 
-    expect(content).toContain("1    0    0     0     0     0     0  Ana Maria");
+    expect(content).toContain("1    0    0     0     0     0     0     0  Ana Maria");
     expect(content).not.toContain("Ana\nMaria");
   });
 
@@ -253,8 +259,8 @@ describe("createLeaderboardDashboardMessage", () => {
     const content = createLeaderboardDashboardMessage(
       {
         rows: [
-          { userId: "user-1", points: 0, soloCount: 0, exactCount: 0, outcomeCount: 0, closestCount: 0, matchesScored: 0 },
-          { userId: "user-2", points: 0, soloCount: 0, exactCount: 0, outcomeCount: 0, closestCount: 0, matchesScored: 0 }
+          { userId: "user-1", points: 0, soloCount: 0, exactCount: 0, outcomeCount: 0, closestCount: 0, decisionBonusCount: 0, matchesScored: 0 },
+          { userId: "user-2", points: 0, soloCount: 0, exactCount: 0, outcomeCount: 0, closestCount: 0, decisionBonusCount: 0, matchesScored: 0 }
         ],
         displayNames: new Map([
           ["user-1", "Anguishx"],
@@ -267,8 +273,8 @@ describe("createLeaderboardDashboardMessage", () => {
     ).content;
 
     expect(content).toContain(
-      ["#  Pts Solo Exato Resul Perto Jogos  Jogador", "1    0    0     0     0     0     0  Anguishx"].join("\n")
+      ["#  Pts Solo Exato Resul Perto Bonus Jogos  Jogador", "1    0    0     0     0     0     0     0  Anguishx"].join("\n")
     );
-    expect(content).toContain("1    0    0     0     0     0     0  QUINZE DIASFIPS");
+    expect(content).toContain("1    0    0     0     0     0     0     0  QUINZE DIASFIPS");
   });
 });

@@ -2,12 +2,15 @@ import {
   ActionRowBuilder,
   ButtonBuilder,
   ButtonStyle,
+  type APILabelComponent,
+  ComponentType,
   EmbedBuilder,
   ModalBuilder,
   TextInputBuilder,
   TextInputStyle
 } from "discord.js";
 
+import type { DecisionMethod } from "../scoring/scoring.js";
 import type { StoredPrediction } from "../storage/database.js";
 import type { WorldCupMatch } from "../worldcup/types.js";
 import { formatDiscordTimestamp, formatPredictionWindow, getPredictionWindow } from "../worldcup/cutoff.js";
@@ -15,6 +18,17 @@ import { formatTeamName } from "../worldcup/team-display.js";
 
 export const homeScoreInputCustomId = "homeScore";
 export const awayScoreInputCustomId = "awayScore";
+export const decisionMethodSelectCustomId = "decisionMethod";
+
+export const decisionMethodOptions: readonly {
+  value: DecisionMethod;
+  label: string;
+  shortLabel: string;
+}[] = [
+  { value: "regular", label: "Tempo regulamentar", shortLabel: "Tempo regulamentar" },
+  { value: "extra_time", label: "Prorrogação", shortLabel: "Prorrogação" },
+  { value: "penalties", label: "Cobrança de pênaltis", shortLabel: "Pênaltis" }
+];
 
 const customIdPrefix = "copanalhas";
 const predictAction = "predict";
@@ -128,7 +142,7 @@ export function createPredictionModalWithInitialScores(
   match: WorldCupMatch,
   existingPrediction?: StoredPrediction
 ): ModalBuilder {
-  return new ModalBuilder()
+  const modal = new ModalBuilder()
     .setCustomId(buildScoreModalCustomId(match.id))
     .setTitle(`${formatTeamName(match.homeTeam)} x ${formatTeamName(match.awayTeam)}`)
     .addComponents(
@@ -147,6 +161,20 @@ export function createPredictionModalWithInitialScores(
         })
       )
     );
+
+  if (match.phase !== "group") {
+    modal.addComponents(createDecisionMethodLabel(existingPrediction?.decisionMethod ?? null));
+  }
+
+  return modal;
+}
+
+export function parseDecisionMethod(value: string): DecisionMethod | undefined {
+  return decisionMethodOptions.find((option) => option.value === value)?.value;
+}
+
+export function formatDecisionMethodLabel(value: DecisionMethod): string {
+  return decisionMethodOptions.find((option) => option.value === value)?.shortLabel ?? value;
 }
 
 function parseCustomId(customId: string, expectedAction: string): ParsedComponentCustomId | undefined {
@@ -247,6 +275,26 @@ function createScoreTextInput(options: {
   }
 
   return input;
+}
+
+function createDecisionMethodLabel(selectedValue: DecisionMethod | null): APILabelComponent {
+  return {
+    type: ComponentType.Label,
+    label: "Como a partida será decidida?",
+    component: {
+      type: ComponentType.StringSelect,
+      custom_id: decisionMethodSelectCustomId,
+      placeholder: "Escolha uma opção",
+      required: true,
+      min_values: 1,
+      max_values: 1,
+      options: decisionMethodOptions.map((option) => ({
+        label: option.label,
+        value: option.value,
+        default: selectedValue === option.value
+      }))
+    }
+  };
 }
 
 function createPredictButton(match: WorldCupMatch, label: string): ButtonBuilder {

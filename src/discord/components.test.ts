@@ -165,6 +165,23 @@ describe("match cards", () => {
     });
   });
 
+  test("keeps group-stage score modals free of knockout decision options", () => {
+    const modal = createPredictionModal(firstSeedMatch()).toJSON();
+
+    expect(JSON.stringify(modal)).not.toContain("Tempo regulamentar");
+    expect(JSON.stringify(modal)).not.toContain("Prorrogação");
+    expect(JSON.stringify(modal)).not.toContain("Cobrança de pênaltis");
+  });
+
+  test("adds decision method options to knockout score modals", () => {
+    const modal = createPredictionModal(seedMatchByNumber(73)).toJSON();
+    const serialized = JSON.stringify(modal);
+
+    expect(serialized).toContain("Tempo regulamentar");
+    expect(serialized).toContain("Prorrogação");
+    expect(serialized).toContain("Cobrança de pênaltis");
+  });
+
   test("pre-fills the score modal with an existing prediction", () => {
     const modal = createPredictionModal(firstSeedMatch(), {
       userId: "user-1",
@@ -181,6 +198,23 @@ describe("match cards", () => {
 
     expect(firstRow?.components[0]?.value).toBe("2");
     expect(secondRow?.components[0]?.value).toBe("1");
+  });
+
+  test("pre-fills the knockout decision method", () => {
+    const modal = createPredictionModal(seedMatchByNumber(73), {
+      userId: "user-1",
+      matchId: "wc2026-073",
+      messageId: "interaction-1",
+      homeScore: 1,
+      awayScore: 1,
+      decisionMethod: "penalties",
+      submittedAt: "2026-06-29T12:00:00.000Z",
+      updatedAt: null,
+      parserVersion: "prediction-modal-v2"
+    }).toJSON();
+
+    expect(JSON.stringify(modal)).toContain("\"default\":true");
+    expect(JSON.stringify(modal)).toContain("\"value\":\"penalties\"");
   });
 });
 

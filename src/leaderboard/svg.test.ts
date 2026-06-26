@@ -13,6 +13,7 @@ describe("renderLeaderboardDashboardSvg", () => {
           exactCount: 4,
           outcomeCount: 3,
           closestCount: 0,
+          decisionBonusCount: 1,
           matchesScored: 8
         },
         {
@@ -22,6 +23,7 @@ describe("renderLeaderboardDashboardSvg", () => {
           exactCount: 3,
           outcomeCount: 0,
           closestCount: 0,
+          decisionBonusCount: 0,
           matchesScored: 3
         }
       ],
@@ -43,12 +45,14 @@ describe("renderLeaderboardDashboardSvg", () => {
     expect(svg).toContain("Exato");
     expect(svg).toContain("Resultado");
     expect(svg).toContain("Perto");
+    expect(svg).toContain("Bonus");
     expect(svg).toContain("Jogos");
+    expect(svg).toContain("Método +2 pts");
     expect(svg).toContain('aria-label="Bandeira do Brasil"');
     expect(svg).toContain('id="leaderboard-avatar-user-1"');
     expect(svg).toContain('href="data:image/png;base64,avatar-one"');
-    expect(svg).toContain('x="1374"');
-    expect(svg).not.toContain('x="1424"');
+    expect(svg).toContain('x="1414"');
+    expect(svg).not.toContain('x="1464"');
     expect(svg).toContain("Premiação: 1k");
     expect(svg).toContain("PS: Se o anguish ganhar eu darei unblock nele como premiação no lugar dos 60%.");
     expect(svg).toContain("#FFDF00");
@@ -66,6 +70,7 @@ describe("renderLeaderboardDashboardSvg", () => {
           exactCount: 0,
           outcomeCount: 0,
           closestCount: 1,
+          decisionBonusCount: 0,
           matchesScored: 1
         }
       ],

@@ -11,6 +11,7 @@ import {
   awayScoreInputCustomId,
   buildPredictButtonCustomId,
   buildScoreModalCustomId,
+  decisionMethodSelectCustomId,
   homeScoreInputCustomId
 } from "./components.js";
 import type { StoredPrediction } from "../storage/database.js";
@@ -102,6 +103,74 @@ describe("handlePredictionInteraction", () => {
         "Meus palpites - 2026-06-11",
         "#1 México x África do Sul: 2x1"
       ].join("\n"),
+      ephemeral: true
+    });
+  });
+
+  test("stores a knockout modal score prediction with its decision method", async () => {
+    const storedPredictions: StoredPrediction[] = [];
+    const interaction = modalInteraction({
+      customId: buildScoreModalCustomId("wc2026-073"),
+      homeScoreText: "1",
+      awayScoreText: "1",
+      decisionMethodValues: ["penalties"],
+      createdAt: new Date("2026-06-27T12:00:00.000Z")
+    });
+
+    const result = await handlePredictionInteraction(
+      interaction,
+      options({
+        matches: [knockoutMatchWithKickoff()],
+        upsertPrediction: (prediction) => {
+          storedPredictions.push(prediction);
+        }
+      })
+    );
+
+    expect(result).toEqual({
+      action: "accepted",
+      prediction: {
+        userId: "user-1",
+        matchId: "wc2026-073",
+        messageId: "interaction-1",
+        homeScore: 1,
+        awayScore: 1,
+        decisionMethod: "penalties",
+        submittedAt: "2026-06-27T12:00:00.000Z",
+        updatedAt: null,
+        parserVersion: modalPredictionParserVersion
+      }
+    });
+    expect(storedPredictions).toEqual(result.action === "accepted" ? [result.prediction] : []);
+  });
+
+  test("rejects knockout modal predictions without a decision method", async () => {
+    const upsertPrediction = vi.fn();
+    const interaction = modalInteraction({
+      customId: buildScoreModalCustomId("wc2026-073"),
+      homeScoreText: "1",
+      awayScoreText: "1",
+      decisionMethodValues: [],
+      createdAt: new Date("2026-06-27T12:00:00.000Z")
+    });
+
+    const result = await handlePredictionInteraction(
+      interaction,
+      options({
+        matches: [knockoutMatchWithKickoff()],
+        upsertPrediction
+      })
+    );
+
+    expect(result).toEqual({
+      action: "rejected",
+      reason: "invalid-decision-method",
+      matchId: "wc2026-073",
+      userId: "user-1"
+    });
+    expect(upsertPrediction).not.toHaveBeenCalled();
+    expect(interaction.reply).toHaveBeenCalledWith({
+      content: "Selecione como a partida será decidida.",
       ephemeral: true
     });
   });
@@ -358,11 +427,20 @@ function modalInteraction(
   overrides: Partial<Extract<PredictionInteraction, { kind: "modal-submit" }>> & {
     homeScoreText?: string;
     awayScoreText?: string;
+    decisionMethodValues?: string[];
   } = {}
-): Extract<PredictionInteraction, { kind: "modal-submit" }> {
+): Extract<PredictionInteraction, { kind: "modal-submit" }> & {
+  getStringSelectValues(customId: string): readonly string[];
+} {
   const homeScoreText = overrides.homeScoreText ?? "2";
   const awayScoreText = overrides.awayScoreText ?? "1";
-  const { homeScoreText: _homeScoreText, awayScoreText: _awayScoreText, ...rest } = overrides;
+  const decisionMethodValues = overrides.decisionMethodValues ?? [];
+  const {
+    homeScoreText: _homeScoreText,
+    awayScoreText: _awayScoreText,
+    decisionMethodValues: _decisionMethodValues,
+    ...rest
+  } = overrides;
 
   return {
     kind: "modal-submit",
@@ -382,6 +460,13 @@ function modalInteraction(
       }
 
       return "";
+    }),
+    getStringSelectValues: vi.fn((customId: string) => {
+      if (customId === decisionMethodSelectCustomId) {
+        return decisionMethodValues;
+      }
+
+      return [];
     }),
     reply: vi.fn(async () => undefined),
     ...rest
@@ -446,4 +531,17 @@ function firstSeedMatch(): WorldCupMatch {
   }
 
   return match;
+}
+
+function knockoutMatchWithKickoff(): WorldCupMatch {
+  const match = WORLD_CUP_2026_SEED.matches.find((candidate) => candidate.matchNumber === 73);
+
+  if (!match) {
+    throw new Error("World Cup seed needs knockout match #73");
+  }
+
+  return {
+    ...match,
+    kickoffAtUtc: "2026-06-28T19:00:00.000Z"
+  };
 }

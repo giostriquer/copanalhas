@@ -3,6 +3,7 @@ import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 
 import type { ChaosWeeklySnapshotRow } from "../chaos-dashboard/types.js";
+import type { DecisionMethod, MatchWinner } from "../scoring/scoring.js";
 import type { StandingsPostKey } from "../standings/format.js";
 import type { WorldCupMatch, WorldCupPhase } from "../worldcup/types.js";
 
@@ -12,6 +13,7 @@ export interface StoredPrediction {
   messageId: string;
   homeScore: number;
   awayScore: number;
+  decisionMethod?: DecisionMethod | null;
   submittedAt: string;
   updatedAt: string | null;
   parserVersion: string;
@@ -21,6 +23,14 @@ export interface StoredResult {
   matchId: string;
   homeScore: number;
   awayScore: number;
+  decisionMethod?: DecisionMethod | null;
+  regularTimeHomeScore?: number | null;
+  regularTimeAwayScore?: number | null;
+  extraTimeHomeScore?: number | null;
+  extraTimeAwayScore?: number | null;
+  penaltyHomeScore?: number | null;
+  penaltyAwayScore?: number | null;
+  winner?: MatchWinner | null;
   recordedAt: string;
   resultSource: "manual" | "football-data";
   externalMatchId: string | null;
@@ -144,6 +154,7 @@ export class CopanalhasDatabase {
         message_id TEXT NOT NULL,
         home_score INTEGER NOT NULL,
         away_score INTEGER NOT NULL,
+        decision_method TEXT,
         submitted_at TEXT NOT NULL,
         updated_at TEXT,
         parser_version TEXT NOT NULL,
@@ -154,6 +165,14 @@ export class CopanalhasDatabase {
         match_id TEXT PRIMARY KEY,
         home_score INTEGER NOT NULL,
         away_score INTEGER NOT NULL,
+        decision_method TEXT,
+        regular_time_home_score INTEGER,
+        regular_time_away_score INTEGER,
+        extra_time_home_score INTEGER,
+        extra_time_away_score INTEGER,
+        penalty_home_score INTEGER,
+        penalty_away_score INTEGER,
+        winner TEXT,
         recorded_at TEXT NOT NULL,
         result_source TEXT NOT NULL,
         external_match_id TEXT,
@@ -263,7 +282,16 @@ export class CopanalhasDatabase {
 
     this.ensureColumn("matches", "kickoff_at_utc", "TEXT");
     this.ensureColumn("matches", "football_data_match_id", "INTEGER");
+    this.ensureColumn("predictions", "decision_method", "TEXT");
     this.ensureColumn("results", "result_source", "TEXT NOT NULL DEFAULT 'manual'");
+    this.ensureColumn("results", "decision_method", "TEXT");
+    this.ensureColumn("results", "regular_time_home_score", "INTEGER");
+    this.ensureColumn("results", "regular_time_away_score", "INTEGER");
+    this.ensureColumn("results", "extra_time_home_score", "INTEGER");
+    this.ensureColumn("results", "extra_time_away_score", "INTEGER");
+    this.ensureColumn("results", "penalty_home_score", "INTEGER");
+    this.ensureColumn("results", "penalty_away_score", "INTEGER");
+    this.ensureColumn("results", "winner", "TEXT");
     this.ensureColumn("results", "external_match_id", "TEXT");
     this.ensureColumn("results", "fetched_at", "TEXT");
     this.ensureColumn("prediction_reveal_posts", "result_revealed_at", "TEXT");
@@ -385,15 +413,17 @@ export class CopanalhasDatabase {
           message_id,
           home_score,
           away_score,
+          decision_method,
           submitted_at,
           updated_at,
           parser_version
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(user_id, match_id) DO UPDATE SET
           message_id = excluded.message_id,
           home_score = excluded.home_score,
           away_score = excluded.away_score,
+          decision_method = excluded.decision_method,
           submitted_at = excluded.submitted_at,
           updated_at = excluded.updated_at,
           parser_version = excluded.parser_version
@@ -404,6 +434,7 @@ export class CopanalhasDatabase {
         prediction.messageId,
         prediction.homeScore,
         prediction.awayScore,
+        prediction.decisionMethod ?? null,
         prediction.submittedAt,
         prediction.updatedAt,
         prediction.parserVersion
@@ -421,6 +452,7 @@ export class CopanalhasDatabase {
       messageId: row.message_id,
       homeScore: row.home_score,
       awayScore: row.away_score,
+      ...optionalDecisionMethod(row.decision_method),
       submittedAt: row.submitted_at,
       updatedAt: row.updated_at,
       parserVersion: row.parser_version
@@ -434,15 +466,31 @@ export class CopanalhasDatabase {
           match_id,
           home_score,
           away_score,
+          decision_method,
+          regular_time_home_score,
+          regular_time_away_score,
+          extra_time_home_score,
+          extra_time_away_score,
+          penalty_home_score,
+          penalty_away_score,
+          winner,
           recorded_at,
           result_source,
           external_match_id,
           fetched_at
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(match_id) DO UPDATE SET
           home_score = excluded.home_score,
           away_score = excluded.away_score,
+          decision_method = excluded.decision_method,
+          regular_time_home_score = excluded.regular_time_home_score,
+          regular_time_away_score = excluded.regular_time_away_score,
+          extra_time_home_score = excluded.extra_time_home_score,
+          extra_time_away_score = excluded.extra_time_away_score,
+          penalty_home_score = excluded.penalty_home_score,
+          penalty_away_score = excluded.penalty_away_score,
+          winner = excluded.winner,
           recorded_at = excluded.recorded_at,
           result_source = excluded.result_source,
           external_match_id = excluded.external_match_id,
@@ -452,6 +500,14 @@ export class CopanalhasDatabase {
         result.matchId,
         result.homeScore,
         result.awayScore,
+        result.decisionMethod ?? null,
+        result.regularTimeHomeScore ?? null,
+        result.regularTimeAwayScore ?? null,
+        result.extraTimeHomeScore ?? null,
+        result.extraTimeAwayScore ?? null,
+        result.penaltyHomeScore ?? null,
+        result.penaltyAwayScore ?? null,
+        result.winner ?? null,
         result.recordedAt,
         result.resultSource,
         result.externalMatchId,
@@ -468,6 +524,14 @@ export class CopanalhasDatabase {
       matchId: row.match_id,
       homeScore: row.home_score,
       awayScore: row.away_score,
+      ...optionalDecisionMethod(row.decision_method),
+      ...optionalNumber("regularTimeHomeScore", row.regular_time_home_score),
+      ...optionalNumber("regularTimeAwayScore", row.regular_time_away_score),
+      ...optionalNumber("extraTimeHomeScore", row.extra_time_home_score),
+      ...optionalNumber("extraTimeAwayScore", row.extra_time_away_score),
+      ...optionalNumber("penaltyHomeScore", row.penalty_home_score),
+      ...optionalNumber("penaltyAwayScore", row.penalty_away_score),
+      ...optionalWinner(row.winner),
       recordedAt: row.recorded_at,
       resultSource: row.result_source,
       externalMatchId: row.external_match_id,
@@ -1052,12 +1116,42 @@ function rowToWorldCupMatch(row: MatchRow): WorldCupMatch {
   };
 }
 
+function optionalDecisionMethod(
+  value: string | null
+): { decisionMethod: DecisionMethod } | Record<string, never> {
+  if (value === "regular" || value === "extra_time" || value === "penalties") {
+    return { decisionMethod: value };
+  }
+
+  return {};
+}
+
+function optionalWinner(value: string | null): { winner: MatchWinner } | Record<string, never> {
+  if (value === "home" || value === "away") {
+    return { winner: value };
+  }
+
+  return {};
+}
+
+function optionalNumber<K extends string>(
+  key: K,
+  value: number | null
+): { [P in K]: number } | Record<string, never> {
+  if (typeof value === "number") {
+    return { [key]: value } as { [P in K]: number };
+  }
+
+  return {};
+}
+
 interface PredictionRow {
   user_id: string;
   match_id: string;
   message_id: string;
   home_score: number;
   away_score: number;
+  decision_method: string | null;
   submitted_at: string;
   updated_at: string | null;
   parser_version: string;
@@ -1067,6 +1161,14 @@ interface ResultRow {
   match_id: string;
   home_score: number;
   away_score: number;
+  decision_method: string | null;
+  regular_time_home_score: number | null;
+  regular_time_away_score: number | null;
+  extra_time_home_score: number | null;
+  extra_time_away_score: number | null;
+  penalty_home_score: number | null;
+  penalty_away_score: number | null;
+  winner: string | null;
   recorded_at: string;
   result_source: "manual" | "football-data";
   external_match_id: string | null;

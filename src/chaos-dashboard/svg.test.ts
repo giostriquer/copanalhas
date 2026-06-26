@@ -141,6 +141,7 @@ describe("chaos dashboard SVG renderer", () => {
       exactCount: 0,
       outcomeCount: 0,
       closestCount: 0,
+      decisionBonusCount: 0,
       matchesScored: 1
     };
     const model = sampleChaosDashboardModel({
@@ -184,6 +185,7 @@ function leaderboardRow(rank: number, displayName: string, points: number): Chao
     exactCount: rank,
     outcomeCount: 7 - rank,
     closestCount: rank % 3,
+    decisionBonusCount: 0,
     matchesScored: 12
   };
 }

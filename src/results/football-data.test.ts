@@ -65,6 +65,100 @@ describe("parseFootballDataMatch", () => {
       }).fullTime
     ).toBeNull();
   });
+
+  test("parses extra-time score layers as final score after extra time", () => {
+    expect(
+      parseFootballDataMatch({
+        id: 12345,
+        utcDate: "2026-07-05T21:00:00Z",
+        status: "FINISHED",
+        score: {
+          winner: "HOME_TEAM",
+          duration: "EXTRA_TIME",
+          fullTime: {
+            home: 2,
+            away: 1
+          },
+          regularTime: {
+            home: 1,
+            away: 1
+          },
+          extraTime: {
+            home: 1,
+            away: 0
+          }
+        }
+      })
+    ).toMatchObject({
+      externalMatchId: "12345",
+      status: "FINISHED",
+      fullTime: {
+        homeScore: 2,
+        awayScore: 1
+      },
+      decisionMethod: "extra_time",
+      regularTime: {
+        homeScore: 1,
+        awayScore: 1
+      },
+      extraTime: {
+        homeScore: 2,
+        awayScore: 1
+      },
+      winner: "home"
+    });
+  });
+
+  test("parses penalty shootout score layers", () => {
+    expect(
+      parseFootballDataMatch({
+        id: 12345,
+        utcDate: "2026-07-05T21:00:00Z",
+        status: "FINISHED",
+        score: {
+          winner: "HOME_TEAM",
+          duration: "PENALTY_SHOOTOUT",
+          fullTime: {
+            home: 6,
+            away: 5
+          },
+          regularTime: {
+            home: 1,
+            away: 1
+          },
+          extraTime: {
+            home: 0,
+            away: 0
+          },
+          penalties: {
+            home: 5,
+            away: 4
+          }
+        }
+      })
+    ).toMatchObject({
+      externalMatchId: "12345",
+      status: "FINISHED",
+      fullTime: {
+        homeScore: 6,
+        awayScore: 5
+      },
+      decisionMethod: "penalties",
+      regularTime: {
+        homeScore: 1,
+        awayScore: 1
+      },
+      extraTime: {
+        homeScore: 1,
+        awayScore: 1
+      },
+      penalties: {
+        homeScore: 5,
+        awayScore: 4
+      },
+      winner: "home"
+    });
+  });
 });
 
 describe("fetchFootballDataMatches", () => {

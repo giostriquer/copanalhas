@@ -259,10 +259,10 @@ describe("handleOperatorCommand", () => {
     expect(resolveUserDisplayNames).toHaveBeenCalledOnce();
     expect(result.content).toContain("Ranking Copanalhas");
     expect(result.content).toContain(
-      "1. Alice - 5 pts (1 solo, 0 exatos, 0 resultados, 0 mais próximos, 1 partida)"
+      "1. Alice - 5 pts (1 solo, 0 exatos, 0 resultados, 0 mais próximos, 0 bônus, 1 partida)"
     );
     expect(result.content).toContain(
-      "2. Bob - 0 pts (0 solos, 0 exatos, 0 resultados, 0 mais próximos, 1 partida)"
+      "2. Bob - 0 pts (0 solos, 0 exatos, 0 resultados, 0 mais próximos, 0 bônus, 1 partida)"
     );
     expect(result.content).toContain("Como funciona");
   });
@@ -616,6 +616,46 @@ describe("handleOperatorCommand", () => {
       matchId: "wc2026-001",
       homeScore: 2,
       awayScore: 1,
+      recordedAt: "2026-06-11T23:00:00.000Z",
+      resultSource: "manual",
+      externalMatchId: null,
+      fetchedAt: null
+    });
+  });
+
+  test("result records detailed knockout manual result fields", async () => {
+    const upsertResult = vi.fn();
+
+    const result = await handleOperatorCommand(
+      command("result", {
+        match: "wc2026-073",
+        score: "5-4",
+        decision: "penalties",
+        "regular-score": "1-1",
+        "extra-score": "1-1",
+        "penalties-score": "4-3",
+        winner: "home"
+      }),
+      options({ upsertResult })
+    );
+
+    expect(result).toEqual({
+      action: "replied",
+      content: "Recorded result wc2026-073 5-4.",
+      ephemeral: true
+    });
+    expect(upsertResult).toHaveBeenCalledWith({
+      matchId: "wc2026-073",
+      homeScore: 5,
+      awayScore: 4,
+      decisionMethod: "penalties",
+      regularTimeHomeScore: 1,
+      regularTimeAwayScore: 1,
+      extraTimeHomeScore: 1,
+      extraTimeAwayScore: 1,
+      penaltyHomeScore: 4,
+      penaltyAwayScore: 3,
+      winner: "home",
       recordedAt: "2026-06-11T23:00:00.000Z",
       resultSource: "manual",
       externalMatchId: null,

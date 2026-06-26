@@ -112,6 +112,24 @@ describe("formatLockedPredictionRevealBatch", () => {
       ].join("\n")
     );
   });
+
+  test("shows knockout decision methods in locked predictions", () => {
+    expect(
+      formatLockedPredictionRevealBatch({
+        matches: [knockoutMatch("wc2026-073", 73, "KOR", "Korea Republic", "SUI", "Switzerland")],
+        predictions: [
+          prediction(
+            "user-1",
+            "wc2026-073",
+            1,
+            1,
+            "2026-06-28T10:00:00.000Z",
+            "penalties"
+          )
+        ]
+      })
+    ).toContain("<@user-1>  1x1 (Pênaltis)");
+  });
 });
 
 describe("formatPredictionResultRevealBatch", () => {
@@ -211,6 +229,60 @@ describe("formatPredictionResultRevealBatch", () => {
       ].join("\n")
     );
   });
+
+  test("shows knockout decision methods and stacked bonus points in result reveals", () => {
+    expect(
+      formatPredictionResultRevealBatch({
+        matches: [knockoutMatch("wc2026-073", 73, "KOR", "Korea Republic", "SUI", "Switzerland")],
+        predictions: [
+          prediction(
+            "user-1",
+            "wc2026-073",
+            1,
+            1,
+            "2026-06-28T10:00:00.000Z",
+            "penalties"
+          ),
+          prediction(
+            "user-2",
+            "wc2026-073",
+            2,
+            1,
+            "2026-06-28T10:01:00.000Z",
+            "regular"
+          )
+        ],
+        results: [
+          {
+            matchId: "wc2026-073",
+            homeScore: 5,
+            awayScore: 4,
+            decisionMethod: "penalties",
+            regularTimeHomeScore: 0,
+            regularTimeAwayScore: 0,
+            extraTimeHomeScore: 1,
+            extraTimeAwayScore: 1,
+            penaltyHomeScore: 4,
+            penaltyAwayScore: 3,
+            winner: "home"
+          }
+        ]
+      })
+    ).toBe(
+      [
+        "Resultado",
+        "",
+        "#73 Coreia do Sul (5) x (4) Suíça",
+        "2 palpites",
+        "",
+        "==== Coreia do Sul ====",
+        "<@user-2>  2x1 (Tempo regulamentar) - 0 pts",
+        "",
+        "==== Empate ====",
+        "<@user-1>  1x1 (Pênaltis) - 5 pts"
+      ].join("\n")
+    );
+  });
 });
 
 function prediction(
@@ -218,7 +290,8 @@ function prediction(
   matchId: string,
   homeScore: number,
   awayScore: number,
-  submittedAt: string
+  submittedAt: string,
+  decisionMethod?: "regular" | "extra_time" | "penalties"
 ): StoredPrediction {
   return {
     userId,
@@ -226,10 +299,26 @@ function prediction(
     messageId: `message-${userId}-${matchId}`,
     homeScore,
     awayScore,
+    ...(decisionMethod ? { decisionMethod } : {}),
     submittedAt,
     updatedAt: null,
     parserVersion: "prediction-modal-v1"
   };
+}
+
+function knockoutMatch(
+  id: string,
+  matchNumber: number,
+  homeCode: string,
+  homeName: string,
+  awayCode: string,
+  awayName: string
+): WorldCupMatch {
+  return {
+    ...match(id, matchNumber, homeCode, homeName, awayCode, awayName),
+    phase: "round_of_32",
+    group: null
+  } as WorldCupMatch;
 }
 
 function match(

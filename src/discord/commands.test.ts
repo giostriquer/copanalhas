@@ -73,6 +73,38 @@ describe("Copanalhas slash command definition", () => {
     );
   });
 
+  test("defines optional detailed knockout result fields", () => {
+    const command = createCopanalhasCommand().toJSON();
+    const resultSubcommand = command.options?.find((option) => option.name === "result") as
+      | { options?: Array<{ name: string; required?: boolean; choices?: unknown[] }> }
+      | undefined;
+
+    expect(resultSubcommand?.options).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          name: "decision",
+          required: false,
+          choices: [
+            { name: "Tempo regulamentar", value: "regular" },
+            { name: "Prorrogação", value: "extra_time" },
+            { name: "Cobrança de pênaltis", value: "penalties" }
+          ]
+        }),
+        expect.objectContaining({ name: "regular-score", required: false }),
+        expect.objectContaining({ name: "extra-score", required: false }),
+        expect.objectContaining({ name: "penalties-score", required: false }),
+        expect.objectContaining({
+          name: "winner",
+          required: false,
+          choices: [
+            { name: "Mandante", value: "home" },
+            { name: "Visitante", value: "away" }
+          ]
+        })
+      ])
+    );
+  });
+
   test("registers commands on the configured guild", async () => {
     const set = vi.fn(async () => undefined);
 

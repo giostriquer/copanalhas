@@ -1,11 +1,20 @@
+import type { DecisionMethod, MatchWinner } from "../scoring/scoring.js";
+
+interface FootballDataScoreLayer {
+  homeScore: number;
+  awayScore: number;
+}
+
 export interface FootballDataMatch {
   externalMatchId: string;
   kickoffAtUtc: string;
   status: string;
-  fullTime: {
-    homeScore: number;
-    awayScore: number;
-  } | null;
+  fullTime: FootballDataScoreLayer | null;
+  decisionMethod?: DecisionMethod;
+  regularTime?: FootballDataScoreLayer | null;
+  extraTime?: FootballDataScoreLayer | null;
+  penalties?: FootballDataScoreLayer | null;
+  winner?: MatchWinner;
 }
 
 export interface FetchFootballDataMatchesOptions {
@@ -38,13 +47,24 @@ export interface FootballDataResponse {
 
 export function parseFootballDataMatch(input: unknown): FootballDataMatch {
   const match = input as FootballDataRawMatch;
-  const fullTime = readFullTimeScore(match.score?.fullTime);
+  const fullTime = readScore(match.score?.fullTime);
+  const regularTime = readScore(match.score?.regularTime);
+  const extraTimeGoals = readScore(match.score?.extraTime);
+  const extraTime = regularTime && extraTimeGoals ? addScores(regularTime, extraTimeGoals) : extraTimeGoals;
+  const penalties = readScore(match.score?.penalties);
+  const decisionMethod = decisionMethodFromDuration(match.score?.duration);
+  const winner = winnerFromProvider(match.score?.winner);
 
   return {
     externalMatchId: String(match.id),
     kickoffAtUtc: new Date(assertString(match.utcDate, "utcDate")).toISOString(),
     status: assertString(match.status, "status"),
-    fullTime
+    fullTime,
+    ...(decisionMethod ? { decisionMethod } : {}),
+    ...(regularTime ? { regularTime } : {}),
+    ...(extraTime ? { extraTime } : {}),
+    ...(penalties ? { penalties } : {}),
+    ...(winner ? { winner } : {})
   };
 }
 
@@ -92,11 +112,16 @@ interface FootballDataRawMatch {
   utcDate: unknown;
   status: unknown;
   score?: {
-    fullTime?: FootballDataRawFullTimeScore;
+    winner?: unknown;
+    duration?: unknown;
+    fullTime?: FootballDataRawScore;
+    regularTime?: FootballDataRawScore;
+    extraTime?: FootballDataRawScore;
+    penalties?: FootballDataRawScore;
   };
 }
 
-interface FootballDataRawFullTimeScore {
+interface FootballDataRawScore {
   home?: number | null;
   away?: number | null;
   homeTeam?: number | null;
@@ -107,17 +132,53 @@ function scoreValue(value: unknown): number | undefined {
   return typeof value === "number" ? value : undefined;
 }
 
-function readFullTimeScore(
-  fullTime: FootballDataRawFullTimeScore | undefined
-): { homeScore: number; awayScore: number } | null {
-  const homeScore = scoreValue(fullTime?.home) ?? scoreValue(fullTime?.homeTeam);
-  const awayScore = scoreValue(fullTime?.away) ?? scoreValue(fullTime?.awayTeam);
+function readScore(score: FootballDataRawScore | undefined | null): FootballDataScoreLayer | null {
+  const homeScore = scoreValue(score?.home) ?? scoreValue(score?.homeTeam);
+  const awayScore = scoreValue(score?.away) ?? scoreValue(score?.awayTeam);
 
   if (homeScore === undefined || awayScore === undefined) {
     return null;
   }
 
   return { homeScore, awayScore };
+}
+
+function addScores(
+  first: FootballDataScoreLayer,
+  second: FootballDataScoreLayer
+): FootballDataScoreLayer {
+  return {
+    homeScore: first.homeScore + second.homeScore,
+    awayScore: first.awayScore + second.awayScore
+  };
+}
+
+function decisionMethodFromDuration(duration: unknown): DecisionMethod | undefined {
+  if (duration === "REGULAR" || duration === "REGULAR_TIME") {
+    return "regular";
+  }
+
+  if (duration === "EXTRA_TIME") {
+    return "extra_time";
+  }
+
+  if (duration === "PENALTY_SHOOTOUT" || duration === "PENALTIES") {
+    return "penalties";
+  }
+
+  return undefined;
+}
+
+function winnerFromProvider(winner: unknown): MatchWinner | undefined {
+  if (winner === "HOME_TEAM") {
+    return "home";
+  }
+
+  if (winner === "AWAY_TEAM") {
+    return "away";
+  }
+
+  return undefined;
 }
 
 function assertString(value: unknown, fieldName: string): string {

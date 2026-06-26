@@ -28,6 +28,7 @@ const rulesLines = [
   "- Se ninguém acertar o placar exato, quem acertar o vencedor ou empate ganha 2 pts resultado.",
   "- O ponto de mais próximo só vale quando ninguém acerta o placar exato nem o vencedor/empate.",
   "- Nesse caso, ganha 1 pt quem tiver a menor soma de diferenças nos gols dos dois times; se empatar, desempata pelo total de gols mais próximo.",
+  "- Em mata-mata, acertar como a partida foi decidida vale 2 pts bônus.",
   "- Em empate na pontuação, desempata por solo, exatos, resultados, mais próximos e depois ID do jogador.",
   "",
   "Premiação",
@@ -70,7 +71,11 @@ export function formatLeaderboard(
         row.closestCount,
         "mais próximo",
         "mais próximos"
-      )}, ${count(row.matchesScored, "partida", "partidas")})`
+      )}, ${count(row.decisionBonusCount, "bônus", "bônus")}, ${count(
+        row.matchesScored,
+        "partida",
+        "partidas"
+      )})`
     );
   });
 
@@ -123,7 +128,7 @@ function formatDashboardRows(
   }
 
   return [
-    "#  Pts Solo Exato Resul Perto Jogos  Jogador",
+    "#  Pts Solo Exato Resul Perto Bonus Jogos  Jogador",
     ...rows.map((row, index) =>
       [
         String(rankForRow(rows, index)).padEnd(2),
@@ -132,6 +137,7 @@ function formatDashboardRows(
         row.exactCount.toString().padStart(5),
         row.outcomeCount.toString().padStart(5),
         row.closestCount.toString().padStart(5),
+        row.decisionBonusCount.toString().padStart(5),
         row.matchesScored.toString().padStart(5)
       ].join(" ") + `  ${playerName(row, displayNames)}`
     )

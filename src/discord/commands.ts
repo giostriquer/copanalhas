@@ -156,6 +156,42 @@ export function createCopanalhasCommand() {
         .addStringOption((option) =>
           option.setName("score").setDescription("Final score, like 2-1").setRequired(true)
         )
+        .addStringOption((option) =>
+          option
+            .setName("decision")
+            .setDescription("How a knockout match was decided")
+            .setRequired(false)
+            .addChoices(
+              { name: "Tempo regulamentar", value: "regular" },
+              { name: "Prorrogação", value: "extra_time" },
+              { name: "Cobrança de pênaltis", value: "penalties" }
+            )
+        )
+        .addStringOption((option) =>
+          option
+            .setName("regular-score")
+            .setDescription("Regular-time score, like 1-1")
+            .setRequired(false)
+        )
+        .addStringOption((option) =>
+          option
+            .setName("extra-score")
+            .setDescription("Score after extra time, like 2-1")
+            .setRequired(false)
+        )
+        .addStringOption((option) =>
+          option
+            .setName("penalties-score")
+            .setDescription("Penalty shootout score, like 4-3")
+            .setRequired(false)
+        )
+        .addStringOption((option) =>
+          option
+            .setName("winner")
+            .setDescription("Side that advanced")
+            .setRequired(false)
+            .addChoices({ name: "Mandante", value: "home" }, { name: "Visitante", value: "away" })
+        )
     );
 }
 

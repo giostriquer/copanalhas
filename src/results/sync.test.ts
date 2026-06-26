@@ -236,6 +236,114 @@ describe("syncFinishedResults", () => {
     expect(insertScoringRun).not.toHaveBeenCalled();
   });
 
+  test("stores complete knockout detail from finished provider scores", async () => {
+    const upsertResult = vi.fn();
+    const insertScoringRun = vi.fn();
+
+    const result = await syncFinishedResults({
+      enabled: true,
+      token: "football-data-token",
+      matches: [{ ...knockoutMatch("wc2026-073"), externalIds: { footballData: 77773 } }],
+      dateFrom: "2026-06-28",
+      dateTo: "2026-06-28",
+      now: () => new Date("2026-06-28T23:01:00.000Z"),
+      fetchMatches: async () => ({
+        ok: true,
+        matches: [
+          {
+            externalMatchId: "77773",
+            kickoffAtUtc: "2026-06-28T19:00:00.000Z",
+            status: "FINISHED",
+            fullTime: { homeScore: 6, awayScore: 5 },
+            decisionMethod: "penalties",
+            regularTime: { homeScore: 1, awayScore: 1 },
+            extraTime: { homeScore: 1, awayScore: 1 },
+            penalties: { homeScore: 5, awayScore: 4 },
+            winner: "home"
+          }
+        ]
+      }),
+      listResults: () => [],
+      listPredictions: () => [],
+      upsertResult,
+      insertScoringRun
+    });
+
+    expect(result).toEqual({
+      action: "synced",
+      storedResults: ["wc2026-073"],
+      skipped: [],
+      skippedDetails: []
+    });
+    expect(upsertResult).toHaveBeenCalledWith({
+      matchId: "wc2026-073",
+      homeScore: 6,
+      awayScore: 5,
+      decisionMethod: "penalties",
+      regularTimeHomeScore: 1,
+      regularTimeAwayScore: 1,
+      extraTimeHomeScore: 1,
+      extraTimeAwayScore: 1,
+      penaltyHomeScore: 5,
+      penaltyAwayScore: 4,
+      winner: "home",
+      recordedAt: "2026-06-28T23:01:00.000Z",
+      resultSource: "football-data",
+      externalMatchId: "77773",
+      fetchedAt: "2026-06-28T23:01:00.000Z"
+    });
+    expect(insertScoringRun).toHaveBeenCalledOnce();
+  });
+
+  test("skips knockout provider scores with incomplete score-layer detail", async () => {
+    const upsertResult = vi.fn();
+    const insertScoringRun = vi.fn();
+
+    await expect(
+      syncFinishedResults({
+        enabled: true,
+        token: "football-data-token",
+        matches: [{ ...knockoutMatch("wc2026-073"), externalIds: { footballData: 77773 } }],
+        dateFrom: "2026-06-28",
+        dateTo: "2026-06-28",
+        now: () => new Date("2026-06-28T23:01:00.000Z"),
+        fetchMatches: async () => ({
+          ok: true,
+          matches: [
+            {
+              externalMatchId: "77773",
+              kickoffAtUtc: "2026-06-28T19:00:00.000Z",
+              status: "FINISHED",
+              fullTime: { homeScore: 6, awayScore: 5 },
+              decisionMethod: "penalties",
+              regularTime: null,
+              extraTime: { homeScore: 1, awayScore: 1 },
+              penalties: { homeScore: 5, awayScore: 4 },
+              winner: "home"
+            }
+          ]
+        }),
+        listResults: () => [],
+        listPredictions: () => [],
+        upsertResult,
+        insertScoringRun
+      })
+    ).resolves.toEqual({
+      action: "synced",
+      storedResults: [],
+      skipped: ["wc2026-073"],
+      skippedDetails: [
+        {
+          matchId: "wc2026-073",
+          reason: "missing-knockout-detail",
+          providerStatus: "FINISHED"
+        }
+      ]
+    });
+    expect(upsertResult).not.toHaveBeenCalled();
+    expect(insertScoringRun).not.toHaveBeenCalled();
+  });
+
   test("returns provider failures without storing results", async () => {
     const upsertResult = vi.fn();
 
@@ -285,4 +393,13 @@ function manualResult(matchId: string): StoredResult {
     externalMatchId: null,
     fetchedAt: null
   };
+}
+
+function knockoutMatch(id: string): WorldCupMatch {
+  return {
+    ...match(id),
+    matchNumber: 73,
+    phase: "round_of_32",
+    group: null
+  } as WorldCupMatch;
 }

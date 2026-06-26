@@ -55,10 +55,10 @@ describe("runCli", () => {
     expect(lines).toHaveLength(1);
     expect(lines[0]).toContain("Ranking Copanalhas");
     expect(lines[0]).toContain(
-      "1. u1 - 5 pts (1 solo, 0 exatos, 0 resultados, 0 mais próximos, 1 partida)"
+      "1. u1 - 5 pts (1 solo, 0 exatos, 0 resultados, 0 mais próximos, 0 bônus, 1 partida)"
     );
     expect(lines[0]).toContain(
-      "2. u2 - 0 pts (0 solos, 0 exatos, 0 resultados, 0 mais próximos, 1 partida)"
+      "2. u2 - 0 pts (0 solos, 0 exatos, 0 resultados, 0 mais próximos, 0 bônus, 1 partida)"
     );
     expect(lines[0]).toContain("Como funciona");
     expect(lines[0]).toContain("Se só uma pessoa acertar o placar exato, ela ganha 5 pts solo.");

@@ -259,7 +259,7 @@ describe("updateLeaderboardDashboard", () => {
     expect(result.renderError).toBe("sharp failed");
     expect(postedMessages[0]?.files).toEqual([]);
     expect(postedMessages[0]?.content).toContain("Dashboard image render failed: sharp failed");
-    expect(postedMessages[0]?.content).toContain("1    5    1     0     0     0     1  user-1");
+    expect(postedMessages[0]?.content).toContain("1    5    1     0     0     0     0     1  user-1");
   });
 });
 
