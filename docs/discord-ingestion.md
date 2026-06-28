@@ -158,9 +158,14 @@ configured channel:
 The standings, leaderboard, and bracket messages are edited in place. Copanalhas
 Recap posts are different: each completed recap period gets its own durable
 message so members can compare week and phase artifacts side by side.
-Startup posts or repairs missing dashboard messages. Automatic result sync,
-manual result entry, forced result sync, and `reset-test-date` refresh the
-affected dashboards so the channel does not fill with new scoreboard messages.
+Startup posts or repairs missing dashboard messages while their tournament phase
+is still active. Automatic result sync, manual result entry, forced result sync,
+and `reset-test-date` refresh the affected dashboards so the channel does not
+fill with new scoreboard messages. Once every group-stage match has a stored
+final result, the group standings and best-third-place dashboards stop
+auto-refreshing; they remain operator-refreshable through their commands, but
+knockout result updates focus on the leaderboard, bracket, reveal messages,
+match-start alerts, and any due recap artifacts.
 The standings dashboard is a deterministic PNG generated from local fixtures and
 stored final results, split across Groups A-F and Groups G-L. It uses Portuguese
 team display names, local SVG flag assets from `flag-icons`, full group-table
@@ -171,10 +176,10 @@ and stored final results, with visible Football-Data attribution when API-backed
 sync may be used. The image renders the knockout path from the Round of 32 edges
 through Oitavas, Quartas, Semifinal, Final, and the third-place decision in the
 center. The Round of 32 teams are split by the reviewed FIFA winner path so each
-outside half converges toward its semifinal, while later rounds use explicit
-winner/loser placeholders until knockout teams and results are reviewed. Team
-names are rendered with Portuguese display names and local SVG flag assets from
-the installed `flag-icons` package, so the runtime renderer does not fetch media
+outside half converges toward its semifinal, and stored knockout results advance
+winners or losers into the next path slots as those results land. Team names are
+rendered with Portuguese display names and local SVG flag assets from the
+installed `flag-icons` package, so the runtime renderer does not fetch media
 from the network. During the group stage, Round of 32 entrants are shown as
 provisional `as it stands` slots; each team row uses a conservative security
 border: green for an exact slot that is already locked, yellow for a team that

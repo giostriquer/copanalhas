@@ -242,22 +242,28 @@ export async function handleOperatorCommand(
       return reply("Use a date like 2026-06-11.");
     }
 
-    const matchIds = options.matches
+    const selectedMatches = options.matches
       .filter((match) =>
         isMatchOnMatchday(match, date, options.timeZone, options.matchdayRolloverTime)
       )
-      .toSorted((left, right) => left.matchNumber - right.matchNumber)
-      .map((match) => match.id);
+      .toSorted((left, right) => left.matchNumber - right.matchNumber);
+    const matchIds = selectedMatches.map((match) => match.id);
+    const refreshGroupDashboards = selectedMatches.some((match) => match.phase === "group");
 
     const postedCards = options.clearPostedMatchCards(date);
     const predictions = options.clearPredictionsForMatches(matchIds);
     const results = options.clearResultsForMatches(matchIds);
     const predictionReveals = options.clearPredictionRevealPostsForMatches(matchIds);
     const matchStartAlerts = options.clearMatchStartAlertsForMatches(matchIds);
-    await options.updateStandingsDashboard();
+
+    if (refreshGroupDashboards) {
+      await options.updateStandingsDashboard();
+    }
     await options.updateLeaderboardDashboard();
     await options.updateBracketDashboard();
-    await options.updateThirdPlaceDashboard();
+    if (refreshGroupDashboards) {
+      await options.updateThirdPlaceDashboard();
+    }
     await options.updateChaosDashboard(false);
 
     return reply(
@@ -268,10 +274,10 @@ export async function handleOperatorCommand(
         `Results: ${results}`,
         `Prediction reveals: ${predictionReveals}`,
         `Match start alerts: ${matchStartAlerts}`,
-        "Standings refreshed.",
+        ...(refreshGroupDashboards ? ["Standings refreshed."] : []),
         "Leaderboard refreshed.",
         "Bracket refreshed.",
-        "Third-place dashboard refreshed.",
+        ...(refreshGroupDashboards ? ["Third-place dashboard refreshed."] : []),
         "Copanalhas Recap refreshed."
       ].join("\n")
     );
@@ -473,10 +479,16 @@ export async function handleOperatorCommand(
     }
 
     await options.upsertResult(manualResult.result);
-    await options.updateStandingsDashboard();
+    const refreshGroupDashboards = match.phase === "group";
+
+    if (refreshGroupDashboards) {
+      await options.updateStandingsDashboard();
+    }
     await options.updateLeaderboardDashboard();
     await options.updateBracketDashboard();
-    await options.updateThirdPlaceDashboard();
+    if (refreshGroupDashboards) {
+      await options.updateThirdPlaceDashboard();
+    }
     await options.updateChaosDashboard(false);
     await options.updatePredictionResultReveals?.();
 

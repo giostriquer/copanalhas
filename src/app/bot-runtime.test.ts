@@ -165,6 +165,40 @@ describe("startCopanalhasBotRuntime", () => {
     });
   });
 
+  test("skips group-stage dashboards during startup after every group result is stored", async () => {
+    const store = {
+      ...createStore(),
+      listResults: vi.fn(() => currentSeedProofStoredResults())
+    };
+    const upsertStandingsMessage = vi.fn(async (message) => `standings-${message.key}`);
+    const upsertThirdPlaceMessage = vi.fn(async () => "third-place-message-1");
+
+    await startCopanalhasBotRuntime({
+      config: config(),
+      store,
+      matches: WORLD_CUP_2026_SEED.matches,
+      startDiscord: vi.fn(async () => ({ destroy: vi.fn(async () => undefined) })),
+      startInterval: vi.fn(() => ({ stop: vi.fn() })),
+      sendMatchCard: vi.fn(async () => "discord-message-1"),
+      sendPredictionReveal: vi.fn(async () => ({
+        threadId: "thread-1",
+        messageId: "reveal-message-1"
+      })),
+      upsertStandingsMessage,
+      upsertLeaderboardMessage: vi.fn(async () => "leaderboard-message-1"),
+      renderLeaderboardPng: vi.fn(async () => Buffer.from("png")),
+      upsertBracketMessage: vi.fn(async () => "bracket-message-1"),
+      renderBracketPng: vi.fn(async () => Buffer.from("png")),
+      upsertThirdPlaceMessage,
+      renderThirdPlacePng: vi.fn(async () => Buffer.from("png")),
+      now: () => new Date("2026-06-28T15:00:00.000Z"),
+      writeLine: vi.fn()
+    });
+
+    expect(upsertStandingsMessage).not.toHaveBeenCalled();
+    expect(upsertThirdPlaceMessage).not.toHaveBeenCalled();
+  });
+
   test("reverts runtime knockout participants when stored results are cleared", async () => {
     let results = currentSeedProofStoredResults();
     const store = {
@@ -678,6 +712,91 @@ describe("startCopanalhasBotRuntime", () => {
     expect(upsertBracketMessage).toHaveBeenCalledOnce();
     expect(upsertThirdPlaceMessage).toHaveBeenCalledOnce();
     expect(upsertChaosDashboardMessage).not.toHaveBeenCalled();
+  });
+
+  test("skips group-stage dashboards after result sync stores a knockout result", async () => {
+    const results: StoredResult[] = currentSeedProofStoredResults();
+    const store = {
+      ...createStore(),
+      listResults: vi.fn(() => results),
+      upsertResult: vi.fn((result: StoredResult) => {
+        const index = results.findIndex((stored) => stored.matchId === result.matchId);
+
+        if (index === -1) {
+          results.push(result);
+        } else {
+          results.splice(index, 1, result);
+        }
+      })
+    };
+    let operatorOptions: OperatorCommandOptions | undefined;
+    let now = new Date("2026-06-28T18:00:00.000Z");
+    const startDiscord = vi.fn(async (_config, _onMessage, _predictionOptions, readyOptions) => {
+      operatorOptions = readyOptions.operatorCommandOptions;
+      return { destroy: vi.fn(async () => undefined) };
+    });
+    const upsertStandingsMessage = vi.fn(async (message) => `standings-${message.key}`);
+    const upsertLeaderboardMessage = vi.fn(async () => "leaderboard-message-1");
+    const upsertBracketMessage = vi.fn(async () => "bracket-message-1");
+    const upsertThirdPlaceMessage = vi.fn(async () => "third-place-message-1");
+    const syncFinishedResults = vi.fn(async (syncOptions) => {
+      await syncOptions.upsertResult({
+        matchId: "wc2026-073",
+        homeScore: 1,
+        awayScore: 3,
+        decisionMethod: "regular",
+        regularTimeHomeScore: 1,
+        regularTimeAwayScore: 3,
+        winner: "away",
+        recordedAt: "2026-06-28T21:15:00.000Z",
+        resultSource: "football-data",
+        externalMatchId: "537417",
+        fetchedAt: "2026-06-28T21:15:00.000Z"
+      });
+
+      return {
+        action: "synced" as const,
+        storedResults: ["wc2026-073"],
+        skipped: []
+      };
+    });
+
+    await startCopanalhasBotRuntime({
+      config: { ...config(), footballDataToken: "token-value", resultSyncEnabled: true },
+      store,
+      matches: WORLD_CUP_2026_SEED.matches,
+      startDiscord,
+      startInterval: vi.fn(() => ({ stop: vi.fn() })),
+      sendMatchCard: vi.fn(async () => "discord-message-1"),
+      sendPredictionReveal: vi.fn(async () => ({
+        threadId: "thread-1",
+        messageId: "reveal-message-1"
+      })),
+      upsertStandingsMessage,
+      upsertLeaderboardMessage,
+      renderLeaderboardPng: vi.fn(async () => Buffer.from("png")),
+      upsertBracketMessage,
+      renderBracketPng: vi.fn(async () => Buffer.from("png")),
+      upsertThirdPlaceMessage,
+      renderThirdPlacePng: vi.fn(async () => Buffer.from("png")),
+      syncFinishedResults,
+      now: () => now,
+      writeLine: vi.fn()
+    });
+    upsertStandingsMessage.mockClear();
+    upsertLeaderboardMessage.mockClear();
+    upsertBracketMessage.mockClear();
+    upsertThirdPlaceMessage.mockClear();
+    syncFinishedResults.mockClear();
+
+    now = new Date("2026-06-28T21:15:00.000Z");
+    await operatorOptions?.syncResultsNow?.();
+
+    expect(syncFinishedResults).toHaveBeenCalledOnce();
+    expect(upsertStandingsMessage).not.toHaveBeenCalled();
+    expect(upsertThirdPlaceMessage).not.toHaveBeenCalled();
+    expect(upsertLeaderboardMessage).toHaveBeenCalledOnce();
+    expect(upsertBracketMessage).toHaveBeenCalledOnce();
   });
 
   test("keeps cached leaderboard display names when a later refresh falls back to ids", async () => {

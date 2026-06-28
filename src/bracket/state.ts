@@ -14,6 +14,7 @@ import {
   type WorldCupMatch,
   type WorldCupTeam
 } from "../worldcup/types.js";
+import { resolveKnockoutMatchParticipants } from "../worldcup/knockout-resolution.js";
 import { computeQualificationSecurityByTeamCode } from "./qualification-security.js";
 import {
   ROUND_OF_32_TEMPLATES,
@@ -30,6 +31,7 @@ export interface CreateBracketStateOptions {
 
 export function createBracketState(options: CreateBracketStateOptions): BracketState {
   const groupMatches = options.matches.filter(isGroupStageMatch);
+  const resolvedMatches = resolveKnockoutMatchParticipants(options.matches, options.results);
   const knockoutScheduleByNumber = knockoutScheduleByNumberForMatches(
     options.matches,
     options.timeZone ?? "America/Sao_Paulo"
@@ -39,7 +41,9 @@ export function createBracketState(options: CreateBracketStateOptions): BracketS
     try {
       return createFinalBracketState(
         resolveWorldCup2026RoundOf32(groupMatches, options.results),
-        knockoutScheduleByNumber
+        knockoutScheduleByNumber,
+        resolvedMatches,
+        options.results
       );
     } catch (error) {
       if (!isManualTiebreakerError(error)) {
@@ -134,28 +138,43 @@ function createProvisionalBracketState(
 
 function createFinalBracketState(
   fixtures: readonly ResolvedRoundOf32Fixture[],
-  knockoutScheduleByNumber: ReadonlyMap<number, string>
+  knockoutScheduleByNumber: ReadonlyMap<number, string>,
+  resolvedMatches: readonly WorldCupMatch[],
+  results: readonly StandingsResult[]
 ): BracketState {
+  const knockoutMatchesByNumber = new Map(
+    resolvedMatches
+      .filter((match) => match.phase !== "group")
+      .map((match) => [match.matchNumber, match] as const)
+  );
+  const resultsByMatchId = new Map(results.map((result) => [result.matchId, result]));
+
   return {
     phase: "final",
     notes: [
       "Round of 32 entrants are resolved from complete group-stage results.",
-      "Later rounds are visual placeholders until reviewed knockout topology is available."
+      "Later rounds update from stored knockout results as matches finish."
     ],
     rounds: [
       round(
         "round_of_32",
         "Round of 32",
-        fixtures.map((fixture) => ({
-          id: `r32-${fixture.matchNumber}`,
-          label: `#${fixture.matchNumber}`,
-          state: "final",
-          ...kickoffLabelForMatchNumber(fixture.matchNumber, knockoutScheduleByNumber),
-          home: resolvedEntrant(fixture.homeSlot, fixture.homeTeam),
-          away: resolvedEntrant(fixture.awaySlot, fixture.awayTeam)
-        }))
+        fixtures.map((fixture) => {
+          const match = knockoutMatchesByNumber.get(fixture.matchNumber);
+          const result = match ? resultsByMatchId.get(match.id) : undefined;
+
+          return {
+            id: `r32-${fixture.matchNumber}`,
+            label: `#${fixture.matchNumber}`,
+            state: "final",
+            ...kickoffLabelForMatchNumber(fixture.matchNumber, knockoutScheduleByNumber),
+            ...scoreLabelForResult(result),
+            home: resolvedEntrant(fixture.homeSlot, fixture.homeTeam),
+            away: resolvedEntrant(fixture.awaySlot, fixture.awayTeam)
+          };
+        })
       ),
-      ...visualSkeletonRounds(knockoutScheduleByNumber)
+      ...resolvedSkeletonRounds(knockoutMatchesByNumber, resultsByMatchId, knockoutScheduleByNumber)
     ]
   };
 }
@@ -249,6 +268,31 @@ function resolvedEntrant(slot: string, team: WorldCupTeam): BracketEntrant {
   };
 }
 
+function entrantForKnockoutTeam(team: WorldCupTeam): BracketEntrant {
+  if (isPlaceholderTeamCode(team.code)) {
+    return { label: team.name, sourceSlot: team.code };
+  }
+
+  return {
+    label: team.code,
+    teamCode: team.code,
+    teamName: team.name,
+    sourceSlot: team.code
+  };
+}
+
+function isPlaceholderTeamCode(code: string): boolean {
+  return /^[123][A-L]$/u.test(code) || /^3[A-L]+$/u.test(code) || /^[WL]\d+$/u.test(code);
+}
+
+function scoreLabelForResult(result: StandingsResult | undefined): Pick<BracketMatch, "scoreLabel"> {
+  if (!result) {
+    return {};
+  }
+
+  return { scoreLabel: `${result.homeScore}-${result.awayScore}` };
+}
+
 function visualSkeletonRounds(knockoutScheduleByNumber: ReadonlyMap<number, string>): BracketRound[] {
   return VISUAL_SKELETON_ROUNDS.map((template) =>
     winnerRound(
@@ -257,6 +301,43 @@ function visualSkeletonRounds(knockoutScheduleByNumber: ReadonlyMap<number, stri
       template.matchNumbers,
       template.sourcePrefix,
       knockoutScheduleByNumber
+    )
+  );
+}
+
+function resolvedSkeletonRounds(
+  knockoutMatchesByNumber: ReadonlyMap<number, WorldCupMatch>,
+  resultsByMatchId: ReadonlyMap<string, StandingsResult>,
+  knockoutScheduleByNumber: ReadonlyMap<number, string>
+): BracketRound[] {
+  return VISUAL_SKELETON_ROUNDS.map((template) =>
+    round(
+      template.key,
+      template.label,
+      template.matchNumbers.map((matchNumber, index) => {
+        const match = knockoutMatchesByNumber.get(matchNumber);
+
+        if (!match) {
+          return {
+            id: `${template.key}-${index + 1}`,
+            label: `#${matchNumber}`,
+            state: "scheduled",
+            ...kickoffLabelForMatchNumber(matchNumber, knockoutScheduleByNumber),
+            home: placeholder(`${template.sourcePrefix}-${index * 2 + 1}`),
+            away: placeholder(`${template.sourcePrefix}-${index * 2 + 2}`)
+          };
+        }
+
+        return {
+          id: `${template.key}-${index + 1}`,
+          label: `#${matchNumber}`,
+          state: resultsByMatchId.has(match.id) ? "final" : "scheduled",
+          ...kickoffLabelForMatchNumber(matchNumber, knockoutScheduleByNumber),
+          ...scoreLabelForResult(resultsByMatchId.get(match.id)),
+          home: entrantForKnockoutTeam(match.homeTeam),
+          away: entrantForKnockoutTeam(match.awayTeam)
+        };
+      })
     )
   );
 }

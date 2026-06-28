@@ -56,6 +56,10 @@ function localizedNote(note: string): string {
     return "As rodadas seguintes são marcadores visuais até a estrutura revisada do mata-mata estar disponível.";
   }
 
+  if (note === "Later rounds update from stored knockout results as matches finish.") {
+    return "As rodadas seguintes são atualizadas com os resultados armazenados do mata-mata.";
+  }
+
   if (note === "Round of 32 entrants are resolved from complete group-stage results.") {
     return "Entradas da Rodada de 32 definidas pelos resultados completos da fase de grupos.";
   }

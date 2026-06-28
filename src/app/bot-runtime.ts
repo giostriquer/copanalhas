@@ -81,7 +81,7 @@ import type {
   StoredStandingsPost,
   StoredThirdPlacePost
 } from "../storage/database.js";
-import type { WorldCupMatch } from "../worldcup/types.js";
+import { isGroupStageMatch, type WorldCupMatch } from "../worldcup/types.js";
 import { canSubmitPredictionAt } from "../worldcup/cutoff.js";
 import { resolveKnockoutMatchParticipants } from "../worldcup/knockout-resolution.js";
 import {
@@ -268,12 +268,19 @@ export async function startCopanalhasBotRuntime(
         writeRuntimeLine(options, formatDiscordAsyncErrorLog({ handler, error }))
     }
   );
-  await operatorCommandOptions.updateStandingsDashboard();
+  const shouldRefreshGroupDashboards = shouldRefreshGroupStageDashboardsOnStartup(
+    options.matches,
+    options.store.listResults()
+  );
+
+  if (shouldRefreshGroupDashboards) {
+    await operatorCommandOptions.updateStandingsDashboard();
+  }
   await operatorCommandOptions.updateLeaderboardDashboard();
   if (hasBracketDashboardDependencies(options)) {
     await runBracketDashboardRefresh(options, operatorCommandOptions.updateBracketDashboard);
   }
-  if (hasThirdPlaceDashboardDependencies(options)) {
+  if (shouldRefreshGroupDashboards && hasThirdPlaceDashboardDependencies(options)) {
     await runThirdPlaceDashboardRefresh(options, operatorCommandOptions.updateThirdPlaceDashboard);
   }
   if (hasChaosDashboardDependencies(options)) {
@@ -984,12 +991,19 @@ async function runResultSync(
 
   if (syncResult.action === "synced" && syncResult.storedResults.length > 0) {
     refreshRuntimeMatches(options, seedMatches);
-    await operatorCommandOptions.updateStandingsDashboard();
+    const shouldRefreshGroupDashboards = storedResultsIncludeGroupMatch(
+      options.matches,
+      syncResult.storedResults
+    );
+
+    if (shouldRefreshGroupDashboards) {
+      await operatorCommandOptions.updateStandingsDashboard();
+    }
     await operatorCommandOptions.updateLeaderboardDashboard();
     if (hasBracketDashboardDependencies(options)) {
       await runBracketDashboardRefresh(options, operatorCommandOptions.updateBracketDashboard);
     }
-    if (hasThirdPlaceDashboardDependencies(options)) {
+    if (shouldRefreshGroupDashboards && hasThirdPlaceDashboardDependencies(options)) {
       await runThirdPlaceDashboardRefresh(options, operatorCommandOptions.updateThirdPlaceDashboard);
     }
     if (hasChaosDashboardDependencies(options)) {
@@ -1290,6 +1304,25 @@ function refreshRuntimeMatches(
 
   options.matches.splice(0, options.matches.length, ...resolvedMatches);
   options.store.upsertMatches(options.matches);
+}
+
+function shouldRefreshGroupStageDashboardsOnStartup(
+  matches: readonly WorldCupMatch[],
+  results: readonly Pick<StoredResult, "matchId">[]
+): boolean {
+  const groupMatches = matches.filter(isGroupStageMatch);
+  const resultMatchIds = new Set(results.map((result) => result.matchId));
+
+  return groupMatches.length > 0 && groupMatches.some((match) => !resultMatchIds.has(match.id));
+}
+
+function storedResultsIncludeGroupMatch(
+  matches: readonly WorldCupMatch[],
+  storedResultMatchIds: readonly string[]
+): boolean {
+  const storedResultMatchIdSet = new Set(storedResultMatchIds);
+
+  return matches.some((match) => isGroupStageMatch(match) && storedResultMatchIdSet.has(match.id));
 }
 
 function cloneRuntimeMatch(match: WorldCupMatch): WorldCupMatch {

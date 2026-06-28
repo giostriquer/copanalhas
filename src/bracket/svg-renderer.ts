@@ -231,11 +231,13 @@ function layoutSide(
     }
 
     const centerY = (centerYForBox(firstSourceBox) + centerYForBox(lastSourceBox)) / 2;
+    const metadata = pathBoxMetadataFor(pair.nextMatchNumber, pathMatchesByNumber);
+
     roundOf16Boxes.push({
       kind: "round-of-16",
       matchNumber: pair.nextMatchNumber,
-      ...pathBoxMetadataFor(pair.nextMatchNumber, pathMatchesByNumber),
-      sourceLabels: sourceBoxes.map((box) => `Vencedor #${box.matchNumber}`),
+      ...metadata,
+      sourceLabels: metadata.sourceLabels ?? sourceBoxes.map((box) => `Vencedor #${box.matchNumber}`),
       sourceBoxes,
       x: side.columns.r16X,
       y: centerY - pathHeight / 2,
@@ -263,11 +265,13 @@ function layoutSide(
     }
 
     const centerY = (centerYForBox(firstSourceBox) + centerYForBox(lastSourceBox)) / 2;
+    const metadata = pathBoxMetadataFor(quarterFinal.nextMatchNumber, pathMatchesByNumber);
+
     quarterFinalBoxes.push({
       kind: "quarter-finals",
       matchNumber: quarterFinal.nextMatchNumber,
-      ...pathBoxMetadataFor(quarterFinal.nextMatchNumber, pathMatchesByNumber),
-      sourceLabels: sourceBoxes.map((box) => `Vencedor #${box.matchNumber}`),
+      ...metadata,
+      sourceLabels: metadata.sourceLabels ?? sourceBoxes.map((box) => `Vencedor #${box.matchNumber}`),
       sourceBoxes,
       x: side.columns.qfX,
       y: centerY - pathHeight / 2,
@@ -288,11 +292,13 @@ function layoutSide(
 
     if (firstSourceBox && lastSourceBox) {
       const centerY = (centerYForBox(firstSourceBox) + centerYForBox(lastSourceBox)) / 2;
+      const metadata = pathBoxMetadataFor(side.semiFinal.nextMatchNumber, pathMatchesByNumber);
+
       semiFinalBox = {
         kind: "semi-finals",
         matchNumber: side.semiFinal.nextMatchNumber,
-        ...pathBoxMetadataFor(side.semiFinal.nextMatchNumber, pathMatchesByNumber),
-        sourceLabels: semiFinalSources.map((box) => `Vencedor #${box.matchNumber}`),
+        ...metadata,
+        sourceLabels: metadata.sourceLabels ?? semiFinalSources.map((box) => `Vencedor #${box.matchNumber}`),
         sourceBoxes: semiFinalSources,
         x: side.columns.sfX,
         y: centerY - pathHeight / 2,
@@ -324,14 +330,16 @@ function layoutCenter(
     sourceBoxes.length > 0
       ? sourceBoxes.reduce((sum, box) => sum + centerYForBox(box), 0) / sourceBoxes.length
       : headerHeight + sideHeaderHeight + (8 * r32Height + 7 * r32Gap) / 2;
+  const finalMetadata = pathBoxMetadataFor(104, pathMatchesByNumber);
+  const thirdPlaceMetadata = pathBoxMetadataFor(103, pathMatchesByNumber);
 
   return {
     finalBox: {
       kind: "final",
       matchNumber: 104,
-      ...pathBoxMetadataFor(104, pathMatchesByNumber),
+      ...finalMetadata,
       title: "Final #104",
-      sourceLabels,
+      sourceLabels: finalMetadata.sourceLabels ?? sourceLabels,
       sourceBoxes,
       x: centerX,
       y: centerY - finalHeight - 16,
@@ -341,9 +349,9 @@ function layoutCenter(
     thirdPlaceBox: {
       kind: "third-place",
       matchNumber: 103,
-      ...pathBoxMetadataFor(103, pathMatchesByNumber),
+      ...thirdPlaceMetadata,
       title: "Decisão do 3º lugar #103",
-      sourceLabels: loserLabels,
+      sourceLabels: thirdPlaceMetadata.sourceLabels ?? loserLabels,
       sourceBoxes,
       x: centerX,
       y: centerY + 28,
@@ -392,6 +400,7 @@ function renderRoundOf32Match(
 function renderPathBox(pathBox: PathBox): string {
   const [firstLabel = "", secondLabel = ""] = pathBox.sourceLabels;
   const title = pathBox.title ?? `#${pathBox.matchNumber}`;
+  const titleSuffix = pathBox.scoreLabel ? ` ${pathBox.scoreLabel}` : "";
   const kickoffLabel = pathBox.kickoffLabel ?? "Agendado";
 
   return [
@@ -400,7 +409,7 @@ function renderPathBox(pathBox: PathBox): string {
     `<rect width="${pathBox.width}" height="${pathBox.height}" fill="#ffffff"/>`,
     `<rect width="3" height="${pathBox.height}" fill="#1d2635"/>`,
     `<line x1="3" y1="${pathBox.height / 2}" x2="${pathBox.width}" y2="${pathBox.height / 2}" stroke="#edf0f3"/>`,
-    `<text x="16" y="22" font-family="Inter, Arial, sans-serif" font-size="11" font-weight="850" fill="#141b2b">${escapeText(title)}</text>`,
+    `<text x="16" y="22" font-family="Inter, Arial, sans-serif" font-size="11" font-weight="850" fill="#141b2b">${escapeText(`${title}${titleSuffix}`)}</text>`,
     `<text x="16" y="42" font-family="Inter, Arial, sans-serif" font-size="10" fill="#42506a">${escapeText(firstLabel)}</text>`,
     `<text x="16" y="54" font-family="Inter, Arial, sans-serif" font-size="10" fill="#42506a">${escapeText(secondLabel)}</text>`,
     "</g>"
@@ -448,10 +457,20 @@ function renderCenterConnector(pathBox: PathBox): string {
 function pathBoxMetadataFor(
   matchNumber: number,
   pathMatchesByNumber: ReadonlyMap<number, BracketMatch>
-): Pick<PathBox, "kickoffLabel"> {
+): Partial<Pick<PathBox, "kickoffLabel" | "scoreLabel" | "sourceLabels">> {
   const match = pathMatchesByNumber.get(matchNumber);
 
-  return match?.kickoffLabel ? { kickoffLabel: match.kickoffLabel } : {};
+  if (!match) {
+    return {};
+  }
+
+  return {
+    ...(match.kickoffLabel ? { kickoffLabel: match.kickoffLabel } : {}),
+    ...(match.scoreLabel ? { scoreLabel: match.scoreLabel } : {}),
+    ...(hasResolvedPathEntrant(match)
+      ? { sourceLabels: [pathEntrantLabel(match.home), pathEntrantLabel(match.away)] }
+      : {})
+  };
 }
 
 function renderEntrantRow(
@@ -552,10 +571,26 @@ function matchStatusLabel(match: BracketMatch): string {
 }
 
 function matchLabelSuffix(match: BracketMatch): string {
+  if (match.scoreLabel) {
+    return match.scoreLabel;
+  }
+
   const homeSlot = match.home.sourceSlot ?? match.home.label;
   const awaySlot = match.away.sourceSlot ?? match.away.label;
 
   return `${homeSlot}/${awaySlot}`;
+}
+
+function pathEntrantLabel(entrant: BracketEntrant): string {
+  if (entrant.teamCode && entrant.teamName) {
+    return formatCompactTeamName({ code: entrant.teamCode, name: entrant.teamName }, 18);
+  }
+
+  return entrant.label;
+}
+
+function hasResolvedPathEntrant(match: BracketMatch): boolean {
+  return match.home.teamCode !== undefined || match.away.teamCode !== undefined;
 }
 
 function phaseLabel(state: BracketState): string {
@@ -693,6 +728,7 @@ interface PathBox extends PositionedBox {
   matchNumber: number;
   title?: string;
   kickoffLabel?: string;
+  scoreLabel?: string;
   sourceLabels: string[];
   sourceBoxes: PositionedBox[];
 }

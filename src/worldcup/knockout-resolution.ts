@@ -5,6 +5,8 @@ import {
 } from "./fifa-qualification.js";
 import { isGroupStageMatch, type WorldCupGroupMatch, type WorldCupMatch, type WorldCupTeam } from "./types.js";
 
+type KnockoutWinnerResult = StandingsResult & { winner?: "home" | "away" | null };
+
 export function resolveKnockoutMatchParticipants(
   matches: readonly WorldCupMatch[],
   results: readonly StandingsResult[]
@@ -166,15 +168,35 @@ function teamForReference(
   const sourceMatch = matchesByNumber.get(Number.parseInt(parsed.groups.matchNumber, 10));
   const sourceResult = sourceMatch ? resultsByMatchId.get(sourceMatch.id) : undefined;
 
-  if (!sourceMatch || !sourceResult || sourceResult.homeScore === sourceResult.awayScore) {
+  if (!sourceMatch || !sourceResult) {
     return undefined;
   }
 
-  const homeWon = sourceResult.homeScore > sourceResult.awayScore;
-  const winner = homeWon ? sourceMatch.homeTeam : sourceMatch.awayTeam;
+  const winner = winnerForResult(sourceResult);
+
+  if (!winner) {
+    return undefined;
+  }
+
+  const homeWon = winner === "home";
+  const winningTeam = homeWon ? sourceMatch.homeTeam : sourceMatch.awayTeam;
   const loser = homeWon ? sourceMatch.awayTeam : sourceMatch.homeTeam;
 
-  return { ...(parsed.groups.kind === "W" ? winner : loser) };
+  return { ...(parsed.groups.kind === "W" ? winningTeam : loser) };
+}
+
+function winnerForResult(result: StandingsResult): "home" | "away" | undefined {
+  if (result.homeScore > result.awayScore) {
+    return "home";
+  }
+
+  if (result.awayScore > result.homeScore) {
+    return "away";
+  }
+
+  const storedWinner = (result as KnockoutWinnerResult).winner;
+
+  return storedWinner === "home" || storedWinner === "away" ? storedWinner : undefined;
 }
 
 function cloneMatch(match: WorldCupMatch): WorldCupMatch {

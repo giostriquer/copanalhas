@@ -708,6 +708,52 @@ describe("handleOperatorCommand", () => {
     expect(updatePredictionResultReveals).toHaveBeenCalledOnce();
   });
 
+  test("result skips group-stage dashboards after recording a knockout result", async () => {
+    const updateStandingsDashboard = vi.fn(async () => ({ action: "updated" as const, posts: [] }));
+    const updateLeaderboardDashboard = vi.fn(async () => ({
+      action: "updated" as const,
+      post: { messageId: "leaderboard-message-1", action: "edited" as const },
+      renderState: "image" as const
+    }));
+    const updatePredictionResultReveals = vi.fn(async () => undefined);
+    const updateBracketDashboard = vi.fn(async () => ({
+      action: "updated" as const,
+      post: { messageId: "bracket-message-1", action: "edited" as const },
+      bracketPhase: "final" as const,
+      renderState: "image" as const
+    }));
+    const updateThirdPlaceDashboard = vi.fn(async () => ({
+      action: "updated" as const,
+      post: { messageId: "third-place-message-1", action: "edited" as const },
+      qualificationStatus: "resolved" as const,
+      renderState: "image" as const
+    }));
+    const updateChaosDashboard = vi.fn(async () => ({
+      action: "updated" as const,
+      posted: [],
+      skipped: []
+    }));
+
+    await handleOperatorCommand(
+      command("result", { match: "wc2026-073", score: "1-3", decision: "regular" }),
+      options({
+        updateStandingsDashboard,
+        updateLeaderboardDashboard,
+        updateBracketDashboard,
+        updateThirdPlaceDashboard,
+        updateChaosDashboard,
+        updatePredictionResultReveals
+      })
+    );
+
+    expect(updateStandingsDashboard).not.toHaveBeenCalled();
+    expect(updateThirdPlaceDashboard).not.toHaveBeenCalled();
+    expect(updateLeaderboardDashboard).toHaveBeenCalledOnce();
+    expect(updateBracketDashboard).toHaveBeenCalledOnce();
+    expect(updateChaosDashboard).toHaveBeenCalledOnce();
+    expect(updatePredictionResultReveals).toHaveBeenCalledOnce();
+  });
+
   test("ignores commands outside the configured guild", async () => {
     await expect(handleOperatorCommand(command("status", {}, { guildId: "other" }), options()))
       .resolves.toEqual({ action: "ignored", reason: "wrong-guild" });

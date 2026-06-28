@@ -83,6 +83,18 @@ describe("resolveKnockoutMatchParticipants", () => {
       awayTeam: { code: "W98", name: "Vencedor #98" }
     });
   });
+
+  test("uses the stored knockout winner when the final score is tied after penalties", () => {
+    const resolved = resolveKnockoutMatchParticipants(WORLD_CUP_2026_SEED.matches, [
+      ...currentSeedProofResults(),
+      knockoutResult("wc2026-073", 1, 1, "away")
+    ]);
+
+    expect(matchByNumber(resolved, 90)).toMatchObject({
+      homeTeam: { code: "BIH", name: "Bosnia and Herzegovina" },
+      awayTeam: { code: "W75", name: "Vencedor #75" }
+    });
+  });
 });
 
 const currentSeedRankOrderByGroup = {
@@ -140,6 +152,15 @@ function currentSeedRank(group: string, teamCode: string): number {
 
 function result(matchId: string, homeScore: number, awayScore: number): StandingsResult {
   return { matchId, homeScore, awayScore };
+}
+
+function knockoutResult(
+  matchId: string,
+  homeScore: number,
+  awayScore: number,
+  winner: "home" | "away"
+): StandingsResult & { decisionMethod: "penalties"; winner: "home" | "away" } {
+  return { matchId, homeScore, awayScore, decisionMethod: "penalties", winner };
 }
 
 function matchByNumber(matches: readonly typeof WORLD_CUP_2026_SEED.matches[number][], matchNumber: number) {

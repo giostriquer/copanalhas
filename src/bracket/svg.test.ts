@@ -101,6 +101,15 @@ describe("renderBracketSvg", () => {
     expect(svg).not.toContain("Team & One");
     expect(svg).not.toContain("Team <Two>");
   });
+
+  test("renders resolved knockout winners and stored score labels in the path", () => {
+    const svg = renderBracketSvg(resolvedKnockoutPathState());
+
+    expect(svg).toContain(">1-3</text>");
+    expect(svg).toContain("Canadá");
+    expect(svg).toContain("Vencedor #75");
+    expect(svg).not.toContain("Vencedor #73");
+  });
 });
 
 function bracketState(): BracketState {
@@ -324,6 +333,82 @@ function bracketState(): BracketState {
             kickoffLabel: "19/07 16:00 GMT-3",
             home: { label: "W-SF-1", sourceSlot: "W-SF-1" },
             away: { label: "W-SF-2", sourceSlot: "W-SF-2" }
+          }
+        ]
+      }
+    ]
+  };
+}
+
+function resolvedKnockoutPathState(): BracketState {
+  return {
+    phase: "final",
+    generatedAtLabel: "2026-06-28 18:00",
+    notes: ["Round of 32 entrants are resolved from complete group-stage results."],
+    rounds: [
+      {
+        key: "round_of_32",
+        label: "Round of 32",
+        matches: [
+          {
+            id: "r32-73",
+            label: "#73",
+            state: "final",
+            kickoffLabel: "28/06 16:00 GMT-3",
+            scoreLabel: "1-3",
+            home: {
+              label: "RSA",
+              teamCode: "RSA",
+              teamName: "South Africa",
+              sourceSlot: "2A",
+              qualificationSecurity: "locked-slot"
+            },
+            away: {
+              label: "CAN",
+              teamCode: "CAN",
+              teamName: "Canada",
+              sourceSlot: "2B",
+              qualificationSecurity: "locked-slot"
+            }
+          },
+          {
+            id: "r32-75",
+            label: "#75",
+            state: "final",
+            kickoffLabel: "29/06 22:00 GMT-3",
+            home: {
+              label: "NED",
+              teamCode: "NED",
+              teamName: "Netherlands",
+              sourceSlot: "1F",
+              qualificationSecurity: "locked-slot"
+            },
+            away: {
+              label: "MAR",
+              teamCode: "MAR",
+              teamName: "Morocco",
+              sourceSlot: "2C",
+              qualificationSecurity: "locked-slot"
+            }
+          }
+        ]
+      },
+      {
+        key: "round_of_16",
+        label: "Round of 16",
+        matches: [
+          {
+            id: "round_of_16-2",
+            label: "#90",
+            state: "scheduled",
+            kickoffLabel: "04/07 14:00 GMT-3",
+            home: {
+              label: "CAN",
+              teamCode: "CAN",
+              teamName: "Canada",
+              sourceSlot: "CAN"
+            },
+            away: { label: "Vencedor #75", sourceSlot: "W75" }
           }
         ]
       }

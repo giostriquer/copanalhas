@@ -245,6 +245,23 @@ describe("createBracketState", () => {
     ]);
   });
 
+  test("propagates completed knockout winners into the next bracket round", () => {
+    const state = createBracketState({
+      matches: WORLD_CUP_2026_SEED.matches,
+      results: [...currentSeedProofResults(), result("wc2026-073", 1, 3)]
+    });
+    const roundOf32 = state.rounds.find((round) => round.key === "round_of_32");
+    const roundOf16 = state.rounds.find((round) => round.key === "round_of_16");
+
+    expect(roundOf32?.matches.find((match) => match.label === "#73")).toMatchObject({
+      scoreLabel: "1-3"
+    });
+    expect(roundOf16?.matches.find((match) => match.label === "#90")).toMatchObject({
+      home: { teamCode: "BIH", teamName: "Bosnia and Herzegovina" },
+      away: { sourceSlot: "W75" }
+    });
+  });
+
   test("reports blocked state instead of guessing when complete results still need manual tiebreakers", () => {
     const matches = groupMatches(["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L"]);
     const state = createBracketState({
