@@ -285,7 +285,8 @@ describe("updateChaosRecaps", () => {
     expect(generateChaosRecapCopy).toHaveBeenCalledOnce();
     expect(renderedSvg).toContain("Oraculo do Zap");
     expect(renderedSvg).toContain("Transformou dado bom em");
-    expect(renderedSvg).toContain("zoeira auditavel.");
+    expect(renderedSvg).toContain("zoeira");
+    expect(renderedSvg).toContain("auditavel.");
     expect(result.posted[0]).toMatchObject({
       periodKey: "group-week-1",
       copyState: "applied"

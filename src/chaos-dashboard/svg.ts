@@ -319,8 +319,10 @@ function renderAwardCard(input: {
   accent: string;
 }): string[] {
   const wide = input.width > 260;
-  const subtitleLines = wrapText(input.subtitle, wide ? 58 : 26, 2);
-  const subtitleStartY = input.y + (wide ? 91 : 94);
+  const subtitleLines = wrapText(input.subtitle, wide ? 70 : 30, wide ? 2 : 4);
+  const subtitleStartY = input.y + (wide ? 91 : 88);
+  const subtitleFontSize = wide ? 10 : 8.5;
+  const subtitleLineHeight = wide ? 13 : 10;
 
   return [
     `<rect x="${input.x}" y="${input.y}" width="${input.width}" height="${input.height}" rx="7" fill="#f8fafc"/>`,
@@ -329,7 +331,14 @@ function renderAwardCard(input: {
     text(truncate(input.subject, wide ? 38 : 24), input.x + 16, input.y + 50, 15, "#111827", 900),
     text(input.value, input.x + 16, input.y + 72, 13, "#334155", 900),
     ...subtitleLines.map((line, index) =>
-      text(line, input.x + 16, subtitleStartY + index * 13, 10, "#64748b", 700)
+      text(
+        line,
+        input.x + 16,
+        subtitleStartY + index * subtitleLineHeight,
+        subtitleFontSize,
+        "#64748b",
+        700
+      )
     )
   ];
 }

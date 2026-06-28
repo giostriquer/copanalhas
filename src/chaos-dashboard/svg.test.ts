@@ -33,14 +33,37 @@ describe("chaos dashboard SVG renderer", () => {
   test("wraps award subtitles without colliding with value text", () => {
     const svg = renderChaosDashboardSvg(sampleChaosDashboardModel());
 
-    expect(svg).toContain("Cravou sozinho e deixou a");
-    expect(svg).toContain("mesa olhando torto.");
+    expect(svg).toContain("Cravou sozinho e deixou a mesa");
+    expect(svg).toContain("olhando torto.");
     expect(svg).not.toContain("Cravou sozinho e deixou a m.");
 
     const valueY = textY(svg, "2 no consenso errado");
     const subtitleY = textY(svg, "A democracia produziu uma derrota coletiva.");
 
     expect(subtitleY - valueY).toBeGreaterThanOrEqual(18);
+  });
+
+  test("keeps long people award subtitles readable without cutting the final joke words", () => {
+    const svg = renderChaosDashboardSvg(
+      sampleChaosDashboardModel({
+        peopleAwards: [
+          {
+            key: "oraculo-sem-plateia",
+            title: "Oraculo sem plateia",
+            subject: "Coelhicious in hexafps",
+            value: "3 solos",
+            subtitle: "Cravou 3 sozinho e deixou a mesa recalculando a autoestima coletiva inteira."
+          }
+        ],
+        matchAwards: []
+      })
+    );
+
+    expect(svg).toContain("Cravou 3 sozinho e deixou a");
+    expect(svg).toContain("mesa recalculando a autoestima");
+    expect(svg).toContain("coletiva inteira.");
+    expect(svg).not.toContain("aut.");
+    expect(svg).not.toContain("inteir.");
   });
 
   test("renders weekly profile cards with stats using the empty right side", () => {
