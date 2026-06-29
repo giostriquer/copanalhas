@@ -427,6 +427,7 @@ function renderRoundOf32MatchNumberColumn(
 
 function renderPathBox(pathBox: PathBox): string {
   const [firstLabel = "", secondLabel = ""] = pathBox.sourceLabels;
+  const [firstEntrant, secondEntrant] = pathBox.sourceEntrants ?? [];
   const title = pathBox.title ?? `#${pathBox.matchNumber}`;
   const kickoffLabel = pathBox.kickoffLabel ?? "Agendado";
   const scoreLabels = scoreLabelsForPathBox(pathBox);
@@ -441,11 +442,45 @@ function renderPathBox(pathBox: PathBox): string {
     `<rect width="3" height="${pathBox.height}" fill="#1d2635"/>`,
     `<line x1="${pathBox.width - pathScoreColumnWidth}" y1="0" x2="${pathBox.width - pathScoreColumnWidth}" y2="${pathBox.height}" stroke="#edf0f3"/>`,
     `<line x1="3" y1="${pathBox.height / 2}" x2="${pathBox.width}" y2="${pathBox.height / 2}" stroke="#edf0f3"/>`,
-    `<text x="13" y="22" font-family="Inter, Arial, sans-serif" font-size="10" font-weight="800" fill="#141b2b">${escapeText(firstLabel)}</text>`,
-    `<text x="13" y="51" font-family="Inter, Arial, sans-serif" font-size="10" font-weight="800" fill="#141b2b">${escapeText(secondLabel)}</text>`,
+    firstEntrant
+      ? renderPathEntrantRow(pathBox, firstEntrant, "home", 22)
+      : renderPathLabelRow(firstLabel, 22),
+    secondEntrant
+      ? renderPathEntrantRow(pathBox, secondEntrant, "away", 51)
+      : renderPathLabelRow(secondLabel, 51),
     scoreLabels
       ? renderPathScoreLabels(pathBox.matchNumber, pathBox.width, scoreLabels)
       : "",
+    "</g>"
+  ].join("");
+}
+
+function renderPathLabelRow(label: string, baselineY: number): string {
+  return `<text x="13" y="${baselineY}" font-family="Inter, Arial, sans-serif" font-size="10" font-weight="800" fill="#141b2b">${escapeText(label)}</text>`;
+}
+
+function renderPathEntrantRow(
+  pathBox: PathBox,
+  entrant: BracketEntrant,
+  row: "home" | "away",
+  baselineY: number
+): string {
+  const primary =
+    entrant.teamCode && entrant.teamName
+      ? formatCompactTeamName(
+          { code: entrant.teamCode, name: entrant.teamName },
+          pathTeamTextMaxLength(pathBox.width)
+        )
+      : entrant.label;
+  const flag = entrant.teamCode
+    ? renderFlagImage(entrant.teamCode, 13, baselineY - flagHeight + 2)
+    : "";
+  const textX = flag ? 13 + flagWidth + 7 : 13;
+
+  return [
+    `<g data-path-entrant-match="${pathBox.matchNumber}" data-path-entrant-row="${row}" data-entrant-source-slot="${escapeAttribute(entrant.sourceSlot ?? entrant.label)}"${entrant.teamCode ? ` data-entrant-team-code="${escapeAttribute(entrant.teamCode)}"` : ""}>`,
+    flag,
+    `<text x="${textX}" y="${baselineY}" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="800" fill="#141b2b">${escapeText(primary)}</text>`,
     "</g>"
   ].join("");
 }
@@ -524,7 +559,13 @@ function pathBoxMetadataFor(
 ): Partial<
   Pick<
     PathBox,
-    "kickoffLabel" | "scoreLabel" | "homeScoreLabel" | "awayScoreLabel" | "scoreWinner" | "sourceLabels"
+    | "kickoffLabel"
+    | "scoreLabel"
+    | "homeScoreLabel"
+    | "awayScoreLabel"
+    | "scoreWinner"
+    | "sourceLabels"
+    | "sourceEntrants"
   >
 > {
   const match = pathMatchesByNumber.get(matchNumber);
@@ -540,7 +581,10 @@ function pathBoxMetadataFor(
     ...(match.awayScoreLabel ? { awayScoreLabel: match.awayScoreLabel } : {}),
     ...(match.scoreWinner ? { scoreWinner: match.scoreWinner } : {}),
     ...(hasResolvedPathEntrant(match)
-      ? { sourceLabels: [pathEntrantLabel(match.home), pathEntrantLabel(match.away)] }
+      ? {
+          sourceLabels: [pathEntrantLabel(match.home), pathEntrantLabel(match.away)],
+          sourceEntrants: [match.home, match.away]
+        }
       : {})
   };
 }
@@ -694,6 +738,12 @@ function pathEntrantLabel(entrant: BracketEntrant): string {
   return entrant.label;
 }
 
+function pathTeamTextMaxLength(width: number): number {
+  const textAreaWidth = width - pathScoreColumnWidth - 13 - flagWidth - 12;
+
+  return Math.max(5, Math.min(18, Math.floor(textAreaWidth / 7)));
+}
+
 function hasResolvedPathEntrant(match: BracketMatch): boolean {
   return match.home.teamCode !== undefined || match.away.teamCode !== undefined;
 }
@@ -838,6 +888,7 @@ interface PathBox extends PositionedBox {
   awayScoreLabel?: string;
   scoreWinner?: "home" | "away";
   sourceLabels: string[];
+  sourceEntrants?: BracketEntrant[];
   sourceBoxes: PositionedBox[];
 }
 

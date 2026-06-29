@@ -124,9 +124,17 @@ describe("renderBracketSvg", () => {
     expect(svg).toContain('data-path-result-winner="home"');
     expect(svg).toContain("Canadá");
     expect(svg).toContain("Holanda");
+    expect(countOccurrences(svg, 'data-flag-team-code="CAN"')).toBe(2);
+    expect(countOccurrences(svg, 'data-flag-team-code="NED"')).toBe(2);
+    expect(svg).toContain('data-path-entrant-match="90" data-path-entrant-row="home"');
+    expect(svg).toContain('data-path-entrant-match="90" data-path-entrant-row="away"');
     expect(svg).not.toContain("#90 2-1");
   });
 });
+
+function countOccurrences(value: string, needle: string): number {
+  return value.split(needle).length - 1;
+}
 
 function bracketState(): BracketState {
   return {
