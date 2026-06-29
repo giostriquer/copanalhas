@@ -108,6 +108,9 @@ describe("renderBracketSvg", () => {
 
     expect(svg).toContain('data-score-home-match="73"');
     expect(svg).toContain('data-score-away-match="73"');
+    expect(svg).toContain('data-r32-result-match-number="73"');
+    expect(svg).toContain('data-score-home-match="73" x="241" y="25"');
+    expect(svg).toContain('data-score-away-match="73" x="241" y="61"');
     expect(svg).toContain('data-result-winner="away"');
     expect(svg).toContain(">1</text>");
     expect(svg).toContain(">3</text>");

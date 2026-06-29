@@ -390,6 +390,7 @@ function renderRoundOf32Match(
   return [
     `<g data-match-id="${escapeAttribute(match.id)}" data-bracket-match-number="${matchNumber}"${resultWinnerAttribute} transform="translate(${x}, ${y})">`,
     `<text data-kickoff-label-side="${sideKey}" x="${kickoffLabelX}" y="-12"${kickoffAnchor} font-family="Inter, Arial, sans-serif" font-size="11" fill="#273140">${escapeText(match.kickoffLabel ?? matchStatusLabel(match))}</text>`,
+    renderRoundOf32ResultMatchNumberHeader(matchNumber, sideKey, scoreLabels),
     `<rect width="${r32Width}" height="${r32Height}" fill="#ffffff"/>`,
     `<rect width="3" height="${r32Height}" fill="${statusColor(match)}"/>`,
     `<line x1="${r32Width - 58}" y1="0" x2="${r32Width - 58}" y2="${r32Height}" stroke="#edf0f3"/>`,
@@ -398,6 +399,25 @@ function renderRoundOf32Match(
     renderEntrantRow(match.home, 14, 25, 1, match.state === "provisional"),
     renderEntrantRow(match.away, 14, 61, r32Height / 2 + 1, match.state === "provisional"),
     "</g>"
+  ].join("");
+}
+
+function renderRoundOf32ResultMatchNumberHeader(
+  matchNumber: number,
+  sideKey: BracketSide["key"],
+  scoreLabels: MatchLabels | undefined
+): string {
+  if (!scoreLabels) {
+    return "";
+  }
+
+  const x = sideKey === "right" ? 0 : r32Width;
+  const anchor = sideKey === "right" ? "" : ' text-anchor="end"';
+
+  return [
+    `<text data-r32-result-match-number="${matchNumber}" x="${x}" y="-12"${anchor} font-family="Inter, Arial, sans-serif" font-size="11" font-weight="850" fill="#141b2b">`,
+    `#${matchNumber}`,
+    "</text>"
   ].join("");
 }
 
@@ -419,9 +439,8 @@ function renderRoundOf32MatchNumberColumn(
   const awayFill = scoreLabels.winner === "away" ? "#0b6b3a" : "#141b2b";
 
   return [
-    `<text x="${x}" y="14" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="10" font-weight="850" fill="#141b2b">#${matchNumber}</text>`,
-    `<text data-score-home-match="${matchNumber}" x="${x}" y="31" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="${scoreFontSize(scoreLabels.home)}" font-weight="900" fill="${homeFill}">${escapeText(scoreLabels.home)}</text>`,
-    `<text data-score-away-match="${matchNumber}" x="${x}" y="67" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="${scoreFontSize(scoreLabels.away)}" font-weight="900" fill="${awayFill}">${escapeText(scoreLabels.away)}</text>`
+    `<text data-score-home-match="${matchNumber}" x="${x}" y="25" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="${scoreFontSize(scoreLabels.home)}" font-weight="900" fill="${homeFill}">${escapeText(scoreLabels.home)}</text>`,
+    `<text data-score-away-match="${matchNumber}" x="${x}" y="61" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="${scoreFontSize(scoreLabels.away)}" font-weight="900" fill="${awayFill}">${escapeText(scoreLabels.away)}</text>`
   ].join("");
 }
 
