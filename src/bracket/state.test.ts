@@ -5,6 +5,17 @@ import type { StandingsResult } from "../standings/standings.js";
 import { WORLD_CUP_2026_SEED } from "../worldcup/seed.js";
 import { isGroupStageMatch, type WorldCupMatch } from "../worldcup/types.js";
 
+type KnockoutPenaltyResult = StandingsResult & {
+  decisionMethod: "penalties";
+  regularTimeHomeScore: number;
+  regularTimeAwayScore: number;
+  extraTimeHomeScore: number;
+  extraTimeAwayScore: number;
+  penaltyHomeScore: number;
+  penaltyAwayScore: number;
+  winner: "home" | "away";
+};
+
 describe("createBracketState", () => {
   test("creates a whole bracket skeleton with provisional round-of-32 entrants from incomplete group results", () => {
     const state = createBracketState({
@@ -259,6 +270,34 @@ describe("createBracketState", () => {
     expect(roundOf16?.matches.find((match) => match.label === "#90")).toMatchObject({
       home: { teamCode: "BIH", teamName: "Bosnia and Herzegovina" },
       away: { sourceSlot: "W75" }
+    });
+  });
+
+  test("formats penalty shootout score labels for completed knockout matches", () => {
+    const penaltyShootoutResult: KnockoutPenaltyResult = {
+      matchId: "wc2026-073",
+      homeScore: 6,
+      awayScore: 5,
+      decisionMethod: "penalties",
+      regularTimeHomeScore: 1,
+      regularTimeAwayScore: 1,
+      extraTimeHomeScore: 1,
+      extraTimeAwayScore: 1,
+      penaltyHomeScore: 5,
+      penaltyAwayScore: 4,
+      winner: "home"
+    };
+    const state = createBracketState({
+      matches: WORLD_CUP_2026_SEED.matches,
+      results: [...currentSeedProofResults(), penaltyShootoutResult]
+    });
+    const roundOf32 = state.rounds.find((round) => round.key === "round_of_32");
+
+    expect(roundOf32?.matches.find((match) => match.label === "#73")).toMatchObject({
+      scoreLabel: "6-5",
+      homeScoreLabel: "1 (5)",
+      awayScoreLabel: "1 (4)",
+      scoreWinner: "home"
     });
   });
 

@@ -23,6 +23,17 @@ import {
 } from "./template.js";
 import type { BracketEntrant, BracketMatch, BracketRound, BracketState } from "./types.js";
 
+type BracketResultDetails = StandingsResult & {
+  decisionMethod?: "regular" | "extra_time" | "penalties" | null;
+  regularTimeHomeScore?: number | null;
+  regularTimeAwayScore?: number | null;
+  extraTimeHomeScore?: number | null;
+  extraTimeAwayScore?: number | null;
+  penaltyHomeScore?: number | null;
+  penaltyAwayScore?: number | null;
+  winner?: "home" | "away" | null;
+};
+
 export interface CreateBracketStateOptions {
   matches: readonly WorldCupMatch[];
   results: readonly StandingsResult[];
@@ -168,7 +179,7 @@ function createFinalBracketState(
             label: `#${fixture.matchNumber}`,
             state: "final",
             ...kickoffLabelForMatchNumber(fixture.matchNumber, knockoutScheduleByNumber),
-            ...scoreLabelForResult(result),
+            ...scoreLabelsForResult(result),
             home: resolvedEntrant(fixture.homeSlot, fixture.homeTeam),
             away: resolvedEntrant(fixture.awaySlot, fixture.awayTeam)
           };
@@ -285,12 +296,96 @@ function isPlaceholderTeamCode(code: string): boolean {
   return /^[123][A-L]$/u.test(code) || /^3[A-L]+$/u.test(code) || /^[WL]\d+$/u.test(code);
 }
 
-function scoreLabelForResult(result: StandingsResult | undefined): Pick<BracketMatch, "scoreLabel"> {
+function scoreLabelsForResult(
+  result: StandingsResult | undefined
+): Pick<BracketMatch, "scoreLabel" | "homeScoreLabel" | "awayScoreLabel"> &
+  Partial<Pick<BracketMatch, "scoreWinner">> {
   if (!result) {
     return {};
   }
 
-  return { scoreLabel: `${result.homeScore}-${result.awayScore}` };
+  const details = result as BracketResultDetails;
+  const scoreLabels = visibleScoreLabels(details);
+  const winner = winnerForResult(details);
+
+  return {
+    scoreLabel: `${result.homeScore}-${result.awayScore}`,
+    homeScoreLabel: scoreLabels.home,
+    awayScoreLabel: scoreLabels.away,
+    ...(winner ? { scoreWinner: winner } : {})
+  };
+}
+
+function visibleScoreLabels(result: BracketResultDetails): { home: string; away: string } {
+  if (
+    result.decisionMethod === "penalties" &&
+    result.penaltyHomeScore !== null &&
+    result.penaltyHomeScore !== undefined &&
+    result.penaltyAwayScore !== null &&
+    result.penaltyAwayScore !== undefined
+  ) {
+    const baseScore = scoreBeforePenalties(result);
+
+    return {
+      home: `${baseScore.homeScore} (${result.penaltyHomeScore})`,
+      away: `${baseScore.awayScore} (${result.penaltyAwayScore})`
+    };
+  }
+
+  return {
+    home: String(result.homeScore),
+    away: String(result.awayScore)
+  };
+}
+
+function scoreBeforePenalties(result: BracketResultDetails): {
+  homeScore: number;
+  awayScore: number;
+} {
+  if (
+    result.extraTimeHomeScore !== null &&
+    result.extraTimeHomeScore !== undefined &&
+    result.extraTimeAwayScore !== null &&
+    result.extraTimeAwayScore !== undefined
+  ) {
+    return {
+      homeScore: result.extraTimeHomeScore,
+      awayScore: result.extraTimeAwayScore
+    };
+  }
+
+  if (
+    result.regularTimeHomeScore !== null &&
+    result.regularTimeHomeScore !== undefined &&
+    result.regularTimeAwayScore !== null &&
+    result.regularTimeAwayScore !== undefined
+  ) {
+    return {
+      homeScore: result.regularTimeHomeScore,
+      awayScore: result.regularTimeAwayScore
+    };
+  }
+
+  return {
+    homeScore: result.homeScore,
+    awayScore: result.awayScore
+  };
+}
+
+function winnerForResult(result: BracketResultDetails): "home" | "away" | undefined {
+  if (result.winner === "home" || result.winner === "away") {
+    return result.winner;
+  }
+
+  if (result.homeScore > result.awayScore) {
+    return "home";
+  }
+
+  if (result.awayScore > result.homeScore) {
+    return "away";
+  }
+
+  return undefined;
 }
 
 function visualSkeletonRounds(knockoutScheduleByNumber: ReadonlyMap<number, string>): BracketRound[] {
@@ -333,7 +428,7 @@ function resolvedSkeletonRounds(
           label: `#${matchNumber}`,
           state: resultsByMatchId.has(match.id) ? "final" : "scheduled",
           ...kickoffLabelForMatchNumber(matchNumber, knockoutScheduleByNumber),
-          ...scoreLabelForResult(resultsByMatchId.get(match.id)),
+          ...scoreLabelsForResult(resultsByMatchId.get(match.id)),
           home: entrantForKnockoutTeam(match.homeTeam),
           away: entrantForKnockoutTeam(match.awayTeam)
         };

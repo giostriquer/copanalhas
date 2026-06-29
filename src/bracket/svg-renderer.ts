@@ -35,6 +35,7 @@ const flagHeight = 17;
 const teamTextMaxLength = 19;
 const entrantAreaX = 4;
 const entrantAreaWidth = r32Width - 64;
+const pathScoreColumnWidth = 36;
 const connectorColor = "#4f8f38";
 const leftR32X = marginX;
 const leftR16X = 344;
@@ -381,38 +382,101 @@ function renderRoundOf32Match(
   const matchNumber = matchNumberFor(match);
   const kickoffLabelX = sideKey === "right" ? r32Width : 0;
   const kickoffAnchor = sideKey === "right" ? ' text-anchor="end"' : "";
+  const scoreLabels = scoreLabelsForMatch(match);
+  const resultWinnerAttribute = scoreLabels?.winner
+    ? ` data-result-winner="${escapeAttribute(scoreLabels.winner)}"`
+    : "";
 
   return [
-    `<g data-match-id="${escapeAttribute(match.id)}" data-bracket-match-number="${matchNumber}" transform="translate(${x}, ${y})">`,
+    `<g data-match-id="${escapeAttribute(match.id)}" data-bracket-match-number="${matchNumber}"${resultWinnerAttribute} transform="translate(${x}, ${y})">`,
     `<text data-kickoff-label-side="${sideKey}" x="${kickoffLabelX}" y="-12"${kickoffAnchor} font-family="Inter, Arial, sans-serif" font-size="11" fill="#273140">${escapeText(match.kickoffLabel ?? matchStatusLabel(match))}</text>`,
     `<rect width="${r32Width}" height="${r32Height}" fill="#ffffff"/>`,
     `<rect width="3" height="${r32Height}" fill="${statusColor(match)}"/>`,
     `<line x1="${r32Width - 58}" y1="0" x2="${r32Width - 58}" y2="${r32Height}" stroke="#edf0f3"/>`,
     `<line x1="3" y1="${r32Height / 2}" x2="${r32Width}" y2="${r32Height / 2}" stroke="#edf0f3"/>`,
-    `<text x="${r32Width - 29}" y="27" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="850" fill="#141b2b">#${matchNumber}</text>`,
-    `<text x="${r32Width - 29}" y="46" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="8" fill="#778397">${escapeText(matchLabelSuffix(match))}</text>`,
+    renderRoundOf32MatchNumberColumn(match, matchNumber, scoreLabels),
     renderEntrantRow(match.home, 14, 25, 1),
     renderEntrantRow(match.away, 14, 61, r32Height / 2 + 1),
     "</g>"
   ].join("");
 }
 
+function renderRoundOf32MatchNumberColumn(
+  match: BracketMatch,
+  matchNumber: number,
+  scoreLabels: MatchLabels | undefined
+): string {
+  const x = r32Width - 29;
+
+  if (!scoreLabels) {
+    return [
+      `<text x="${x}" y="27" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="850" fill="#141b2b">#${matchNumber}</text>`,
+      `<text x="${x}" y="46" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="8" fill="#778397">${escapeText(matchLabelSuffix(match))}</text>`
+    ].join("");
+  }
+
+  const homeFill = scoreLabels.winner === "home" ? "#0b6b3a" : "#141b2b";
+  const awayFill = scoreLabels.winner === "away" ? "#0b6b3a" : "#141b2b";
+
+  return [
+    `<text x="${x}" y="14" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="10" font-weight="850" fill="#141b2b">#${matchNumber}</text>`,
+    `<text data-score-home-match="${matchNumber}" x="${x}" y="31" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="${scoreFontSize(scoreLabels.home)}" font-weight="900" fill="${homeFill}">${escapeText(scoreLabels.home)}</text>`,
+    `<text data-score-away-match="${matchNumber}" x="${x}" y="67" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="${scoreFontSize(scoreLabels.away)}" font-weight="900" fill="${awayFill}">${escapeText(scoreLabels.away)}</text>`
+  ].join("");
+}
+
 function renderPathBox(pathBox: PathBox): string {
   const [firstLabel = "", secondLabel = ""] = pathBox.sourceLabels;
   const title = pathBox.title ?? `#${pathBox.matchNumber}`;
-  const titleSuffix = pathBox.scoreLabel ? ` ${pathBox.scoreLabel}` : "";
   const kickoffLabel = pathBox.kickoffLabel ?? "Agendado";
+  const scoreLabels = scoreLabelsForPathBox(pathBox);
+  const resultWinnerAttribute = scoreLabels?.winner
+    ? ` data-path-result-winner="${escapeAttribute(scoreLabels.winner)}"`
+    : "";
 
   return [
-    `<g data-path-match="${pathBox.matchNumber}" transform="translate(${pathBox.x}, ${pathBox.y})">`,
-    `<text data-path-kickoff-label-match="${pathBox.matchNumber}" x="0" y="-8" font-family="Inter, Arial, sans-serif" font-size="11" fill="#273140">${escapeText(kickoffLabel)}</text>`,
+    `<g data-path-match="${pathBox.matchNumber}"${resultWinnerAttribute} transform="translate(${pathBox.x}, ${pathBox.y})">`,
+    renderPathBoxHeader(pathBox, kickoffLabel, title),
     `<rect width="${pathBox.width}" height="${pathBox.height}" fill="#ffffff"/>`,
     `<rect width="3" height="${pathBox.height}" fill="#1d2635"/>`,
+    `<line x1="${pathBox.width - pathScoreColumnWidth}" y1="0" x2="${pathBox.width - pathScoreColumnWidth}" y2="${pathBox.height}" stroke="#edf0f3"/>`,
     `<line x1="3" y1="${pathBox.height / 2}" x2="${pathBox.width}" y2="${pathBox.height / 2}" stroke="#edf0f3"/>`,
-    `<text x="16" y="22" font-family="Inter, Arial, sans-serif" font-size="11" font-weight="850" fill="#141b2b">${escapeText(`${title}${titleSuffix}`)}</text>`,
-    `<text x="16" y="42" font-family="Inter, Arial, sans-serif" font-size="10" fill="#42506a">${escapeText(firstLabel)}</text>`,
-    `<text x="16" y="54" font-family="Inter, Arial, sans-serif" font-size="10" fill="#42506a">${escapeText(secondLabel)}</text>`,
+    `<text x="13" y="22" font-family="Inter, Arial, sans-serif" font-size="10" font-weight="800" fill="#141b2b">${escapeText(firstLabel)}</text>`,
+    `<text x="13" y="51" font-family="Inter, Arial, sans-serif" font-size="10" font-weight="800" fill="#141b2b">${escapeText(secondLabel)}</text>`,
+    scoreLabels
+      ? renderPathScoreLabels(pathBox.matchNumber, pathBox.width, scoreLabels)
+      : "",
     "</g>"
+  ].join("");
+}
+
+function renderPathBoxHeader(pathBox: PathBox, kickoffLabel: string, title: string): string {
+  if (pathBox.kind === "third-place") {
+    return [
+      `<text data-path-title-label-match="${pathBox.matchNumber}" x="0" y="-22" font-family="Inter, Arial, sans-serif" font-size="11" font-weight="850" fill="#141b2b">${escapeText("Decisão do 3º lugar")}</text>`,
+      `<text data-path-kickoff-label-match="${pathBox.matchNumber}" x="0" y="-8" font-family="Inter, Arial, sans-serif" font-size="11" fill="#273140">${escapeText(kickoffLabel)}</text>`,
+      `<text data-path-match-number-label="${pathBox.matchNumber}" x="${pathBox.width}" y="-8" text-anchor="end" font-family="Inter, Arial, sans-serif" font-size="11" font-weight="850" fill="#141b2b">#${pathBox.matchNumber}</text>`
+    ].join("");
+  }
+
+  return [
+    `<text data-path-kickoff-label-match="${pathBox.matchNumber}" x="0" y="-8" font-family="Inter, Arial, sans-serif" font-size="11" fill="#273140">${escapeText(kickoffLabel)}</text>`,
+    `<text data-path-match-number-label="${pathBox.matchNumber}" x="${pathBox.width}" y="-8" text-anchor="end" font-family="Inter, Arial, sans-serif" font-size="11" font-weight="850" fill="#141b2b">${escapeText(title)}</text>`,
+  ].join("");
+}
+
+function renderPathScoreLabels(
+  matchNumber: number,
+  width: number,
+  scoreLabels: MatchLabels
+): string {
+  const x = width - pathScoreColumnWidth / 2;
+  const homeFill = scoreLabels.winner === "home" ? "#0b6b3a" : "#141b2b";
+  const awayFill = scoreLabels.winner === "away" ? "#0b6b3a" : "#141b2b";
+
+  return [
+    `<text data-path-score-home-match="${matchNumber}" x="${x}" y="22" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="${scoreFontSize(scoreLabels.home)}" font-weight="900" fill="${homeFill}">${escapeText(scoreLabels.home)}</text>`,
+    `<text data-path-score-away-match="${matchNumber}" x="${x}" y="51" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="${scoreFontSize(scoreLabels.away)}" font-weight="900" fill="${awayFill}">${escapeText(scoreLabels.away)}</text>`
   ].join("");
 }
 
@@ -457,7 +521,12 @@ function renderCenterConnector(pathBox: PathBox): string {
 function pathBoxMetadataFor(
   matchNumber: number,
   pathMatchesByNumber: ReadonlyMap<number, BracketMatch>
-): Partial<Pick<PathBox, "kickoffLabel" | "scoreLabel" | "sourceLabels">> {
+): Partial<
+  Pick<
+    PathBox,
+    "kickoffLabel" | "scoreLabel" | "homeScoreLabel" | "awayScoreLabel" | "scoreWinner" | "sourceLabels"
+  >
+> {
   const match = pathMatchesByNumber.get(matchNumber);
 
   if (!match) {
@@ -467,6 +536,9 @@ function pathBoxMetadataFor(
   return {
     ...(match.kickoffLabel ? { kickoffLabel: match.kickoffLabel } : {}),
     ...(match.scoreLabel ? { scoreLabel: match.scoreLabel } : {}),
+    ...(match.homeScoreLabel ? { homeScoreLabel: match.homeScoreLabel } : {}),
+    ...(match.awayScoreLabel ? { awayScoreLabel: match.awayScoreLabel } : {}),
+    ...(match.scoreWinner ? { scoreWinner: match.scoreWinner } : {}),
     ...(hasResolvedPathEntrant(match)
       ? { sourceLabels: [pathEntrantLabel(match.home), pathEntrantLabel(match.away)] }
       : {})
@@ -579,6 +651,34 @@ function matchLabelSuffix(match: BracketMatch): string {
   const awaySlot = match.away.sourceSlot ?? match.away.label;
 
   return `${homeSlot}/${awaySlot}`;
+}
+
+function scoreLabelsForMatch(match: BracketMatch): MatchLabels | undefined {
+  return scoreLabelsFromFields(match.homeScoreLabel, match.awayScoreLabel, match.scoreWinner);
+}
+
+function scoreLabelsForPathBox(pathBox: PathBox): MatchLabels | undefined {
+  return scoreLabelsFromFields(pathBox.homeScoreLabel, pathBox.awayScoreLabel, pathBox.scoreWinner);
+}
+
+function scoreLabelsFromFields(
+  homeScoreLabel: string | undefined,
+  awayScoreLabel: string | undefined,
+  winner: "home" | "away" | undefined
+): MatchLabels | undefined {
+  if (!homeScoreLabel || !awayScoreLabel) {
+    return undefined;
+  }
+
+  return {
+    home: homeScoreLabel,
+    away: awayScoreLabel,
+    ...(winner ? { winner } : {})
+  };
+}
+
+function scoreFontSize(label: string): number {
+  return label.length > 2 ? 12 : 16;
 }
 
 function pathEntrantLabel(entrant: BracketEntrant): string {
@@ -729,8 +829,17 @@ interface PathBox extends PositionedBox {
   title?: string;
   kickoffLabel?: string;
   scoreLabel?: string;
+  homeScoreLabel?: string;
+  awayScoreLabel?: string;
+  scoreWinner?: "home" | "away";
   sourceLabels: string[];
   sourceBoxes: PositionedBox[];
+}
+
+interface MatchLabels {
+  home: string;
+  away: string;
+  winner?: "home" | "away";
 }
 
 interface FlagAsset {

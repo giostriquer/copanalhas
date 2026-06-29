@@ -70,6 +70,7 @@ describe("renderBracketSvg", () => {
     expect(svg).toContain("Semifinal");
     expect(svg).toContain("Final");
     expect(svg).toContain("Decisão do 3º lugar");
+    expect(svg).toContain('data-path-title-label-match="103" x="0" y="-22"');
     expect(svg).toContain("Vencedor #101");
     expect(svg).toContain("Vencedor #102");
     expect(svg).toContain("Perdedor #101");
@@ -105,10 +106,24 @@ describe("renderBracketSvg", () => {
   test("renders resolved knockout winners and stored score labels in the path", () => {
     const svg = renderBracketSvg(resolvedKnockoutPathState());
 
-    expect(svg).toContain(">1-3</text>");
+    expect(svg).toContain('data-score-home-match="73"');
+    expect(svg).toContain('data-score-away-match="73"');
+    expect(svg).toContain('data-result-winner="away"');
+    expect(svg).toContain(">1</text>");
+    expect(svg).toContain(">3</text>");
     expect(svg).toContain("Canadá");
-    expect(svg).toContain("Vencedor #75");
     expect(svg).not.toContain("Vencedor #73");
+  });
+
+  test("renders later-round results with row score cells instead of title suffixes", () => {
+    const svg = renderBracketSvg(resolvedKnockoutPathState());
+
+    expect(svg).toContain('data-path-score-home-match="90"');
+    expect(svg).toContain('data-path-score-away-match="90"');
+    expect(svg).toContain('data-path-result-winner="home"');
+    expect(svg).toContain("Canadá");
+    expect(svg).toContain("Holanda");
+    expect(svg).not.toContain("#90 2-1");
   });
 });
 
@@ -356,6 +371,9 @@ function resolvedKnockoutPathState(): BracketState {
             state: "final",
             kickoffLabel: "28/06 16:00 GMT-3",
             scoreLabel: "1-3",
+            homeScoreLabel: "1",
+            awayScoreLabel: "3",
+            scoreWinner: "away",
             home: {
               label: "RSA",
               teamCode: "RSA",
@@ -400,15 +418,24 @@ function resolvedKnockoutPathState(): BracketState {
           {
             id: "round_of_16-2",
             label: "#90",
-            state: "scheduled",
+            state: "final",
             kickoffLabel: "04/07 14:00 GMT-3",
+            scoreLabel: "2-1",
+            homeScoreLabel: "2",
+            awayScoreLabel: "1",
+            scoreWinner: "home",
             home: {
               label: "CAN",
               teamCode: "CAN",
               teamName: "Canada",
               sourceSlot: "CAN"
             },
-            away: { label: "Vencedor #75", sourceSlot: "W75" }
+            away: {
+              label: "NED",
+              teamCode: "NED",
+              teamName: "Netherlands",
+              sourceSlot: "NED"
+            }
           }
         ]
       }

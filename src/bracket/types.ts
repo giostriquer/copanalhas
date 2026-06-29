@@ -32,6 +32,9 @@ export interface BracketMatch {
   away: BracketEntrant;
   kickoffLabel?: string;
   scoreLabel?: string;
+  homeScoreLabel?: string;
+  awayScoreLabel?: string;
+  scoreWinner?: "home" | "away";
 }
 
 export interface BracketEntrant {
