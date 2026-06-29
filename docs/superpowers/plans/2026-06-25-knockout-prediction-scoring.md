@@ -87,9 +87,10 @@ For knockout results, compute:
 
 1. regular-time exact: solo 5 or shared exact 3
 2. if no regular exact, extra-time exact 3
-3. no result, closest-score, or advancement-side points after extra time/penalties when no exact phase hit
-4. regular-time knockout finishes reuse the normal result and closest-score tiers
-5. decision-method bonus 2 independently when prediction decision equals result decision
+3. no result or closest-score points after extra time when no exact phase hit
+4. advancement-side result points after penalties when no exact phase hit
+5. regular-time knockout finishes reuse the normal result and closest-score tiers
+6. decision-method bonus 2 independently when prediction decision equals result decision
 
 Set `distance` against the score layer that was considered for exact scoring, or the compatibility final score when no layer exists.
 

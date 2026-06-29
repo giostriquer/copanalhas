@@ -373,7 +373,7 @@ describe("scoreMatch", () => {
     });
   });
 
-  test("does not award advancement-side result points after penalties", () => {
+  test("awards advancement-side points after penalties when nobody hits an exact phase", () => {
     const scored = scoreMatch(
       knockoutResult({
         matchId: "ko-1",
@@ -397,16 +397,16 @@ describe("scoreMatch", () => {
     );
 
     expect(pointsByUser(scored)).toEqual({
-      u1: 2,
+      u1: 4,
       u2: 2,
       u3: 2,
-      u4: 0
+      u4: 2
     });
     expect(awardsByUser(scored)).toEqual({
-      u1: ["decision_bonus"],
+      u1: ["outcome", "decision_bonus"],
       u2: ["decision_bonus"],
       u3: ["decision_bonus"],
-      u4: []
+      u4: ["outcome"]
     });
   });
 

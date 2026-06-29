@@ -179,6 +179,15 @@ function scoreKnockoutMatch(
     ) {
       awards.push("exact");
       points += 3;
+    } else if (
+      regularExactCount === 0 &&
+      extraTimeExactCount === 0 &&
+      result.decisionMethod === "penalties" &&
+      result.winner &&
+      row.outcome === result.winner
+    ) {
+      awards.push("outcome");
+      points += 2;
     }
 
     if (prediction.decisionMethod === result.decisionMethod) {

@@ -49,8 +49,11 @@ eligible exact-score phase only:
 - If nobody hit the regular-time score and extra time is played, compare
   predictions with the score after extra time. Exact extra-time scorelines earn
   3 points each.
-- If nobody hits those exact phases, no result, closest-score, or advancing-side
-  scoreline points are awarded for extra-time or penalty matches.
+- If the match is decided after extra time and nobody hits those exact phases,
+  no result or closest-score points are awarded.
+- If the match is decided by penalties and nobody hits those exact phases, each
+  member whose predicted scoreline picked the side that advanced receives 2
+  result points. Draw predictions do not imply an advancing side.
 
 The decision-method choice is an independent bonus:
 
