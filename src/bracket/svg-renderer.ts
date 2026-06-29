@@ -395,8 +395,8 @@ function renderRoundOf32Match(
     `<line x1="${r32Width - 58}" y1="0" x2="${r32Width - 58}" y2="${r32Height}" stroke="#edf0f3"/>`,
     `<line x1="3" y1="${r32Height / 2}" x2="${r32Width}" y2="${r32Height / 2}" stroke="#edf0f3"/>`,
     renderRoundOf32MatchNumberColumn(match, matchNumber, scoreLabels),
-    renderEntrantRow(match.home, 14, 25, 1),
-    renderEntrantRow(match.away, 14, 61, r32Height / 2 + 1),
+    renderEntrantRow(match.home, 14, 25, 1, match.state === "provisional"),
+    renderEntrantRow(match.away, 14, 61, r32Height / 2 + 1, match.state === "provisional"),
     "</g>"
   ].join("");
 }
@@ -549,7 +549,8 @@ function renderEntrantRow(
   entrant: BracketEntrant,
   x: number,
   baselineY: number,
-  rowY: number
+  rowY: number,
+  showQualificationSecurityBorder: boolean
 ): string {
   const primary =
     entrant.teamCode && entrant.teamName
@@ -562,15 +563,19 @@ function renderEntrantRow(
 
   return [
     `<g data-entrant-source-slot="${escapeAttribute(entrant.sourceSlot ?? entrant.label)}"${entrant.teamCode ? ` data-entrant-team-code="${escapeAttribute(entrant.teamCode)}"` : ""}>`,
-    renderQualificationSecurityBorder(entrant, rowY),
+    renderQualificationSecurityBorder(entrant, rowY, showQualificationSecurityBorder),
     flag,
     `<text x="${textX}" y="${baselineY}" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="800" fill="#141b2b">${escapeText(primary)}</text>`,
     "</g>"
   ].join("");
 }
 
-function renderQualificationSecurityBorder(entrant: BracketEntrant, rowY: number): string {
-  if (!entrant.qualificationSecurity) {
+function renderQualificationSecurityBorder(
+  entrant: BracketEntrant,
+  rowY: number,
+  showBorder: boolean
+): string {
+  if (!showBorder || !entrant.qualificationSecurity) {
     return "";
   }
 

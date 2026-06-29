@@ -113,6 +113,7 @@ describe("renderBracketSvg", () => {
     expect(svg).toContain(">3</text>");
     expect(svg).toContain("Canadá");
     expect(svg).not.toContain("Vencedor #73");
+    expect(svg).not.toContain("data-qualification-security=");
   });
 
   test("renders later-round results with row score cells instead of title suffixes", () => {
