@@ -50,13 +50,13 @@ describe("renderBracketSvg", () => {
     expect(svg).toContain("18/07 18:00 GMT-3");
     expect(svg).toContain("19/07 16:00 GMT-3");
     expect(svg).toContain(
-      'data-r32-heading-side="left" x="187" y="148" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="14"'
+      'data-r32-heading-side="left" x="168" y="148" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="14"'
     );
     expect(svg).toContain(
-      'data-r32-heading-side="right" x="1813" y="148" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="14"'
+      'data-r32-heading-side="right" x="1832" y="148" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="14"'
     );
     expect(svg).toContain(
-      'data-kickoff-label-side="right" x="270" y="-12" text-anchor="end" font-family="Inter, Arial, sans-serif" font-size="11"'
+      'data-kickoff-label-side="right" x="232" y="-12" text-anchor="end" font-family="Inter, Arial, sans-serif" font-size="11"'
     );
     expect(svg).toContain(
       'data-path-kickoff-label-match="89" x="0" y="-8" font-family="Inter, Arial, sans-serif" font-size="11"'
@@ -71,6 +71,10 @@ describe("renderBracketSvg", () => {
     expect(svg).toContain("Final");
     expect(svg).toContain("Decisão do 3º lugar");
     expect(svg).toContain('data-path-title-label-match="103" x="0" y="-22"');
+    expect(svg).toContain('data-path-match-number-label="89" x="168"');
+    expect(svg).toContain('data-path-match-number-label="97" x="144"');
+    expect(svg).toContain('data-path-match-number-label="101" x="144"');
+    expect(svg).toContain('data-path-match-number-label="104" x="186"');
     expect(svg).toContain("Vencedor #101");
     expect(svg).toContain("Vencedor #102");
     expect(svg).toContain("Perdedor #101");
@@ -109,8 +113,8 @@ describe("renderBracketSvg", () => {
     expect(svg).toContain('data-score-home-match="73"');
     expect(svg).toContain('data-score-away-match="73"');
     expect(svg).toContain('data-r32-result-match-number="73"');
-    expect(svg).toContain('data-score-home-match="73" x="241" y="25"');
-    expect(svg).toContain('data-score-away-match="73" x="241" y="61"');
+    expect(svg).toContain('data-score-home-match="73" x="203" y="25"');
+    expect(svg).toContain('data-score-away-match="73" x="203" y="61"');
     expect(svg).toContain('data-result-winner="away"');
     expect(svg).toContain(">1</text>");
     expect(svg).toContain(">3</text>");
