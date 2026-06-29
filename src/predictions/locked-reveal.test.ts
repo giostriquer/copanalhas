@@ -230,6 +230,39 @@ describe("formatPredictionResultRevealBatch", () => {
     );
   });
 
+  test("shows penalty shootout details without summing them into the match score", () => {
+    expect(
+      formatPredictionResultRevealBatch({
+        matches: [knockoutMatch("wc2026-074", 74, "GER", "Germany", "PAR", "Paraguay")],
+        predictions: [
+          prediction(
+            "user-1",
+            "wc2026-074",
+            1,
+            2,
+            "2026-06-29T10:00:00.000Z",
+            "penalties"
+          )
+        ],
+        results: [
+          {
+            matchId: "wc2026-074",
+            homeScore: 5,
+            awayScore: 6,
+            decisionMethod: "penalties",
+            regularTimeHomeScore: 1,
+            regularTimeAwayScore: 1,
+            extraTimeHomeScore: 1,
+            extraTimeAwayScore: 1,
+            penaltyHomeScore: 4,
+            penaltyAwayScore: 5,
+            winner: "away"
+          }
+        ]
+      })
+    ).toContain("#74 Alemanha (1 (4)) x (1 (5)) Paraguai");
+  });
+
   test("shows knockout decision methods and stacked bonus points in result reveals", () => {
     expect(
       formatPredictionResultRevealBatch({
@@ -272,7 +305,7 @@ describe("formatPredictionResultRevealBatch", () => {
       [
         "Resultado",
         "",
-        "#73 Coreia do Sul (5) x (4) Suíça",
+        "#73 Coreia do Sul (1 (4)) x (1 (3)) Suíça",
         "2 palpites",
         "",
         "==== Coreia do Sul ====",

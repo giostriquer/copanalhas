@@ -56,9 +56,7 @@ export function formatPredictionResultRevealBatch(
 
       return [
         ...(index === 0 ? [] : [""]),
-        `#${match.matchNumber} ${formatTeamName(match.homeTeam)} (${result.homeScore}) x (${
-          result.awayScore
-        }) ${formatTeamName(match.awayTeam)}`,
+        resultHeader(match, result),
         countLabel(predictions.length),
         ...formatPredictionResultLines(match, predictions, scoredByUserId)
       ];
@@ -207,6 +205,85 @@ function formatPredictionResultLines(
 
     return `<@${prediction.userId}>  ${formatPredictionScoreLabel(prediction)} - ${pointsLabel(points)}`;
   });
+}
+
+function resultHeader(match: WorldCupMatch, result: MatchResult): string {
+  const scoreLabels = resultScoreLabels(result);
+
+  return `#${match.matchNumber} ${formatTeamName(match.homeTeam)} (${scoreLabels.home}) x (${scoreLabels.away}) ${formatTeamName(match.awayTeam)}`;
+}
+
+function resultScoreLabels(result: MatchResult): { home: string; away: string } {
+  const baseScore = visibleBaseScore(result);
+
+  if (
+    result.decisionMethod === "penalties" &&
+    result.penaltyHomeScore !== null &&
+    result.penaltyHomeScore !== undefined &&
+    result.penaltyAwayScore !== null &&
+    result.penaltyAwayScore !== undefined
+  ) {
+    return {
+      home: `${baseScore.homeScore} (${result.penaltyHomeScore})`,
+      away: `${baseScore.awayScore} (${result.penaltyAwayScore})`
+    };
+  }
+
+  return {
+    home: String(baseScore.homeScore),
+    away: String(baseScore.awayScore)
+  };
+}
+
+function visibleBaseScore(result: MatchResult): Pick<MatchResult, "homeScore" | "awayScore"> {
+  if (result.decisionMethod === "penalties") {
+    return (
+      scoreLayer(result.extraTimeHomeScore, result.extraTimeAwayScore) ??
+      scoreLayer(result.regularTimeHomeScore, result.regularTimeAwayScore) ?? {
+        homeScore: result.homeScore,
+        awayScore: result.awayScore
+      }
+    );
+  }
+
+  if (result.decisionMethod === "extra_time") {
+    return (
+      scoreLayer(result.extraTimeHomeScore, result.extraTimeAwayScore) ?? {
+        homeScore: result.homeScore,
+        awayScore: result.awayScore
+      }
+    );
+  }
+
+  if (result.decisionMethod === "regular") {
+    return (
+      scoreLayer(result.regularTimeHomeScore, result.regularTimeAwayScore) ?? {
+        homeScore: result.homeScore,
+        awayScore: result.awayScore
+      }
+    );
+  }
+
+  return {
+    homeScore: result.homeScore,
+    awayScore: result.awayScore
+  };
+}
+
+function scoreLayer(
+  homeScore: number | null | undefined,
+  awayScore: number | null | undefined
+): Pick<MatchResult, "homeScore" | "awayScore"> | undefined {
+  if (
+    homeScore === null ||
+    homeScore === undefined ||
+    awayScore === null ||
+    awayScore === undefined
+  ) {
+    return undefined;
+  }
+
+  return { homeScore, awayScore };
 }
 
 function countLabel(value: number): string {
