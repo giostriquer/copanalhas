@@ -599,6 +599,94 @@ describe("handleOperatorCommand", () => {
     expect(repostPredictionReveal).toHaveBeenCalledWith("wc2026-001");
   });
 
+  test("set-prediction lets the configured owner store an extraordinary knockout prediction", async () => {
+    const upsertPrediction = vi.fn();
+
+    const result = await handleOperatorCommand(
+      command("set-prediction", {
+        match: "wc2026-073",
+        user: "user-extra",
+        score: "1-1",
+        decision: "penalties",
+        reason: "missed the cutoff because Discord was down"
+      }),
+      options({ ownerUserId: "operator-1", upsertPrediction })
+    );
+
+    expect(result).toEqual({
+      action: "replied",
+      content: [
+        "Recorded extraordinary prediction for <@user-extra> on #73 2º Grupo A x 2º Grupo B: 1x1 (Cobrança de pênaltis).",
+        "Reason: missed the cutoff because Discord was down",
+        "If a locked reveal already exists, run /copanalhas repost-reveal match:wc2026-073 to refresh the public thread."
+      ].join("\n"),
+      ephemeral: true
+    });
+    expect(upsertPrediction).toHaveBeenCalledWith({
+      userId: "user-extra",
+      matchId: "wc2026-073",
+      messageId: "operator:operator-1:2026-06-11T23:00:00.000Z",
+      homeScore: 1,
+      awayScore: 1,
+      decisionMethod: "penalties",
+      submittedAt: "2026-06-11T23:00:00.000Z",
+      updatedAt: null,
+      parserVersion: "operator-set-prediction-v1"
+    });
+  });
+
+  test("set-prediction refuses when the owner user id is not configured", async () => {
+    const upsertPrediction = vi.fn();
+
+    const result = await handleOperatorCommand(
+      command("set-prediction", { match: "wc2026-001", user: "user-extra", score: "2-1" }),
+      options({ upsertPrediction })
+    );
+
+    expect(result).toEqual({
+      action: "replied",
+      content: "Configure COPANALHAS_OWNER_USER_ID before using set-prediction.",
+      ephemeral: true
+    });
+    expect(upsertPrediction).not.toHaveBeenCalled();
+  });
+
+  test("set-prediction refuses users other than the configured owner", async () => {
+    const upsertPrediction = vi.fn();
+
+    const result = await handleOperatorCommand(
+      command(
+        "set-prediction",
+        { match: "wc2026-001", user: "user-extra", score: "2-1" },
+        { userId: "not-owner" }
+      ),
+      options({ ownerUserId: "operator-1", upsertPrediction })
+    );
+
+    expect(result).toEqual({
+      action: "replied",
+      content: "Only the configured Copanalhas owner can use set-prediction.",
+      ephemeral: true
+    });
+    expect(upsertPrediction).not.toHaveBeenCalled();
+  });
+
+  test("set-prediction requires a decision method for knockout matches", async () => {
+    const upsertPrediction = vi.fn();
+
+    const result = await handleOperatorCommand(
+      command("set-prediction", { match: "wc2026-073", user: "user-extra", score: "1-1" }),
+      options({ ownerUserId: "operator-1", upsertPrediction })
+    );
+
+    expect(result).toEqual({
+      action: "replied",
+      content: "Use decision regular, extra_time, or penalties for knockout predictions.",
+      ephemeral: true
+    });
+    expect(upsertPrediction).not.toHaveBeenCalled();
+  });
+
   test("result records a manual result for a known match", async () => {
     const upsertResult = vi.fn();
 
@@ -920,6 +1008,46 @@ describe("handleDiscordOperatorCommand", () => {
     );
   });
 
+  test("maps owner-only set-prediction Discord options", async () => {
+    const logOperatorCommand = vi.fn();
+    const upsertPrediction = vi.fn();
+    const interaction = discordCommandInteraction("set-prediction");
+
+    const result = await handleDiscordOperatorCommand(
+      interaction as unknown as Interaction,
+      options({ ownerUserId: "operator-1", upsertPrediction, logOperatorCommand })
+    );
+
+    expect(result.action).toBe("replied");
+    expect(upsertPrediction).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: "target-user-1",
+        matchId: "wc2026-001",
+        homeScore: 2,
+        awayScore: 1,
+        parserVersion: "operator-set-prediction-v1"
+      })
+    );
+    expect(logOperatorCommand).toHaveBeenCalledWith(
+      {
+        guildId: "guild-1",
+        channelId: "channel-1",
+        userId: "operator-1",
+        subcommand: "set-prediction",
+        options: {
+          match: "wc2026-001",
+          user: "target-user-1",
+          score: "2-1",
+          reason: "late exception"
+        }
+      },
+      expect.objectContaining({
+        action: "replied",
+        ephemeral: true
+      })
+    );
+  });
+
   test("defers private operator commands before running slow work", async () => {
     const events: string[] = [];
     const interaction = discordCommandInteraction("post-date", events);
@@ -1029,6 +1157,7 @@ function command(
   subcommand:
     | OperatorCommandInput["subcommand"]
     | "predictions"
+    | "set-prediction"
     | "reveal"
     | "repost-reveal"
     | "bracket"
@@ -1062,6 +1191,7 @@ function options(overrides: Partial<OperatorCommandOptions> = {}): OperatorComma
     clearPredictionRevealPostsForMatches: vi.fn(() => 0),
     clearMatchStartAlertsForMatches: vi.fn(() => 0),
     listPredictions: vi.fn(() => []),
+    upsertPrediction: vi.fn(),
     listResults: vi.fn(() => []),
     upsertResult: vi.fn(),
     listStandingsPosts: vi.fn(() => []),
@@ -1110,6 +1240,7 @@ function discordCommandInteraction(
   subcommand:
     | OperatorCommandInput["subcommand"]
     | "predictions"
+    | "set-prediction"
     | "reveal"
     | "repost-reveal"
     | "bracket"
@@ -1137,6 +1268,17 @@ function discordCommandInteraction(
 
         if (name === "score") {
           return "2-1";
+        }
+
+        if (name === "reason") {
+          return "late exception";
+        }
+
+        return null;
+      }),
+      getUser: vi.fn((name: string) => {
+        if (name === "user") {
+          return { id: "target-user-1" };
         }
 
         return null;

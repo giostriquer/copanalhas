@@ -121,6 +121,7 @@ While `bot` is running, use `/copanalhas` for normal operator work:
 - `/copanalhas copanalhas-recap-painel`
 - `/copanalhas meus-palpites`
 - `/copanalhas predictions match:wc2026-001`
+- `/copanalhas set-prediction match:wc2026-001 user:@member score:2-1`
 - `/copanalhas reveal match:wc2026-001`
 - `/copanalhas repost-reveal match:wc2026-001`
 - `/copanalhas result match:wc2026-001 score:2-1`
@@ -250,16 +251,26 @@ moderation without exposing picks to other members. `reveal` is the public view:
 it refuses while the prediction window is still open and posts the pick list only
 after the match cutoff has passed.
 
+`set-prediction` is an extraordinary recovery command for the configured owner
+only. It requires `COPANALHAS_OWNER_USER_ID`; when that value is missing, the
+command refuses to run. It upserts one parsed prediction for the selected user
+and match even after the normal cutoff, using parser version
+`operator-set-prediction-v1`. For knockout matches, the owner must also pass the
+user's decision method (`regular`, `extra_time`, or `penalties`). The command
+does not automatically edit public reveal or leaderboard artifacts; if a locked
+reveal already exists, run `repost-reveal` for the match so the thread reflects
+the extraordinary entry.
+
 `repost-reveal` is an operator-only private recovery command for cases where the
 automatic locked-prediction reveal thread message was deleted or otherwise needs
 to be recreated. It clears only the stored reveal pointer for the selected match
 or its grouped reveal message, then reruns the normal locked-reveal post flow.
 Predictions, results, standings, leaderboard, and bracket data are not touched.
 
-Match arguments for `predictions`, `reveal`, `repost-reveal`, and `result` use
-Discord autocomplete. Operators can search by match number, team code,
-translated team name, original team name, or date instead of typing internal
-match IDs.
+Match arguments for `predictions`, `set-prediction`, `reveal`, `repost-reveal`,
+and `result` use Discord autocomplete. Operators can search by match number,
+team code, translated team name, original team name, or date instead of typing
+internal match IDs.
 
 `sync-results` is an operator-only private command for match-end impatience. It
 bypasses the scheduled result-sync delay for unresolved Football-Data mapped

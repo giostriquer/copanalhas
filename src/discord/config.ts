@@ -16,6 +16,7 @@ export interface CopanalhasConfig {
   matchStartAlertDeleteAfterMinutes?: number;
   matchStartAlertLeadMinutes?: number;
   matchStartAlertGraceMinutes?: number;
+  ownerUserId?: string | null;
   recapCodexEnabled: boolean;
   recapCodexCommand: string;
   recapCodexOutputDir: string;
@@ -61,6 +62,7 @@ export function parseCopanalhasConfig(
   const matchStartAlertGraceMinutes = parsePositiveInteger(
     clean(env.COPANALHAS_MATCH_START_GRACE_MINUTES) ?? "5"
   );
+  const ownerUserId = clean(env.COPANALHAS_OWNER_USER_ID) ?? null;
   const recapCodexEnabled = clean(env.COPANALHAS_RECAP_CODEX_ENABLED)?.toLowerCase() === "true";
   const recapCodexCommand = clean(env.COPANALHAS_RECAP_CODEX_COMMAND) ?? "codex";
   const recapCodexOutputDir = clean(env.COPANALHAS_RECAP_CODEX_OUTPUT_DIR) ?? "./data/recap-copy";
@@ -152,6 +154,7 @@ export function parseCopanalhasConfig(
       matchStartAlertDeleteAfterMinutes,
       matchStartAlertLeadMinutes,
       matchStartAlertGraceMinutes,
+      ownerUserId,
       recapCodexEnabled,
       recapCodexCommand,
       recapCodexOutputDir,

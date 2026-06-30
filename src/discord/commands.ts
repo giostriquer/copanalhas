@@ -120,6 +120,44 @@ export function createCopanalhasCommand() {
     )
     .addSubcommand((subcommand) =>
       subcommand
+        .setName("set-prediction")
+        .setDescription("Owner-only extraordinary prediction override")
+        .addStringOption((option) =>
+          option
+            .setName("match")
+            .setDescription("Search by match number or team")
+            .setRequired(true)
+            .setAutocomplete(true)
+        )
+        .addUserOption((option) =>
+          option
+            .setName("user")
+            .setDescription("Discord user receiving the prediction")
+            .setRequired(true)
+        )
+        .addStringOption((option) =>
+          option.setName("score").setDescription("Prediction score, like 2-1").setRequired(true)
+        )
+        .addStringOption((option) =>
+          option
+            .setName("decision")
+            .setDescription("How the user predicted a knockout match would be decided")
+            .setRequired(false)
+            .addChoices(
+              { name: "Tempo regulamentar", value: "regular" },
+              { name: "Prorrogação", value: "extra_time" },
+              { name: "Cobrança de pênaltis", value: "penalties" }
+            )
+        )
+        .addStringOption((option) =>
+          option
+            .setName("reason")
+            .setDescription("Short audit note for the extraordinary entry")
+            .setRequired(false)
+        )
+    )
+    .addSubcommand((subcommand) =>
+      subcommand
         .setName("reveal")
         .setDescription("Publicly reveal locked predictions for one match")
         .addStringOption((option) =>

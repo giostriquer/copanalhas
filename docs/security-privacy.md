@@ -48,6 +48,9 @@ or operator-facing dashboard output:
 - Make source-data imports auditable.
 - Log failures without exposing tokens or raw private message bodies.
 - Keep admin/operator commands explicit and restricted.
+- Keep extraordinary late-prediction recovery restricted to
+  `COPANALHAS_OWNER_USER_ID`; when that value is missing, the command must fail
+  closed.
 - Use `/copanalhas` commands only in the configured guild/channel.
 - Use thread posting only for matchday prediction reveal messages.
 - Allow role mentions only for the configured match-start role when that feature

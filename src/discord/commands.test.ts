@@ -25,6 +25,7 @@ describe("Copanalhas slash command definition", () => {
         expect.objectContaining({ name: "sync-results" }),
         expect.objectContaining({ name: "meus-palpites" }),
         expect.objectContaining({ name: "predictions" }),
+        expect.objectContaining({ name: "set-prediction" }),
         expect.objectContaining({ name: "reveal" }),
         expect.objectContaining({ name: "repost-reveal" }),
         expect.objectContaining({ name: "result" })
@@ -36,10 +37,10 @@ describe("Copanalhas slash command definition", () => {
   test("enables autocomplete for match-based operator commands", () => {
     const command = createCopanalhasCommand().toJSON();
     const matchSubcommands = command.options?.filter((option) =>
-      ["predictions", "reveal", "repost-reveal", "result"].includes(option.name)
+      ["predictions", "set-prediction", "reveal", "repost-reveal", "result"].includes(option.name)
     );
 
-    expect(matchSubcommands).toHaveLength(4);
+    expect(matchSubcommands).toHaveLength(5);
     for (const subcommand of matchSubcommands ?? []) {
       expect((subcommand as { options?: unknown[] }).options).toEqual(
         expect.arrayContaining([
@@ -50,6 +51,31 @@ describe("Copanalhas slash command definition", () => {
         ])
       );
     }
+  });
+
+  test("defines owner-only extraordinary prediction fields", () => {
+    const command = createCopanalhasCommand().toJSON();
+    const setPredictionSubcommand = command.options?.find(
+      (option) => option.name === "set-prediction"
+    ) as { options?: Array<{ name: string; required?: boolean; choices?: unknown[] }> } | undefined;
+
+    expect(setPredictionSubcommand?.options).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ name: "match", required: true, autocomplete: true }),
+        expect.objectContaining({ name: "user", required: true }),
+        expect.objectContaining({ name: "score", required: true }),
+        expect.objectContaining({
+          name: "decision",
+          required: false,
+          choices: [
+            { name: "Tempo regulamentar", value: "regular" },
+            { name: "Prorrogação", value: "extra_time" },
+            { name: "Cobrança de pênaltis", value: "penalties" }
+          ]
+        }),
+        expect.objectContaining({ name: "reason", required: false })
+      ])
+    );
   });
 
   test("defines optional Copanalhas Recap period choices", () => {

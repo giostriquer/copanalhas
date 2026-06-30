@@ -668,11 +668,13 @@ function createOperatorCommandOptions(
     clearMatchStartAlertsForMatches: (matchIds) =>
       options.store.clearMatchStartAlertsForMatches(matchIds),
     listPredictions: () => options.store.listPredictions(),
+    upsertPrediction: (prediction) => options.store.upsertPrediction(prediction),
     listResults: () => options.store.listResults(),
     upsertResult: async (result) => {
       await options.store.upsertResult(result);
       refreshRuntimeMatches(options, seedMatches);
     },
+    ownerUserId: options.config.ownerUserId ?? null,
     listStandingsPosts: () => options.store.listStandingsPosts(),
     updateStandingsDashboard: updateStandingsDashboardForRuntime,
     listLeaderboardPosts: () => options.store.listLeaderboardPosts(),

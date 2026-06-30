@@ -121,6 +121,12 @@ The leaderboard dashboard includes an operator-provided prize section:
 ## Open Decisions
 
 - Whether edited Discord messages update predictions until kickoff.
-- Whether late predictions are rejected at kickoff or at a configurable cutoff.
 - Whether each user can submit one prediction per match or multiple attempts with
   the latest valid one winning.
+
+## Late Recovery
+
+Normal member submissions are rejected after the configured prediction cutoff.
+The owner-only extraordinary recovery command can upsert one late prediction for
+a selected user and match, but it stores the same parsed prediction fields as the
+normal flow so scoring remains recomputable from predictions plus results.

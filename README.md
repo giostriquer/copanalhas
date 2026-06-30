@@ -103,6 +103,10 @@ Useful operator commands while the bot is running:
 - `/copanalhas predictions match:wc2026-001`: privately inspect submitted picks
   for one match before or after lock. Match fields support autocomplete by team
   or match number.
+- `/copanalhas set-prediction match:wc2026-001 user:@member score:2-1`: owner-only
+  extraordinary prediction entry after lock. Knockout matches also require
+  `decision`. If a locked reveal already exists, run `repost-reveal` for that
+  match after the override.
 - `/copanalhas reveal match:wc2026-001`: publicly reveal submitted picks only
   after predictions have closed.
 - `/copanalhas result match:wc2026-001 score:2-1`: record or override a result.
@@ -126,6 +130,9 @@ Useful operator commands while the bot is running:
   match-start pings, default `5`. Set to `0` to post at kickoff.
 - `COPANALHAS_MATCH_START_GRACE_MINUTES`: startup/tick grace window for posting
   a just-started match ping, default `5`.
+- `COPANALHAS_OWNER_USER_ID`: Discord user ID allowed to run the owner-only
+  `/copanalhas set-prediction` recovery command. Leave blank to make that
+  command fail closed.
 
 ## Recap Copy
 

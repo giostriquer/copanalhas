@@ -58,6 +58,7 @@ export type OperatorSubcommand =
   | "sync-results"
   | "meus-palpites"
   | "predictions"
+  | "set-prediction"
   | "reveal"
   | "repost-reveal"
   | "result";
@@ -96,8 +97,10 @@ export interface OperatorCommandOptions {
   clearPredictionRevealPostsForMatches(matchIds: readonly string[]): number;
   clearMatchStartAlertsForMatches(matchIds: readonly string[]): number;
   listPredictions(): StoredPrediction[];
+  upsertPrediction(prediction: StoredPrediction): void | Promise<void>;
   listResults(): MatchResult[];
   upsertResult(result: StoredResult): void | Promise<void>;
+  ownerUserId?: string | null;
   listStandingsPosts(): StoredStandingsPost[];
   updateStandingsDashboard(): Promise<UpdateStandingsDashboardResult>;
   listLeaderboardPosts(): StoredLeaderboardPost[];
@@ -121,6 +124,8 @@ export interface OperatorCommandOptions {
     result: OperatorAutocompleteResult
   ): void;
 }
+
+export const operatorSetPredictionParserVersion = "operator-set-prediction-v1";
 
 export type OperatorCommandResult =
   | {
@@ -430,6 +435,67 @@ export async function handleOperatorCommand(
     );
   }
 
+  if (command.subcommand === "set-prediction") {
+    if (!options.ownerUserId) {
+      return reply("Configure COPANALHAS_OWNER_USER_ID before using set-prediction.");
+    }
+
+    if (command.userId !== options.ownerUserId) {
+      return reply("Only the configured Copanalhas owner can use set-prediction.");
+    }
+
+    const match = matchFromCommand(command, options);
+
+    if (!match) {
+      return reply(`Unknown match ${command.options.match}.`);
+    }
+
+    const targetUserId = command.options.user?.trim();
+
+    if (!targetUserId) {
+      return reply("Choose a Discord user for set-prediction.");
+    }
+
+    const parsedScore = parseScoreInput(command.options.score ?? "");
+
+    if (!parsedScore.ok) {
+      return reply("Use a score like 2x1 or 2-1.");
+    }
+
+    const parsedDecision = parseOperatorPredictionDecision(match, command.options);
+
+    if (!parsedDecision.ok) {
+      return reply(parsedDecision.message);
+    }
+
+    const recordedAt = options.now().toISOString();
+    const existingPrediction = options
+      .listPredictions()
+      .find((prediction) => prediction.userId === targetUserId && prediction.matchId === match.id);
+    const prediction: StoredPrediction = {
+      userId: targetUserId,
+      matchId: match.id,
+      messageId: `operator:${command.userId}:${recordedAt}`,
+      homeScore: parsedScore.score.homeScore,
+      awayScore: parsedScore.score.awayScore,
+      ...(parsedDecision.decisionMethod ? { decisionMethod: parsedDecision.decisionMethod } : {}),
+      submittedAt: existingPrediction?.submittedAt ?? recordedAt,
+      updatedAt: existingPrediction ? recordedAt : null,
+      parserVersion: operatorSetPredictionParserVersion
+    };
+
+    await options.upsertPrediction(prediction);
+
+    return reply(
+      formatSetPredictionReply({
+        match,
+        targetUserId,
+        prediction,
+        reason: cleanOptionalReason(command.options.reason)
+      })
+    );
+  }
+
   if (command.subcommand === "reveal") {
     const match = matchFromCommand(command, options);
 
@@ -512,7 +578,9 @@ export function handleOperatorAutocomplete(
 
   if (
     interaction.focusedOptionName !== "match" ||
-    !["predictions", "reveal", "repost-reveal", "result"].includes(interaction.subcommand)
+    !["predictions", "set-prediction", "reveal", "repost-reveal", "result"].includes(
+      interaction.subcommand
+    )
   ) {
     return { action: "ignored", reason: "unsupported-option" };
   }
@@ -698,6 +766,16 @@ function readCommandOptions(
     };
   }
 
+  if (subcommand === "set-prediction") {
+    return removeUndefinedValues({
+      match: interaction.options.getString("match", true),
+      user: interaction.options.getUser("user", true).id,
+      score: interaction.options.getString("score", true),
+      decision: interaction.options.getString("decision", false) ?? undefined,
+      reason: interaction.options.getString("reason", false) ?? undefined
+    });
+  }
+
   if (subcommand === "result") {
     return removeUndefinedValues({
       match: interaction.options.getString("match", true),
@@ -711,6 +789,66 @@ function readCommandOptions(
   }
 
   return {};
+}
+
+function parseOperatorPredictionDecision(
+  match: WorldCupMatch,
+  options: Record<string, string>
+): { ok: true; decisionMethod?: DecisionMethod } | { ok: false; message: string } {
+  if (match.phase === "group") {
+    return { ok: true };
+  }
+
+  const decisionMethod = parseDecisionMethodOption(options.decision ?? "");
+
+  if (!decisionMethod) {
+    return {
+      ok: false,
+      message: "Use decision regular, extra_time, or penalties for knockout predictions."
+    };
+  }
+
+  return { ok: true, decisionMethod };
+}
+
+function formatSetPredictionReply(input: {
+  match: WorldCupMatch;
+  targetUserId: string;
+  prediction: StoredPrediction;
+  reason: string | undefined;
+}): string {
+  const matchLabel = `#${input.match.matchNumber} ${formatTeamName(
+    input.match.homeTeam
+  )} x ${formatTeamName(input.match.awayTeam)}`;
+  const decisionSuffix = input.prediction.decisionMethod
+    ? ` (${formatOperatorPredictionDecisionLabel(input.prediction.decisionMethod)})`
+    : "";
+
+  return [
+    `Recorded extraordinary prediction for <@${input.targetUserId}> on ${matchLabel}: ${input.prediction.homeScore}x${input.prediction.awayScore}${decisionSuffix}.`,
+    input.reason ? `Reason: ${input.reason}` : null,
+    `If a locked reveal already exists, run /copanalhas repost-reveal match:${input.match.id} to refresh the public thread.`
+  ]
+    .filter((line): line is string => line !== null)
+    .join("\n");
+}
+
+function formatOperatorPredictionDecisionLabel(value: DecisionMethod): string {
+  if (value === "regular") {
+    return "Tempo regulamentar";
+  }
+
+  if (value === "extra_time") {
+    return "Prorrogação";
+  }
+
+  return "Cobrança de pênaltis";
+}
+
+function cleanOptionalReason(value: string | undefined): string | undefined {
+  const trimmed = value?.trim();
+
+  return trimmed === "" ? undefined : trimmed;
 }
 
 function parseManualResult(
@@ -892,6 +1030,7 @@ function parseOperatorSubcommand(value: string): OperatorSubcommand | undefined 
     value === "sync-results" ||
     value === "meus-palpites" ||
     value === "predictions" ||
+    value === "set-prediction" ||
     value === "reveal" ||
     value === "repost-reveal" ||
     value === "result"
