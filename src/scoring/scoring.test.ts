@@ -341,34 +341,34 @@ describe("scoreMatch", () => {
     });
   });
 
-  test("does not award result points after extra time when nobody hits an exact score", () => {
+  test("awards result points after extra time when nobody hits an exact score", () => {
     const scored = scoreMatch(
       knockoutResult({
         matchId: "ko-1",
-        homeScore: 2,
-        awayScore: 1,
+        homeScore: 3,
+        awayScore: 2,
         decisionMethod: "extra_time",
-        regularTimeHomeScore: 1,
-        regularTimeAwayScore: 1,
-        extraTimeHomeScore: 2,
-        extraTimeAwayScore: 1,
+        regularTimeHomeScore: 2,
+        regularTimeAwayScore: 2,
+        extraTimeHomeScore: 3,
+        extraTimeAwayScore: 2,
         winner: "home"
       }),
       [
-        prediction("u1", "ko-1", 3, 1, "extra_time"),
-        prediction("u2", "ko-1", 0, 0, "extra_time"),
+        prediction("u1", "ko-1", 2, 1, "extra_time"),
+        prediction("u2", "ko-1", 2, 1, "regular"),
         prediction("u3", "ko-1", 1, 2, "extra_time")
       ]
     );
 
     expect(pointsByUser(scored)).toEqual({
-      u1: 2,
+      u1: 4,
       u2: 2,
       u3: 2
     });
     expect(awardsByUser(scored)).toEqual({
-      u1: ["decision_bonus"],
-      u2: ["decision_bonus"],
+      u1: ["outcome", "decision_bonus"],
+      u2: ["outcome"],
       u3: ["decision_bonus"]
     });
   });

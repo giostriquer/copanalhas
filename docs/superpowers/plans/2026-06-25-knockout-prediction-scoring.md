@@ -61,7 +61,7 @@ expect(pointsByUser(scoreMatch({
 ]))).toEqual({ u1: 7, u2: 2 });
 ```
 
-Also add tests for shared regular exact, extra-time exact, no result or closest-score points after extra time/penalties, regular-time result and closest-score points, wrong bonus receiving 0, and leaderboard bonus aggregation.
+Also add tests for shared regular exact, extra-time exact, extra-time result points with no exact phase, no closest-score points after extra time/penalties, regular-time result and closest-score points, wrong bonus receiving 0, and leaderboard bonus aggregation.
 
 - [ ] **Step 2: Run focused tests and verify failure**
 
@@ -87,7 +87,7 @@ For knockout results, compute:
 
 1. regular-time exact: solo 5 or shared exact 3
 2. if no regular exact, extra-time exact 3
-3. no result or closest-score points after extra time when no exact phase hit
+3. if no exact phase hit and the match is decided after extra time, result points for the side that won after extra time
 4. advancement-side result points after penalties when no exact phase hit
 5. regular-time knockout finishes reuse the normal result and closest-score tiers
 6. decision-method bonus 2 independently when prediction decision equals result decision

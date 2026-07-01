@@ -151,6 +151,7 @@ function scoreKnockoutMatch(
     regularExactCount === 0 && extraTimeScore
       ? extraTimeRows.filter((row) => isExactScore(row, extraTimeScore)).length
       : 0;
+  const resultPointWinner = knockoutResultPointWinner(result, extraTimeScore ?? finalScore);
 
   return matchPredictions.map((prediction, index) => {
     const regularRow = regularRows[index];
@@ -182,9 +183,8 @@ function scoreKnockoutMatch(
     } else if (
       regularExactCount === 0 &&
       extraTimeExactCount === 0 &&
-      result.decisionMethod === "penalties" &&
-      result.winner &&
-      row.outcome === result.winner
+      resultPointWinner &&
+      row.outcome === resultPointWinner
     ) {
       awards.push("outcome");
       points += 2;
@@ -203,6 +203,21 @@ function scoreKnockoutMatch(
       awards
     };
   });
+}
+
+function knockoutResultPointWinner(
+  result: MatchResult & { decisionMethod: DecisionMethod },
+  score: Pick<MatchResult, "homeScore" | "awayScore">
+): MatchWinner | undefined {
+  if (result.decisionMethod === "extra_time") {
+    return result.winner ?? winnerForScore(score);
+  }
+
+  if (result.decisionMethod === "penalties") {
+    return result.winner ?? undefined;
+  }
+
+  return undefined;
 }
 
 function addDecisionBonus(
@@ -305,6 +320,12 @@ function outcomeForScore(homeScore: number, awayScore: number): MatchOutcome {
   }
 
   return "draw";
+}
+
+function winnerForScore(score: Pick<MatchResult, "homeScore" | "awayScore">): MatchWinner | undefined {
+  const outcome = outcomeForScore(score.homeScore, score.awayScore);
+
+  return outcome === "draw" ? undefined : outcome;
 }
 
 function isKnockoutResult(

@@ -66,7 +66,9 @@ predictions against the score after extra time:
 - Any exact scoreline after extra time receives 3 exact points.
 
 If nobody hits the exact regular-time or extra-time scoreline in a match decided
-after extra time, no result or closest-score points are awarded.
+after extra time, each member whose predicted scoreline picked the side that won
+after extra time receives 2 result points. Closest-score points are not awarded
+after extra time.
 
 If nobody hits the exact regular-time or extra-time scoreline in a match decided
 by penalties, each member whose predicted scoreline picked the side that
@@ -147,8 +149,8 @@ Focused tests should cover:
 - group-stage scoring remains unchanged
 - regular-time solo exact and shared exact knockout scoring
 - extra-time exact scoring when no regular-time exact exists
-- no result or closest-score points after extra time when nobody hit an exact
-  phase
+- extra-time result points when nobody hit an exact phase
+- no closest-score points after extra time when nobody hit an exact phase
 - advancement-side points after penalties when nobody hit an exact phase
 - regular-time knockout result and closest-score scoring
 - decision-method bonus stacks with every score tier
