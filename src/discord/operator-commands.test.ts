@@ -227,44 +227,40 @@ describe("handleOperatorCommand", () => {
     expect(updateStandingsDashboard).toHaveBeenCalledOnce();
   });
 
-  test("leaderboard returns formatted standings", async () => {
-    const resolveUserDisplayNames = vi.fn(async (userIds: readonly string[]) => {
-      expect(userIds).toEqual(["u1", "u2"]);
+  test("leaderboard posts or updates the leaderboard dashboard", async () => {
+    const updateLeaderboardDashboard = vi.fn(async () => ({
+      action: "updated" as const,
+      post: { messageId: "leaderboard-message-1", action: "edited" as const },
+      renderState: "image" as const
+    }));
+    const result = await handleOperatorCommand(
+      command("leaderboard"),
+      options({ updateLeaderboardDashboard })
+    );
 
-      return new Map([
-        ["u1", "Alice"],
-        ["u2", "Bob"]
-      ]);
+    expect(result).toEqual({
+      action: "replied",
+      content: "Updated leaderboard dashboard: edited (image).",
+      ephemeral: true
     });
+    expect(updateLeaderboardDashboard).toHaveBeenCalledOnce();
+  });
+
+  test("leaderboard returns a private failure reply when refresh fails", async () => {
     const result = await handleOperatorCommand(
       command("leaderboard"),
       options({
-        listPredictions: () => [
-          storedPrediction("u1", 2, 1, "2026-06-10T12:00:00.000Z"),
-          storedPrediction("u2", 1, 1, "2026-06-10T12:00:00.000Z")
-        ],
-        listResults: () => [{ matchId: "wc2026-001", homeScore: 2, awayScore: 1 }],
-        resolveUserDisplayNames
+        updateLeaderboardDashboard: vi.fn(async () => {
+          throw new Error("Discord upload failed");
+        })
       })
     );
 
     expect(result).toEqual({
       action: "replied",
-      content: expect.any(String),
+      content: "Failed to update leaderboard dashboard: Discord upload failed.",
       ephemeral: true
     });
-    if (result.action !== "replied") {
-      throw new Error("expected leaderboard reply");
-    }
-    expect(resolveUserDisplayNames).toHaveBeenCalledOnce();
-    expect(result.content).toContain("Ranking Copanalhas");
-    expect(result.content).toContain(
-      "1. Alice - 5 pts (1 solo, 0 exatos, 0 resultados, 0 mais próximos, 0 bônus, 1 partida)"
-    );
-    expect(result.content).toContain(
-      "2. Bob - 0 pts (0 solos, 0 exatos, 0 resultados, 0 mais próximos, 0 bônus, 1 partida)"
-    );
-    expect(result.content).toContain("Como funciona");
   });
 
   test("bracket posts or updates the bracket dashboard", async () => {

@@ -63,7 +63,7 @@ export function createCopanalhasCommand() {
       subcommand.setName("standings").setDescription("Post or update group standings")
     )
     .addSubcommand((subcommand) =>
-      subcommand.setName("leaderboard").setDescription("Show the current leaderboard")
+      subcommand.setName("leaderboard").setDescription("Post or update the leaderboard")
     )
     .addSubcommand((subcommand) =>
       subcommand.setName("bracket").setDescription("Post or update the World Cup bracket")

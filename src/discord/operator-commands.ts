@@ -2,13 +2,10 @@ import { MessageFlags, type ChatInputCommandInteraction, type Interaction } from
 
 import type { PostDueMatchCardsResult } from "../app/match-card-posting.js";
 import { formatOperatorHealthReport, type OperatorHealthSnapshot } from "../app/operator-health.js";
-import { formatLeaderboard } from "../leaderboard/format.js";
 import { formatUserPredictionSummary } from "../predictions/personal-summary.js";
 import { parseScoreInput, type ParsedScoreInput } from "../predictions/score-parser.js";
 import { formatPredictionAudit, formatPredictionReveal } from "../predictions/visibility.js";
 import {
-  buildLeaderboard,
-  scoreMatch,
   type DecisionMethod,
   type MatchResult,
   type MatchWinner
@@ -335,17 +332,15 @@ export async function handleOperatorCommand(
   }
 
   if (command.subcommand === "leaderboard") {
-    const predictions = options.listPredictions();
-    const scoredPredictions = options
-      .listResults()
-      .flatMap((result) => scoreMatch(result, predictions));
-    const rows = buildLeaderboard(scoredPredictions, predictions);
-    const displayNames = await resolveLeaderboardDisplayNames(
-      options,
-      rows.map((row) => row.userId)
-    );
+    try {
+      const result = await options.updateLeaderboardDashboard();
 
-    return reply(formatLeaderboard(rows, displayNames));
+      return reply(
+        `Updated leaderboard dashboard: ${result.post.action} (${result.renderState}).`
+      );
+    } catch (error) {
+      return reply(`Failed to update leaderboard dashboard: ${errorMessage(error)}.`);
+    }
   }
 
   if (command.subcommand === "bracket") {
@@ -1116,21 +1111,6 @@ function isUnknownInteractionError(error: unknown): boolean {
     "code" in error &&
     error.code === 10062
   );
-}
-
-async function resolveLeaderboardDisplayNames(
-  options: Pick<OperatorCommandOptions, "resolveUserDisplayNames">,
-  userIds: readonly string[]
-): Promise<ReadonlyMap<string, string>> {
-  if (!options.resolveUserDisplayNames || userIds.length === 0) {
-    return new Map();
-  }
-
-  try {
-    return await options.resolveUserDisplayNames(userIds);
-  } catch {
-    return new Map();
-  }
 }
 
 function matchFromCommand(
